@@ -1,0 +1,96 @@
+name: Build unsigned real-device IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: unsigned-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate repository
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate project structure
+        run: python3 scripts/validate_repo.py
+
+  build:
+    name: macOS 26 / iOS real device
+    needs: validate
+    runs-on: macos-26
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select stable Xcode 26
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -d /Applications/Xcode_26.2.app ]]; then
+            sudo xcode-select -s /Applications/Xcode_26.2.app/Contents/Developer
+          elif [[ -d /Applications/Xcode_26.1.app ]]; then
+            sudo xcode-select -s /Applications/Xcode_26.1.app/Contents/Developer
+          elif [[ -d /Applications/Xcode_26.0.app ]]; then
+            sudo xcode-select -s /Applications/Xcode_26.0.app/Contents/Developer
+          else
+            sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          fi
+          sw_vers
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build unsigned arm64 IPA
+        run: ./scripts/build_unsigned_ipa.sh
+
+      - name: Verify packaged IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f build/Android-iOSEmulator-unsigned.ipa
+          test -f build/Android-iOSEmulator-unsigned.ipa.sha256
+          test -f build/build-manifest.txt
+          unzip -t build/Android-iOSEmulator-unsigned.ipa
+          ! unzip -l build/Android-iOSEmulator-unsigned.ipa | grep -q _CodeSignature
+          ! unzip -l build/Android-iOSEmulator-unsigned.ipa | grep -q embedded.mobileprovision
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-unsigned-real-device
+          path: |
+            build/Android-iOSEmulator-unsigned.ipa
+            build/Android-iOSEmulator-unsigned.ipa.sha256
+            build/build-manifest.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish tagged release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "${GITHUB_REF_NAME}" \
+            build/Android-iOSEmulator-unsigned.ipa \
+            build/Android-iOSEmulator-unsigned.ipa.sha256 \
+            build/build-manifest.txt \
+            --title "Android iOSEmulator ${GITHUB_REF_NAME}" \
+            --notes "Unsigned arm64 real-device Gate 0 IPA built on GitHub's macOS 26 runner. Sign with a development profile that preserves get-task-allow before installation."
