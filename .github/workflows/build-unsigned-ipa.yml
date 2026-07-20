@@ -26,6 +26,9 @@ jobs:
       - name: Validate project structure
         run: python3 scripts/validate_repo.py
 
+      - name: Validate Gate 1 runtime contracts
+        run: python3 scripts/validate_runtime_contract.py
+
   build:
     name: macOS 26 / iOS real device
     needs: validate
