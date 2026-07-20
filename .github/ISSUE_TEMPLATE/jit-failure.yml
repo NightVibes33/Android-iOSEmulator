@@ -1,0 +1,34 @@
+name: JIT failure
+about: Report a LocalDevVPN, StikDebug, or executable-memory failure
+title: "[JIT] "
+labels: ["jit", "needs-triage"]
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: iPhone17,3
+    validations:
+      required: true
+  - type: input
+    id: ios
+    attributes:
+      label: iOS version and build
+      placeholder: 27.0 (24Axxxx)
+    validations:
+      required: true
+  - type: dropdown
+    id: protocol
+    attributes:
+      label: Protocol
+      options:
+        - Universal brk #0xf00d
+        - UTM legacy brk #0x69
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Diagnostic JSON and StikDebug log
+    validations:
+      required: true
