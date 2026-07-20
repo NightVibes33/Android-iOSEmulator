@@ -64,7 +64,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p ci-logs
-          ./scripts/build_unsigned_ipa.sh 2>&1 | tee ci-logs/xcodebuild.log
+          bash ./scripts/build_unsigned_ipa.sh 2>&1 | tee ci-logs/xcodebuild.log
 
       - name: Upload build diagnostics
         if: always()
