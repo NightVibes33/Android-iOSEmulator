@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "product": "fvp_mini-userdebug",
+  "androidBuildFingerprint": "replace-with-exact-build-fingerprint",
+  "architecture": "arm64",
+  "machine": "virt",
+  "assets": [
+    {
+      "role": "kernel",
+      "fileName": "Image",
+      "byteCount": 0,
+      "sha256": "replace-with-sha256",
+      "required": true
+    },
+    {
+      "role": "initramfs",
+      "fileName": "ramdisk.img",
+      "byteCount": 0,
+      "sha256": "replace-with-sha256",
+      "required": true
+    }
+  ]
+}
