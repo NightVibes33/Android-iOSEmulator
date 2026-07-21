@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   build:
-    name: UTM SE + preinstalled BlissOS Android 13
+    name: UTM SE x86_64 + preinstalled BlissOS Android 13
     runs-on: macos-26
     timeout-minutes: 360
     steps:
@@ -55,14 +55,14 @@ jobs:
           sgdisk --version
           "$(brew --prefix e2fsprogs)/sbin/mkfs.ext4" -V
 
-      - name: Build unsigned preinstalled Android 13 guest IPA
+      - name: Build single-file Android 13 guest IPA
         shell: bash
         run: |
           set -o pipefail
           rm -f livecontainer-android13-build.log
           bash -x ./scripts/build_livecontainer_guest_ipa.sh 2>&1 | tee livecontainer-android13-build.log
 
-      - name: Verify preinstalled guest-only package
+      - name: Verify single-file preinstalled package
         shell: bash
         run: |
           set -euo pipefail
@@ -75,32 +75,23 @@ jobs:
           ! unzip -Z1 "$IPA" | grep -q 'PreloadedApps/'
           ! unzip -Z1 "$IPA" | grep -Eq '^Payload/[^/]+\.app/.+\.app/'
           ! unzip -Z1 "$IPA" | grep -q '\.iso$'
+          ! unzip -Z1 "$IPA" | grep -Eq 'qemu-(aarch64|i386|m68k|ppc|ppc64|riscv64)-softmmu\.framework/'
           grep -q 'Payload/Android iOSEmulator.app/LCAppInfo.plist' "$OUT/verified-contents.txt"
           grep -q 'Payload/Android iOSEmulator.app/BootstrapTweaks/AndroidGuestBootstrap.dylib' "$OUT/verified-contents.txt"
           grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' "$OUT/verified-contents.txt"
           grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/bliss-android13-preinstalled.qcow2' "$OUT/verified-contents.txt"
+          grep -q 'Payload/Android iOSEmulator.app/Frameworks/qemu-x86_64-softmmu.framework/' "$OUT/verified-contents.txt"
           grep -q 'Android guest: BlissOS 16.9.7 / Android 13 x86_64' "$OUT/build-manifest.txt"
-          grep -q 'Android state: preinstalled persistent disk' "$OUT/build-manifest.txt"
-          grep -q 'Installer ISO: absent' "$OUT/build-manifest.txt"
-          grep -q 'Debug console boot: disabled' "$OUT/build-manifest.txt"
-
-      - name: Prepare release-size parts
-        shell: bash
-        run: |
-          set -euo pipefail
-          OUT="build/livecontainer-guest"
-          IPA="$OUT/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
-          PARTS="$OUT/parts"
-          mkdir -p "$PARTS"
-          split -b 1900m -d -a 2 "$IPA" "$PARTS/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa.part-"
-          test "$(find "$PARTS" -type f -name '*.part-*' | wc -l | tr -d ' ')" -le 5
-          shasum -a 256 "$PARTS"/*.part-* > "$PARTS/parts.sha256"
+          grep -q 'UTM runtime architectures: x86_64 only' "$OUT/build-manifest.txt"
+          grep -q 'Release delivery: one complete IPA asset; split parts forbidden' "$OUT/build-manifest.txt"
+          SIZE="$(stat -f%z "$IPA")"
+          test "$SIZE" -lt 2147483648
 
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Android13-Preinstalled-LiveContainer-Guest-diagnostics
+          name: Android13-Single-IPA-diagnostics
           path: |
             livecontainer-android13-build.log
             build/livecontainer-guest/ipa-contents.txt
@@ -109,7 +100,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Upload full Android 13 guest IPA
+      - name: Upload complete Android 13 IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned
@@ -121,48 +112,31 @@ jobs:
           compression-level: 0
           retention-days: 30
 
-      - name: Upload release-size parts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-parts
-          path: |
-            build/livecontainer-guest/parts/*
-            build/livecontainer-guest/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa.sha256
-            build/livecontainer-guest/build-manifest.txt
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 30
-
-      - name: Publish Android 13 prerelease
+      - name: Publish one-IPA Android 13 prerelease
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v0.2.0-android13-preinstalled
+          TAG: v0.2.1-android13-single-ipa
+          OLD_SPLIT_TAG: v0.2.0-android13-preinstalled
         run: |
           set -euo pipefail
           OUT="build/livecontainer-guest"
           IPA="$OUT/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
-          LIMIT=2000000000
           SIZE="$(stat -f%z "$IPA")"
+          test "$SIZE" -lt 2147483648
+
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
-          if (( SIZE <= LIMIT )); then
-            gh release create "$TAG" \
-              "$IPA" \
-              "$IPA.sha256" \
-              "$OUT/build-manifest.txt" \
-              --target "$GITHUB_SHA" \
-              --title "Android iOSEmulator — preinstalled Android 13" \
-              --notes "BlissOS 16 / Android 13 is already installed on the bundled persistent disk. Opening the guest boots from disk with a zero-second GRUB entry; there is no installer ISO and no debug-console boot. This remains an unsigned LiveContainer guest and physical-device graphical boot still requires validation." \
-              --prerelease
-          else
-            gh release create "$TAG" \
-              "$OUT"/parts/*.part-* \
-              "$OUT/parts/parts.sha256" \
-              "$IPA.sha256" \
-              "$OUT/build-manifest.txt" \
-              --target "$GITHUB_SHA" \
-              --title "Android iOSEmulator — preinstalled Android 13" \
-              --notes "The complete IPA exceeds GitHub's single-release-asset limit. Download all ordered .part files and concatenate them to reconstruct the IPA. The workflow artifact also contains the complete IPA. BlissOS 16 / Android 13 is already installed; no installer ISO or debug-console boot is included. Physical-device graphical boot still requires validation." \
-              --prerelease
-          fi
+          gh release create "$TAG" "$IPA" \
+            --target "$GITHUB_SHA" \
+            --title "Android iOSEmulator — Android 13 single IPA" \
+            --notes "One complete unsigned LiveContainer guest IPA. BlissOS 16 / Android 13 is already installed on the bundled persistent disk. UTM SE is trimmed to the x86_64 runtime used by this guest. There is no installer ISO, debug-console boot, or split-file reconstruction step. Physical-device graphical boot still requires validation." \
+            --prerelease
+
+          RELEASE_JSON="$(gh release view "$TAG" --json assets,isPrerelease)"
+          test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
+          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$(basename "$IPA")"
+          test "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"
+          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = "true"
+
+          gh release delete "$OLD_SPLIT_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true

@@ -11,6 +11,7 @@ GUEST_BUNDLE_ID="com.nightvibes33.androidiosemulator.livecontainer"
 GUEST_INSTALL_FOLDER="${GUEST_BUNDLE_ID}.app"
 GUEST_CONTAINER="AndroidRuntimeData"
 OUTPUT_IPA="Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
+GITHUB_RELEASE_LIMIT=2147483648
 
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK" "$OUT"
@@ -22,7 +23,7 @@ for command in qemu-img 7zz mformat mcopy; do
   fi
 done
 
-printf '[1/8] Downloading official UTM SE %s\n' "$UTM_TAG"
+printf '[1/9] Downloading official UTM SE %s\n' "$UTM_TAG"
 curl --fail --location --retry 4 --retry-delay 2 "$UTM_IPA_URL" -o "$WORK/UTM-SE.ipa"
 mkdir -p "$WORK/utm"
 unzip -q "$WORK/UTM-SE.ipa" -d "$WORK/utm"
@@ -32,24 +33,62 @@ if [[ -z "$UTM_APP" ]]; then
   exit 1
 fi
 
-printf '[2/8] Building a preinstalled BlissOS 16 / Android 13 disk\n'
+printf '[2/9] Building a preinstalled BlissOS 16 / Android 13 disk\n'
 bash "$ROOT/scripts/build_bliss_android13_disk.sh" \
   "$WORK/android13-disk-work" \
   "$WORK/$ANDROID_DISK_NAME"
 
-printf '[3/8] Creating the Android 13 UTM bundle\n'
+printf '[3/9] Creating the Android 13 UTM bundle\n'
 python3 "$ROOT/scripts/make_bliss_android13_utm.py" \
   --output "$WORK/Android.utm" \
   --disk "$WORK/$ANDROID_DISK_NAME"
 plutil -lint "$WORK/Android.utm/config.plist"
 
-printf '[4/8] Creating the real LiveContainer guest application\n'
+printf '[4/9] Creating the real LiveContainer guest application\n'
 PAYLOAD="$WORK/package/Payload"
 GUEST_APP="$PAYLOAD/Android iOSEmulator.app"
 mkdir -p "$PAYLOAD"
 cp -R "$UTM_APP" "$GUEST_APP"
 find "$GUEST_APP" -name '_CodeSignature' -type d -prune -exec rm -rf {} + || true
 find "$GUEST_APP" -name 'embedded.mobileprovision' -type f -delete || true
+
+printf '[5/9] Trimming UTM SE to the x86_64 runtime required by Android\n'
+UTM_SIZE_BEFORE_KIB="$(du -sk "$GUEST_APP" | awk '{print $1}')"
+REQUIRED_QEMU_FRAMEWORK="$GUEST_APP/Frameworks/qemu-x86_64-softmmu.framework"
+if [[ ! -d "$REQUIRED_QEMU_FRAMEWORK" ]]; then
+  echo "UTM SE does not contain the required x86_64 QEMU framework." >&2
+  exit 1
+fi
+
+UNUSED_QEMU_FRAMEWORKS=(
+  qemu-aarch64-softmmu.framework
+  qemu-i386-softmmu.framework
+  qemu-m68k-softmmu.framework
+  qemu-ppc-softmmu.framework
+  qemu-ppc64-softmmu.framework
+  qemu-riscv64-softmmu.framework
+)
+for framework in "${UNUSED_QEMU_FRAMEWORKS[@]}"; do
+  rm -rf "$GUEST_APP/Frameworks/$framework"
+done
+
+rm -f \
+  "$GUEST_APP/qemu/edk2-arm-code.fd" \
+  "$GUEST_APP/qemu/edk2-aarch64-code.fd" \
+  "$GUEST_APP/qemu/edk2-aarch64-secure-code.fd" \
+  "$GUEST_APP/qemu/edk2-riscv-code.fd" \
+  "$GUEST_APP/qemu/edk2-riscv-vars.fd" \
+  "$GUEST_APP/qemu/edk2-loongarch64-code.fd" \
+  "$GUEST_APP/qemu/edk2-loongarch64-vars.fd" \
+  "$GUEST_APP/qemu/skiboot.lid" \
+  "$GUEST_APP/qemu/openbios-sparc64"
+
+UTM_SIZE_AFTER_KIB="$(du -sk "$GUEST_APP" | awk '{print $1}')"
+UTM_TRIMMED_KIB=$((UTM_SIZE_BEFORE_KIB - UTM_SIZE_AFTER_KIB))
+if (( UTM_TRIMMED_KIB < 500000 )); then
+  echo "The x86_64-only UTM trim removed too little data (${UTM_TRIMMED_KIB} KiB)." >&2
+  exit 1
+fi
 
 INFO_PLIST="$GUEST_APP/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $GUEST_BUNDLE_ID" "$INFO_PLIST"
@@ -62,7 +101,7 @@ mkdir -p "$GUEST_APP/PreloadedData"
 cp -R "$WORK/Android.utm" "$GUEST_APP/PreloadedData/Android.utm"
 cp "$WORK/$ANDROID_DISK_NAME.manifest.txt" "$GUEST_APP/PreloadedData/Android.utm/Android13RuntimeManifest.txt"
 
-printf '[5/8] Compiling the Android 13 guest bootstrap tweak\n'
+printf '[6/9] Compiling the Android 13 guest bootstrap tweak\n'
 mkdir -p "$GUEST_APP/BootstrapTweaks"
 xcrun --sdk iphoneos clang \
   -arch arm64 \
@@ -97,7 +136,7 @@ with output.open("wb") as stream:
     plistlib.dump(metadata, stream, fmt=plistlib.FMT_BINARY, sort_keys=False)
 PY
 
-printf '[6/8] Verifying the preinstalled Android 13 guest layout\n'
+printf '[7/9] Verifying the preinstalled Android 13 guest layout\n'
 EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO_PLIST")"
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO_PLIST")"
 DISPLAY_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$INFO_PLIST")"
@@ -106,6 +145,10 @@ DISPLAY_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$INFO_P
 [[ -n "$EXECUTABLE" && -f "$GUEST_APP/$EXECUTABLE" ]]
 file "$GUEST_APP/$EXECUTABLE" | grep -q 'Mach-O 64-bit executable arm64'
 file "$GUEST_APP/BootstrapTweaks/AndroidGuestBootstrap.dylib" | grep -q 'Mach-O 64-bit dynamically linked shared library arm64'
+[[ -d "$REQUIRED_QEMU_FRAMEWORK" ]]
+for framework in "${UNUSED_QEMU_FRAMEWORKS[@]}"; do
+  [[ ! -e "$GUEST_APP/Frameworks/$framework" ]]
+done
 [[ -f "$GUEST_APP/PreloadedData/Android.utm/config.plist" ]]
 [[ -f "$GUEST_APP/PreloadedData/Android.utm/Images/$ANDROID_DISK_NAME" ]]
 [[ -f "$GUEST_APP/PreloadedData/Android.utm/Android13RuntimeManifest.txt" ]]
@@ -124,13 +167,13 @@ if find "$GUEST_APP" -mindepth 1 -type d -name '*.app' -print -quit | grep -q .;
   exit 1
 fi
 
-printf '[7/8] Packaging the unsigned Android 13 LiveContainer guest IPA\n'
+printf '[8/9] Packaging the unsigned Android 13 LiveContainer guest IPA\n'
 (
   cd "$WORK/package"
   zip -qry "$OUT/$OUTPUT_IPA" Payload
 )
 
-printf '[8/8] Validating the final IPA\n'
+printf '[9/9] Validating the final single-file IPA\n'
 unzip -t "$OUT/$OUTPUT_IPA" >/dev/null
 unzip -l "$OUT/$OUTPUT_IPA" > "$OUT/ipa-contents.txt"
 TOP_LEVEL_APPS="$(unzip -Z1 "$OUT/$OUTPUT_IPA" | grep -Ec '^Payload/[^/]+\.app/$')"
@@ -140,6 +183,11 @@ grep -q 'Payload/Android iOSEmulator.app/BootstrapTweaks/AndroidGuestBootstrap.d
 grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' "$OUT/ipa-contents.txt"
 grep -q "Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/$ANDROID_DISK_NAME" "$OUT/ipa-contents.txt"
 grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Android13RuntimeManifest.txt' "$OUT/ipa-contents.txt"
+grep -q 'Payload/Android iOSEmulator.app/Frameworks/qemu-x86_64-softmmu.framework/' "$OUT/ipa-contents.txt"
+if grep -Eq 'qemu-(aarch64|i386|m68k|ppc|ppc64|riscv64)-softmmu\.framework/' "$OUT/ipa-contents.txt"; then
+  echo "The final IPA still contains an unused QEMU architecture." >&2
+  exit 1
+fi
 if grep -q '\.iso$' "$OUT/ipa-contents.txt"; then
   echo "The final IPA unexpectedly contains an installer ISO." >&2
   exit 1
@@ -153,8 +201,13 @@ if grep -Eq '(_CodeSignature|embedded.mobileprovision)' "$OUT/ipa-contents.txt";
   exit 1
 fi
 
-shasum -a 256 "$OUT/$OUTPUT_IPA" > "$OUT/$OUTPUT_IPA.sha256"
 IPA_SIZE="$(stat -f%z "$OUT/$OUTPUT_IPA")"
+if (( IPA_SIZE >= GITHUB_RELEASE_LIMIT )); then
+  echo "The IPA is ${IPA_SIZE} bytes and exceeds the single GitHub release asset limit of ${GITHUB_RELEASE_LIMIT} bytes." >&2
+  exit 1
+fi
+
+shasum -a 256 "$OUT/$OUTPUT_IPA" > "$OUT/$OUTPUT_IPA.sha256"
 cat > "$OUT/build-manifest.txt" <<EOF
 Package type: LiveContainer guest IPA
 Top-level app: Android iOSEmulator.app (UTM SE ${UTM_TAG})
@@ -169,12 +222,15 @@ Installer ISO: absent
 Debug console boot: disabled
 Boot target: disk / UEFI / zero-second GRUB
 Execution mode: UTM SE QEMU TCI / no JIT
+UTM runtime architectures: x86_64 only
+Removed unused UTM data: ${UTM_TRIMMED_KIB} KiB
 Persistent Android data: 3 GiB ext4 image inside the guest disk
 Nested LiveContainer host: absent
 Nested .app bundles: absent
+Release delivery: one complete IPA asset; split parts forbidden
 Signing: unsigned; import into a configured LiveContainer JITLess installation
 IPA size: ${IPA_SIZE} bytes
 Physical-device graphical boot verification: pending
 EOF
 
-printf 'Built preinstalled Android 13 LiveContainer guest: %s\n' "$OUT/$OUTPUT_IPA"
+printf 'Built single-file preinstalled Android 13 LiveContainer guest: %s\n' "$OUT/$OUTPUT_IPA"
