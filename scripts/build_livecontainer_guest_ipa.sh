@@ -15,7 +15,7 @@ OUTPUT_IPA="Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsig
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK" "$OUT"
 
-for command in qemu-img 7zz mformat mcopy mkfs.ext4; do
+for command in qemu-img 7zz mformat mcopy; do
   if ! command -v "$command" >/dev/null 2>&1; then
     echo "$command is required to build the preinstalled Android 13 guest." >&2
     exit 1
@@ -38,7 +38,7 @@ bash "$ROOT/scripts/build_bliss_android13_disk.sh" \
   "$WORK/$ANDROID_DISK_NAME"
 
 printf '[3/8] Creating the Android 13 UTM bundle\n'
-python3 "$ROOT/scripts/make_android_x86_utm.py" \
+python3 "$ROOT/scripts/make_bliss_android13_utm.py" \
   --output "$WORK/Android.utm" \
   --disk "$WORK/$ANDROID_DISK_NAME"
 plutil -lint "$WORK/Android.utm/config.plist"
