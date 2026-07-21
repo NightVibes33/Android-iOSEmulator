@@ -1,5 +1,4 @@
 import Foundation
-import Security
 
 struct SigningSnapshot: Codable {
     let getTaskAllow: Bool?
@@ -25,10 +24,14 @@ enum EntitlementInspector {
     }
 
     private static func booleanValue(for key: String) -> Bool? {
-        guard let task = SecTaskCreateFromSelf(nil) else { return nil }
-        guard let value = SecTaskCopyValueForEntitlement(task, key as CFString, nil)?.takeRetainedValue() else {
-            return false
+        let result = key.withCString { pointer in
+            jitprobe_entitlement_boolean(pointer)
         }
-        return value as? Bool
+
+        switch result {
+        case 1: return true
+        case 0: return false
+        default: return nil
+        }
     }
 }
