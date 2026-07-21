@@ -46,7 +46,7 @@ def main() -> None:
                 throw "Android Runtime is missing. Reinstall the full Android iOSEmulator build."
             }
 '''
-    final_lookup = '''            let candidates = sharedModel.apps + sharedModel.hiddenApps
+    optional_lookup = '''            let candidates = sharedModel.apps + sharedModel.hiddenApps
             var matchedRuntime: LCAppModel?
             for candidate in candidates {
                 let candidateName = candidate.appInfo.displayName()
@@ -61,9 +61,26 @@ def main() -> None:
                 throw "Android Runtime is missing. Reinstall the full Android iOSEmulator build."
             }
 '''
+    final_lookup = '''            let candidates = sharedModel.apps + sharedModel.hiddenApps
+            var matchedRuntime: LCAppModel?
+            for candidate in candidates {
+                let candidateName = candidate.appInfo.displayName() ?? ""
+                if candidate.appInfo.relativeBundlePath == "Android Runtime.app" ||
+                    candidateName.localizedCaseInsensitiveContains("UTM SE") ||
+                    candidateName.localizedCaseInsensitiveContains("Android Runtime") {
+                    matchedRuntime = candidate
+                    break
+                }
+            }
+            guard let runtime = matchedRuntime else {
+                throw "Android Runtime is missing. Reinstall the full Android iOSEmulator build."
+            }
+'''
 
     if final_lookup not in text:
-        if intermediate_lookup in text:
+        if optional_lookup in text:
+            text = text.replace(optional_lookup, final_lookup, 1)
+        elif intermediate_lookup in text:
             text = text.replace(intermediate_lookup, final_lookup, 1)
         elif old_lookup in text:
             text = text.replace(old_lookup, final_lookup, 1)
