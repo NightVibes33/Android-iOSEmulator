@@ -17,7 +17,7 @@ BLISS_SHA256_URL="${BLISS_SHA256_URL:-${BLISS_ISO_URL}.sha256}"
 DISK_SIZE_GIB="${DISK_SIZE_GIB:-8}"
 EFI_VOLUME_GIB="${EFI_VOLUME_GIB:-7}"
 DATA_SIZE_GIB="${DATA_SIZE_GIB:-3}"
-QCOW2_COMPRESSION_TYPE="${QCOW2_COMPRESSION_TYPE:-zstd}"
+QCOW2_COMPRESSION_TYPE="${QCOW2_COMPRESSION_TYPE:-zlib}"
 
 for command in curl 7zz mformat mmd mcopy mdir qemu-img truncate sgdisk dd; do
   if ! command -v "$command" >/dev/null 2>&1; then
