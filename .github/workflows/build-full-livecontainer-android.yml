@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "scripts/build_livecontainer_utm_se.sh"
+      - "scripts/patch_livecontainer_apk_flow.py"
       - ".github/workflows/build-full-livecontainer-android.yml"
       - "docs/FULL_LIVECONTAINER_BUILD.md"
   push:
@@ -12,6 +13,7 @@ on:
       - main
     paths:
       - "scripts/build_livecontainer_utm_se.sh"
+      - "scripts/patch_livecontainer_apk_flow.py"
       - ".github/workflows/build-full-livecontainer-android.yml"
       - "docs/FULL_LIVECONTAINER_BUILD.md"
 
@@ -60,6 +62,7 @@ jobs:
           unzip -l "$IPA" | tee build/full-livecontainer/verified-contents.txt
           grep -q 'Payload/Android iOSEmulator.app/PreloadedApps/UTM SE.app/' build/full-livecontainer/verified-contents.txt
           grep -q 'LiveContainer' build/full-livecontainer/xcodebuild.log
+          grep -q 'APK workflow: persistent LiveContainer library' build/full-livecontainer/build-manifest.txt
           if grep -Eq '(_CodeSignature|embedded.mobileprovision)' build/full-livecontainer/verified-contents.txt; then
             echo "Signing artifacts found in unsigned IPA." >&2
             exit 1
