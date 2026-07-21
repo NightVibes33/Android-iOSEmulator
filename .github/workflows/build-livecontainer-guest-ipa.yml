@@ -7,7 +7,7 @@ on:
       - "runtime/livecontainer-guest/**"
       - "scripts/build_bliss_android13_disk.sh"
       - "scripts/build_livecontainer_guest_ipa.sh"
-      - "scripts/make_android_x86_utm.py"
+      - "scripts/make_bliss_android13_utm.py"
       - ".github/workflows/build-livecontainer-guest-ipa.yml"
   push:
     branches: [main]
@@ -15,7 +15,7 @@ on:
       - "runtime/livecontainer-guest/**"
       - "scripts/build_bliss_android13_disk.sh"
       - "scripts/build_livecontainer_guest_ipa.sh"
-      - "scripts/make_android_x86_utm.py"
+      - "scripts/make_bliss_android13_utm.py"
       - ".github/workflows/build-livecontainer-guest-ipa.yml"
 
 permissions:
@@ -47,11 +47,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          brew install qemu p7zip mtools e2fsprogs
+          brew install qemu p7zip mtools e2fsprogs gptfdisk
           echo "$(brew --prefix e2fsprogs)/sbin" >> "$GITHUB_PATH"
           qemu-img --version
           7zz --help >/dev/null
           mformat -V
+          sgdisk --version
           "$(brew --prefix e2fsprogs)/sbin/mkfs.ext4" -V
 
       - name: Build unsigned preinstalled Android 13 guest IPA
