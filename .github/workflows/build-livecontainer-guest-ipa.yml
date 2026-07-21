@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   build:
-    name: Import-safe UTM SE + preinstalled BlissOS Android 13
+    name: Boot-safe UTM SE + preinstalled BlissOS Android 13
     runs-on: macos-26
     timeout-minutes: 360
     steps:
@@ -56,7 +56,7 @@ jobs:
           sgdisk --version
           "$(brew --prefix e2fsprogs)/sbin/mkfs.ext4" -V
 
-      - name: Build import-safe Android 13 guest IPA
+      - name: Build boot-safe Android 13 guest IPA
         shell: bash
         run: |
           set -o pipefail
@@ -69,6 +69,7 @@ jobs:
           set -euo pipefail
           OUT="build/livecontainer-guest"
           IPA="$OUT/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
+          UTM_CONFIG="$OUT/../livecontainer-guest/../livecontainer-guest"
           test -f "$IPA"
           unzip -t "$IPA" >/dev/null
           unzip -Z1 "$IPA" | tee "$OUT/verified-contents.txt"
@@ -95,6 +96,21 @@ jobs:
           grep -q 'LiveContainer import metadata: extracted and parsed from final IPA' "$OUT/build-manifest.txt"
           grep -q 'Unknown.app fallback: blocked by post-archive bundle identifier and executable checks' "$OUT/build-manifest.txt"
           grep -q 'Release delivery: one complete IPA asset; split parts forbidden' "$OUT/build-manifest.txt"
+
+          VERIFY_DIR="$(mktemp -d)"
+          trap 'rm -rf "$VERIFY_DIR"' EXIT
+          unzip -q "$IPA" \
+            'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' \
+            'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Android13RuntimeManifest.txt' \
+            -d "$VERIFY_DIR"
+          CONFIG="$VERIFY_DIR/Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist"
+          RUNTIME_MANIFEST="$VERIFY_DIR/Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Android13RuntimeManifest.txt"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :System:CPU' "$CONFIG")" = 'max'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :System:Architecture' "$CONFIG")" = 'x86_64'
+          grep -q '^Graphics mode: SwiftShader ANGLE software rendering$' "$RUNTIME_MANIFEST"
+          grep -q '^SELinux checkreqprot override: 0$' "$RUNTIME_MANIFEST"
+          grep -q '^Virtual A/B OTA support: unavailable by design' "$RUNTIME_MANIFEST"
+
           SIZE="$(stat -f%z "$IPA")"
           test "$SIZE" -lt 2147483648
 
@@ -102,7 +118,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Android13-LiveContainer-Import-Fix-diagnostics
+          name: Android13-Boot-Fix-diagnostics
           path: |
             livecontainer-android13-build.log
             build/livecontainer-guest/ipa-contents.txt
@@ -126,13 +142,13 @@ jobs:
           compression-level: 0
           retention-days: 30
 
-      - name: Publish LiveContainer import-fix Android 13 prerelease
+      - name: Publish Android 13 boot-fix prerelease
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v0.2.3-android13-livecontainer-import-fix
-          BROKEN_TAG: v0.2.2-android13-dyld-fix
+          TAG: v0.2.4-android13-boot-fix
+          BROKEN_TAG: v0.2.3-android13-livecontainer-import-fix
         run: |
           set -euo pipefail
           OUT="build/livecontainer-guest"
@@ -145,8 +161,8 @@ jobs:
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" "$IPA" \
             --target "$GITHUB_SHA" \
-            --title "Android iOSEmulator — LiveContainer import fix" \
-            --notes "One complete unsigned LiveContainer guest IPA. Fixes the Unknown.app/(null) import failure by placing Info.plist, the UTM SE executable, and LCAppInfo.plist at the beginning of the archive and validating those files after extraction from the final IPA. qemu-m68k-softmmu and qemu-x86_64-softmmu remain present. BlissOS 16 / Android 13 is preinstalled; no installer ISO, debug shell, or split files are used. Delete the previous app entry from LiveContainer before importing this build so stale Unknown.app metadata is removed." \
+            --title "Android iOSEmulator — Android 13 boot fix" \
+            --notes "One complete unsigned LiveContainer guest IPA. Keeps the Unknown.app import fix and changes the cross-architecture QEMU CPU from the implicit qemu64/default model to CPU=max so BlissOS receives its required SSE4.2 instruction set. The guest also uses the VM-safe SwiftShader ANGLE path, sets SELinux checkreqprot=0, and treats the Virtual A/B message as an expected no-OTA warning. Delete the previous LiveContainer app entry before importing this build so its older VM configuration is not reused." \
             --prerelease
 
           RELEASE_JSON="$(gh release view "$TAG" --json assets,isPrerelease)"
