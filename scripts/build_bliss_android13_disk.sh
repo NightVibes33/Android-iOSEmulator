@@ -89,13 +89,16 @@ mcopy -o -i "$FAT_VOLUME" "$DATA_IMAGE" ::/blissos/data.img
 printf 'Android 13 preinstalled runtime\n' > "$WORK/android.boot"
 mcopy -o -i "$FAT_VOLUME" "$WORK/android.boot" ::/blissos/android.boot
 
+# UTM SE has no hardware-accelerated guest GPU. BlissOS documents nomodeset plus
+# ANGLE/HWACCEL=0 as its VM-safe SwiftShader path. checkreqprot=0 overrides the
+# deprecated insecure SELinux default baked into this older BlissOS kernel.
 cat > "$WORK/grub.cfg" <<'EOF'
 set timeout=0
 set default=0
 
 menuentry "Android iOSEmulator - Android 13" {
     search --file --no-floppy --set=root /blissos/android.boot
-    linux /blissos/kernel root=/dev/ram0 SRC=/blissos DATA= androidboot.hardware=android_x86_64 androidboot.selinux=permissive quiet nomodeset VULKAN=0
+    linux /blissos/kernel root=/dev/ram0 SRC=/blissos DATA= androidboot.hardware=android_x86_64 androidboot.selinux=permissive checkreqprot=0 quiet nomodeset HWACCEL=0 ANGLE=1 vt.global_cursor_default=0
     initrd /blissos/initrd.img
 }
 EOF
@@ -122,6 +125,8 @@ PARTITION_OFFSET=$((2048 * 512))
 mdir -i "$RAW_DISK@@$PARTITION_OFFSET" ::/EFI/BOOT/BOOTX64.EFI >/dev/null
 mdir -i "$RAW_DISK@@$PARTITION_OFFSET" ::/EFI/BOOT/grub.cfg >/dev/null
 mdir -i "$RAW_DISK@@$PARTITION_OFFSET" ::/blissos/android.boot >/dev/null
+mtype -i "$RAW_DISK@@$PARTITION_OFFSET" ::/EFI/BOOT/grub.cfg | grep -q 'HWACCEL=0 ANGLE=1'
+mtype -i "$RAW_DISK@@$PARTITION_OFFSET" ::/EFI/BOOT/grub.cfg | grep -q 'checkreqprot=0'
 
 printf '[android13 6/7] Compressing the installed disk as qcow2 (%s)\n' "$QCOW2_COMPRESSION_TYPE"
 rm -f "$OUTPUT"
@@ -147,6 +152,10 @@ Debug console enabled: no
 Persistent data image: ${DATA_SIZE_GIB} GiB ext4
 Virtual disk capacity: ${DISK_SIZE_GIB} GiB
 System image: ${SYSTEM_BASENAME}
+Graphics mode: SwiftShader ANGLE software rendering
+Graphics boot flags: nomodeset HWACCEL=0 ANGLE=1 vt.global_cursor_default=0
+SELinux checkreqprot override: 0
+Virtual A/B OTA support: unavailable by design for this manual system.sfs/data.img layout
 QCOW2 compression: ${QCOW2_COMPRESSION_TYPE}
 EOF
 printf 'Created preinstalled Android 13 disk: %s\n' "$OUTPUT"
