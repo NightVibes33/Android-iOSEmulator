@@ -32,7 +32,7 @@ def main() -> None:
                 throw "Android Runtime is missing. Reinstall the full Android iOSEmulator build."
             }
 '''
-    new_lookup = '''            let candidates = sharedModel.apps + sharedModel.hiddenApps
+    intermediate_lookup = '''            let candidates = sharedModel.apps + sharedModel.hiddenApps
             var matchedRuntime: LCAppModel?
             for candidate in candidates {
                 if candidate.appInfo.relativeBundlePath == "Android Runtime.app" ||
@@ -46,12 +46,48 @@ def main() -> None:
                 throw "Android Runtime is missing. Reinstall the full Android iOSEmulator build."
             }
 '''
+    final_lookup = '''            let candidates = sharedModel.apps + sharedModel.hiddenApps
+            var matchedRuntime: LCAppModel?
+            for candidate in candidates {
+                let candidateName = candidate.appInfo.displayName()
+                if candidate.appInfo.relativeBundlePath == "Android Runtime.app" ||
+                    candidateName.localizedCaseInsensitiveContains("UTM SE") ||
+                    candidateName.localizedCaseInsensitiveContains("Android Runtime") {
+                    matchedRuntime = candidate
+                    break
+                }
+            }
+            guard let runtime = matchedRuntime else {
+                throw "Android Runtime is missing. Reinstall the full Android iOSEmulator build."
+            }
+'''
 
-    if old_lookup not in text:
-        if new_lookup not in text:
+    if final_lookup not in text:
+        if intermediate_lookup in text:
+            text = text.replace(intermediate_lookup, final_lookup, 1)
+        elif old_lookup in text:
+            text = text.replace(old_lookup, final_lookup, 1)
+        else:
             raise SystemExit("Could not find Android runtime lookup block")
-    else:
-        text = text.replace(old_lookup, new_lookup, 1)
+
+    old_launch = '''            androidAPKStore.updateStatus(for: app.id, status: "Launching Android runtime…")
+            let launchURL = "androidiosemulator://install?request=\(request.requestID.uuidString)&apk=\(app.id.uuidString)"
+            try await runtime.runApp(
+                containerFolderName: container.folderName,
+                urlStr: launchURL,
+                forceJIT: false
+            )
+'''
+    new_launch = '''            androidAPKStore.updateStatus(for: app.id, status: "Launching Android runtime…")
+            try await runtime.runApp(
+                containerFolderName: container.folderName,
+                forceJIT: false
+            )
+'''
+    if new_launch not in text:
+        if old_launch not in text:
+            raise SystemExit("Could not find Android runtime launch block")
+        text = text.replace(old_launch, new_launch, 1)
 
     path.write_text(text)
 
