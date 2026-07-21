@@ -1,0 +1,73 @@
+name: Publish full Android IPA release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-full-android-release.yml"
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    name: Publish IPA-only release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: "29794639684"
+      SOURCE_ARTIFACT: "Android-iOSEmulator-Full-Android-x86-unsigned"
+      RELEASE_TAG: "v0.1.0-android-x86"
+      RELEASE_TITLE: "Android iOSEmulator Full Android Build"
+      EXPECTED_SHA256: "f9eb30efab567bcffca29d99a928ce3164a5d85580080df250701aeafaf58ac7"
+    steps:
+      - name: Download verified build artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-download
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir release-download
+
+      - name: Verify exact IPA
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="$(find release-download -type f -name '*.ipa' -print -quit)"
+          test -n "$IPA"
+          ACTUAL_SHA256="$(sha256sum "$IPA" | awk '{print $1}')"
+          test "$ACTUAL_SHA256" = "$EXPECTED_SHA256"
+          unzip -t "$IPA" >/dev/null
+          echo "ipa=$IPA" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$IPA")" >> "$GITHUB_OUTPUT"
+
+      - name: Publish prerelease with IPA only
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="${{ steps.verify.outputs.ipa }}"
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$IPA" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$RELEASE_TAG" "$IPA" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$RELEASE_TITLE" \
+              --notes "Unsigned full Android iOSEmulator build. Includes the LiveContainer APK-first interface, UTM SE no-JIT runtime, and preconfigured Android-x86 guest. Physical-device Android boot remains under validation." \
+              --prerelease
+          fi
+
+      - name: Verify release asset list
+        shell: bash
+        run: |
+          set -euo pipefail
+          ASSETS="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          test "$ASSETS" = "${{ steps.verify.outputs.name }}"
