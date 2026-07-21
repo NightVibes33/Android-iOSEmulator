@@ -2,22 +2,82 @@
 
 static NSString *const AndroidVMName = @"Android.utm";
 static NSString *const AndroidDiskName = @"bliss-android13-preinstalled.qcow2";
-static NSString *const AndroidRuntimeVersion = @"bliss16-android13-v1";
+static NSString *const AndroidRuntimeVersion = @"bliss16-android13-v2-importsafe";
 
-static BOOL AndroidCopyItemIfMissing(NSFileManager *fileManager, NSURL *source, NSURL *destination, NSError **error) {
-    if ([fileManager fileExistsAtPath:destination.path]) {
-        return YES;
+static NSError *AndroidBootstrapError(NSInteger code, NSString *description) {
+    return [NSError errorWithDomain:@"AndroidGuestBootstrap"
+                               code:code
+                           userInfo:@{NSLocalizedDescriptionKey: description ?: @"Unknown Android bootstrap error"}];
+}
+
+static unsigned long long AndroidFileSize(NSFileManager *fileManager, NSURL *url, NSError **error) {
+    NSDictionary<NSFileAttributeKey, id> *attributes =
+        [fileManager attributesOfItemAtPath:url.path error:error];
+    if (!attributes) {
+        return 0;
     }
+    return [attributes[NSFileSize] unsignedLongLongValue];
+}
+
+static BOOL AndroidInstallLargeFileAtomicallyIfNeeded(NSFileManager *fileManager,
+                                                       NSURL *source,
+                                                       NSURL *destination,
+                                                       NSError **error) {
     if (![fileManager fileExistsAtPath:source.path]) {
         if (error) {
-            *error = [NSError errorWithDomain:@"AndroidGuestBootstrap"
-                                         code:2
-                                     userInfo:@{NSLocalizedDescriptionKey:
-                                                    [NSString stringWithFormat:@"Bundled file is missing: %@", source.path]}];
+            *error = AndroidBootstrapError(
+                2,
+                [NSString stringWithFormat:@"Bundled file is missing: %@", source.path]
+            );
         }
         return NO;
     }
-    return [fileManager copyItemAtURL:source toURL:destination error:error];
+
+    NSError *sizeError = nil;
+    unsigned long long sourceSize = AndroidFileSize(fileManager, source, &sizeError);
+    if (sizeError || sourceSize == 0) {
+        if (error) {
+            *error = sizeError ?: AndroidBootstrapError(3, @"Bundled Android disk is empty.");
+        }
+        return NO;
+    }
+
+    if ([fileManager fileExistsAtPath:destination.path]) {
+        sizeError = nil;
+        unsigned long long destinationSize = AndroidFileSize(fileManager, destination, &sizeError);
+        if (!sizeError && destinationSize == sourceSize) {
+            return YES;
+        }
+        [fileManager removeItemAtURL:destination error:nil];
+    }
+
+    NSURL *partialURL = [destination URLByAppendingPathExtension:@"partial"];
+    [fileManager removeItemAtURL:partialURL error:nil];
+
+    if (![fileManager copyItemAtURL:source toURL:partialURL error:error]) {
+        [fileManager removeItemAtURL:partialURL error:nil];
+        return NO;
+    }
+
+    sizeError = nil;
+    unsigned long long copiedSize = AndroidFileSize(fileManager, partialURL, &sizeError);
+    if (sizeError || copiedSize != sourceSize) {
+        [fileManager removeItemAtURL:partialURL error:nil];
+        if (error) {
+            *error = sizeError ?: AndroidBootstrapError(
+                4,
+                [NSString stringWithFormat:@"Android disk copy was truncated (%llu of %llu bytes).",
+                                           copiedSize, sourceSize]
+            );
+        }
+        return NO;
+    }
+
+    if (![fileManager moveItemAtURL:partialURL toURL:destination error:error]) {
+        [fileManager removeItemAtURL:partialURL error:nil];
+        return NO;
+    }
+    return YES;
 }
 
 static BOOL AndroidReplaceFile(NSFileManager *fileManager, NSURL *source, NSURL *destination, NSError **error) {
@@ -85,7 +145,7 @@ static void AndroidGuestBootstrap(void) {
         NSURL *sourceDisk = [sourceImages URLByAppendingPathComponent:AndroidDiskName];
         NSURL *destinationDisk = [destinationImages URLByAppendingPathComponent:AndroidDiskName];
         error = nil;
-        if (!AndroidCopyItemIfMissing(fileManager, sourceDisk, destinationDisk, &error)) {
+        if (!AndroidInstallLargeFileAtomicallyIfNeeded(fileManager, sourceDisk, destinationDisk, &error)) {
             NSLog(@"[AndroidGuestBootstrap] Failed to install the preinstalled Android 13 disk: %@", error);
             return;
         }
@@ -98,12 +158,13 @@ static void AndroidGuestBootstrap(void) {
             @"sourceBundle": NSBundle.mainBundle.bundleIdentifier ?: @"unknown",
             @"vm": AndroidVMName,
             @"installerISO": @NO,
-            @"preinstalledDisk": @YES
+            @"preinstalledDisk": @YES,
+            @"atomicDiskInstall": @YES
         };
         if (![marker writeToURL:markerURL atomically:YES]) {
             NSLog(@"[AndroidGuestBootstrap] Failed to write the Android runtime marker.");
             return;
         }
-        NSLog(@"[AndroidGuestBootstrap] Preinstalled Android 13 VM is ready at %@", destinationVM.path);
+        NSLog(@"[AndroidGuestBootstrap] Import-safe Android 13 VM is ready at %@", destinationVM.path);
     }
 }
