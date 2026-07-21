@@ -16,7 +16,7 @@ GITHUB_RELEASE_LIMIT=2147483648
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK" "$OUT"
 
-for command in qemu-img 7zz mformat mcopy otool zip; do
+for command in qemu-img 7zz mformat mcopy otool zip zipinfo unzip; do
   if ! command -v "$command" >/dev/null 2>&1; then
     echo "$command is required to build the preinstalled Android 13 guest." >&2
     exit 1
@@ -124,6 +124,7 @@ grep -q '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executa
   /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Android iOSEmulator" "$INFO_PLIST"
 /usr/libexec/PlistBuddy -c "Set :CFBundleName Android iOSEmulator" "$INFO_PLIST" 2>/dev/null || \
   /usr/libexec/PlistBuddy -c "Add :CFBundleName string Android iOSEmulator" "$INFO_PLIST"
+plutil -lint "$INFO_PLIST"
 
 mkdir -p "$GUEST_APP/PreloadedData"
 cp -R "$WORK/Android.utm" "$GUEST_APP/PreloadedData/Android.utm"
@@ -163,6 +164,7 @@ metadata = {
 with output.open("wb") as stream:
     plistlib.dump(metadata, stream, fmt=plistlib.FMT_BINARY, sort_keys=False)
 PY
+plutil -lint "$GUEST_APP/LCAppInfo.plist"
 
 printf '[7/9] Verifying the preinstalled Android 13 guest layout\n'
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO_PLIST")"
@@ -195,17 +197,70 @@ if find "$GUEST_APP" -mindepth 1 -type d -name '*.app' -print -quit | grep -q .;
   exit 1
 fi
 
-printf '[8/9] Packaging the unsigned Android 13 LiveContainer guest IPA\n'
+printf '[8/9] Packaging an import-safe Android 13 LiveContainer guest IPA\n'
+ZIP_LIST="$WORK/zip-file-order.txt"
 (
   cd "$WORK/package"
-  zip -9 -qry "$OUT/$OUTPUT_IPA" Payload
+  python3 - "$EXECUTABLE" "$ANDROID_DISK_NAME" > "$ZIP_LIST" <<'PY'
+from pathlib import Path
+import os
+import sys
+
+executable = sys.argv[1]
+disk_name = sys.argv[2]
+root = Path("Payload")
+app = root / "Android iOSEmulator.app"
+
+leading = [
+    root,
+    app,
+    app / "Info.plist",
+    app / executable,
+    app / "LCAppInfo.plist",
+]
+
+all_paths = []
+for current, dirs, files in os.walk(root):
+    current_path = Path(current)
+    for directory in dirs:
+        all_paths.append(current_path / directory)
+    for filename in files:
+        all_paths.append(current_path / filename)
+
+leading_set = {str(path) for path in leading}
+remaining = [path for path in all_paths if str(path) not in leading_set]
+remaining.sort(key=lambda path: (
+    path.name == disk_name,
+    path.is_file(),
+    str(path).lower(),
+))
+
+for path in [*leading, *remaining]:
+    if path.exists() or path.is_symlink():
+        text = str(path)
+        if path.is_dir() and not text.endswith("/"):
+            text += "/"
+        print(text)
+PY
+  rm -f "$OUT/$OUTPUT_IPA"
+  zip -9 -q "$OUT/$OUTPUT_IPA" -@ < "$ZIP_LIST"
 )
 
-printf '[9/9] Validating the final dyld-safe single-file IPA\n'
+printf '[9/9] Validating LiveContainer import metadata from the final IPA\n'
 unzip -t "$OUT/$OUTPUT_IPA" >/dev/null
 unzip -l "$OUT/$OUTPUT_IPA" > "$OUT/ipa-contents.txt"
-TOP_LEVEL_APPS="$(unzip -Z1 "$OUT/$OUTPUT_IPA" | grep -Ec '^Payload/[^/]+\.app/$')"
+zipinfo -1 "$OUT/$OUTPUT_IPA" > "$OUT/archive-entry-order.txt"
+TOP_LEVEL_APPS="$(grep -Ec '^Payload/[^/]+\.app/$' "$OUT/archive-entry-order.txt")"
 [[ "$TOP_LEVEL_APPS" == "1" ]]
+
+mapfile -t LEADING_ENTRIES < <(head -n 5 "$OUT/archive-entry-order.txt")
+[[ "${LEADING_ENTRIES[0]}" == "Payload/" ]]
+[[ "${LEADING_ENTRIES[1]}" == "Payload/Android iOSEmulator.app/" ]]
+[[ "${LEADING_ENTRIES[2]}" == "Payload/Android iOSEmulator.app/Info.plist" ]]
+[[ "${LEADING_ENTRIES[3]}" == "Payload/Android iOSEmulator.app/$EXECUTABLE" ]]
+[[ "${LEADING_ENTRIES[4]}" == "Payload/Android iOSEmulator.app/LCAppInfo.plist" ]]
+tail -n 1 "$OUT/archive-entry-order.txt" | grep -q "Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/$ANDROID_DISK_NAME"
+
 grep -q 'Payload/Android iOSEmulator.app/LCAppInfo.plist' "$OUT/ipa-contents.txt"
 grep -q 'Payload/Android iOSEmulator.app/BootstrapTweaks/AndroidGuestBootstrap.dylib' "$OUT/ipa-contents.txt"
 grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' "$OUT/ipa-contents.txt"
@@ -232,9 +287,30 @@ if grep -Eq '(_CodeSignature|embedded.mobileprovision)' "$OUT/ipa-contents.txt";
   exit 1
 fi
 
+# Reproduce the exact metadata reads LiveContainer performs after extraction.
+IMPORT_CHECK="$WORK/livecontainer-import-check"
+rm -rf "$IMPORT_CHECK"
+mkdir -p "$IMPORT_CHECK"
+unzip -q "$OUT/$OUTPUT_IPA" \
+  'Payload/Android iOSEmulator.app/Info.plist' \
+  "Payload/Android iOSEmulator.app/$EXECUTABLE" \
+  'Payload/Android iOSEmulator.app/LCAppInfo.plist' \
+  -d "$IMPORT_CHECK"
+EXTRACTED_APP="$IMPORT_CHECK/Payload/Android iOSEmulator.app"
+plutil -lint "$EXTRACTED_APP/Info.plist"
+plutil -lint "$EXTRACTED_APP/LCAppInfo.plist"
+ARCHIVE_BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$EXTRACTED_APP/Info.plist")"
+ARCHIVE_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$EXTRACTED_APP/Info.plist")"
+[[ "$ARCHIVE_BUNDLE_ID" == "$GUEST_BUNDLE_ID" ]]
+[[ "$ARCHIVE_EXECUTABLE" == "$EXECUTABLE" ]]
+[[ -f "$EXTRACTED_APP/$ARCHIVE_EXECUTABLE" ]]
+cmp "$INFO_PLIST" "$EXTRACTED_APP/Info.plist"
+file "$EXTRACTED_APP/$ARCHIVE_EXECUTABLE" | grep -q 'Mach-O 64-bit executable arm64'
+printf 'bundleIdentifier=%s\nexecutable=%s\n' "$ARCHIVE_BUNDLE_ID" "$ARCHIVE_EXECUTABLE" > "$OUT/livecontainer-import-metadata.txt"
+
 IPA_SIZE="$(stat -f%z "$OUT/$OUTPUT_IPA")"
 if (( IPA_SIZE >= GITHUB_RELEASE_LIMIT )); then
-  echo "The dyld-safe IPA is ${IPA_SIZE} bytes and exceeds the single GitHub release asset limit of ${GITHUB_RELEASE_LIMIT} bytes." >&2
+  echo "The import-safe IPA is ${IPA_SIZE} bytes and exceeds the single GitHub release asset limit of ${GITHUB_RELEASE_LIMIT} bytes." >&2
   exit 1
 fi
 
@@ -256,6 +332,9 @@ Boot target: disk / UEFI / zero-second GRUB
 Execution mode: UTM SE QEMU TCI / no JIT
 UTM required QEMU frameworks: m68k and x86_64 retained
 UTM executable dependencies: validated with otool
+LiveContainer import metadata: extracted and parsed from final IPA
+Archive order: Info.plist, executable and LCAppInfo.plist before Android disk
+Unknown.app fallback: blocked by post-archive bundle identifier and executable checks
 Removed unused QEMU frameworks and firmware: ${UTM_TRIMMED_KIB} KiB
 Persistent Android data: 3 GiB ext4 image inside the guest disk
 Nested LiveContainer host: absent
@@ -266,4 +345,4 @@ IPA size: ${IPA_SIZE} bytes
 Physical-device graphical boot verification: pending
 EOF
 
-printf 'Built dyld-safe preinstalled Android 13 LiveContainer guest: %s\n' "$OUT/$OUTPUT_IPA"
+printf 'Built import-safe preinstalled Android 13 LiveContainer guest: %s\n' "$OUT/$OUTPUT_IPA"
