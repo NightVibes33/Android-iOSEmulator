@@ -1,9 +1,11 @@
 #include "JITProbe.h"
 
+#include <CoreFoundation/CoreFoundation.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <libkern/OSCacheControl.h>
 #include <mach/mach.h>
-#include <mach/mach_vm.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -60,6 +62,59 @@ static void jit26_prepare_utm_legacy(void *address, size_t length) {
 }
 #endif
 
+typedef CFTypeRef (*SecTaskCreateFromSelfFunction)(CFAllocatorRef allocator);
+typedef CFTypeRef (*SecTaskCopyValueForEntitlementFunction)(CFTypeRef task,
+                                                            CFStringRef entitlement,
+                                                            CFErrorRef *error);
+
+int32_t jitprobe_entitlement_boolean(const char *key) {
+    if (key == NULL || key[0] == '\0') {
+        return -1;
+    }
+
+    SecTaskCreateFromSelfFunction create_task =
+        (SecTaskCreateFromSelfFunction)dlsym(RTLD_DEFAULT, "SecTaskCreateFromSelf");
+    SecTaskCopyValueForEntitlementFunction copy_entitlement =
+        (SecTaskCopyValueForEntitlementFunction)dlsym(RTLD_DEFAULT, "SecTaskCopyValueForEntitlement");
+
+    if (create_task == NULL || copy_entitlement == NULL) {
+        return -1;
+    }
+
+    CFTypeRef task = create_task(kCFAllocatorDefault);
+    if (task == NULL) {
+        return -1;
+    }
+
+    CFStringRef entitlement_key = CFStringCreateWithCString(
+        kCFAllocatorDefault,
+        key,
+        kCFStringEncodingUTF8
+    );
+    if (entitlement_key == NULL) {
+        CFRelease(task);
+        return -1;
+    }
+
+    CFErrorRef error = NULL;
+    CFTypeRef value = copy_entitlement(task, entitlement_key, &error);
+    int32_t result = 0;
+
+    if (value != NULL && CFGetTypeID(value) == CFBooleanGetTypeID()) {
+        result = CFBooleanGetValue((CFBooleanRef)value) ? 1 : 0;
+    }
+
+    if (value != NULL) {
+        CFRelease(value);
+    }
+    if (error != NULL) {
+        CFRelease(error);
+    }
+    CFRelease(entitlement_key);
+    CFRelease(task);
+    return result;
+}
+
 int32_t jitprobe_is_debugger_attached(void) {
     int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()};
     struct kinfo_proc info;
@@ -113,17 +168,17 @@ int32_t jitprobe_run(int32_t protocol,
         return code;
     }
 
-    mach_vm_address_t executable_alias = 0;
+    vm_address_t executable_alias = 0;
     vm_prot_t current_protection = VM_PROT_NONE;
     vm_prot_t maximum_protection = VM_PROT_NONE;
-    kern_return_t kr = mach_vm_remap(
+    kern_return_t kr = vm_remap(
         mach_task_self(),
         &executable_alias,
-        (mach_vm_size_t)length,
+        (vm_size_t)length,
         0,
         VM_FLAGS_ANYWHERE,
         mach_task_self(),
-        (mach_vm_address_t)writable_candidate,
+        (vm_address_t)writable_candidate,
         false,
         &current_protection,
         &maximum_protection,
@@ -132,19 +187,19 @@ int32_t jitprobe_run(int32_t protocol,
 
     if (kr != KERN_SUCCESS || executable_alias == 0) {
         munmap(writable_candidate, length);
-        snprintf(g_last_error, sizeof(g_last_error), "mach_vm_remap failed (Mach %d)", kr);
+        snprintf(g_last_error, sizeof(g_last_error), "vm_remap failed (Mach %d)", kr);
         return (int32_t)(1000 + kr);
     }
 
     if (protocol == JITProbeProtocolUTMLegacy) {
-        jit26_prepare_utm_legacy((void *)executable_alias, length);
+        jit26_prepare_utm_legacy((void *)(uintptr_t)executable_alias, length);
     } else {
-        jit26_prepare_universal((void *)executable_alias, length);
+        jit26_prepare_universal((void *)(uintptr_t)executable_alias, length);
     }
 
     if (mprotect(writable_candidate, length, PROT_READ | PROT_WRITE) != 0) {
         int code = errno;
-        mach_vm_deallocate(mach_task_self(), executable_alias, (mach_vm_size_t)length);
+        vm_deallocate(mach_task_self(), executable_alias, (vm_size_t)length);
         munmap(writable_candidate, length);
         set_error("mprotect RW alias", code);
         if (protocol == JITProbeProtocolUniversal) {
@@ -156,7 +211,7 @@ int32_t jitprobe_run(int32_t protocol,
     // ARM64: mov w0, #42; ret
     const uint32_t generated_code[] = {0x52800540u, 0xD65F03C0u};
     memcpy(writable_candidate, generated_code, sizeof(generated_code));
-    sys_icache_invalidate((void *)executable_alias, sizeof(generated_code));
+    sys_icache_invalidate((void *)(uintptr_t)executable_alias, sizeof(generated_code));
 
     typedef int32_t (*GeneratedFunction)(void);
     GeneratedFunction function = (GeneratedFunction)(uintptr_t)executable_alias;
@@ -167,7 +222,7 @@ int32_t jitprobe_run(int32_t protocol,
     if (region_length) *region_length = (uint64_t)length;
     if (generated_result) *generated_result = value;
 
-    mach_vm_deallocate(mach_task_self(), executable_alias, (mach_vm_size_t)length);
+    vm_deallocate(mach_task_self(), executable_alias, (vm_size_t)length);
     munmap(writable_candidate, length);
 
     if (protocol == JITProbeProtocolUniversal) {

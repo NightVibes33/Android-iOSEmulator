@@ -12,6 +12,10 @@ typedef enum JITProbeProtocol {
     JITProbeProtocolUTMLegacy = 1,
 } JITProbeProtocol;
 
+/// Reads an effective boolean entitlement from the running process.
+/// Returns 1 for true, 0 for false/missing, and -1 when the Security task API is unavailable.
+int32_t jitprobe_entitlement_boolean(const char *key);
+
 /// Returns non-zero when the process currently has P_TRACED.
 int32_t jitprobe_is_debugger_attached(void);
 
