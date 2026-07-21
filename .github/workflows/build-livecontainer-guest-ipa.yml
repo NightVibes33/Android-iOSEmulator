@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   build:
-    name: UTM SE x86_64 + preinstalled BlissOS Android 13
+    name: Dyld-safe UTM SE + preinstalled BlissOS Android 13
     runs-on: macos-26
     timeout-minutes: 360
     steps:
@@ -55,14 +55,14 @@ jobs:
           sgdisk --version
           "$(brew --prefix e2fsprogs)/sbin/mkfs.ext4" -V
 
-      - name: Build single-file Android 13 guest IPA
+      - name: Build dyld-safe Android 13 guest IPA
         shell: bash
         run: |
           set -o pipefail
           rm -f livecontainer-android13-build.log
           bash -x ./scripts/build_livecontainer_guest_ipa.sh 2>&1 | tee livecontainer-android13-build.log
 
-      - name: Verify single-file preinstalled package
+      - name: Verify m68k loader dependency and x86_64 runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -75,14 +75,17 @@ jobs:
           ! unzip -Z1 "$IPA" | grep -q 'PreloadedApps/'
           ! unzip -Z1 "$IPA" | grep -Eq '^Payload/[^/]+\.app/.+\.app/'
           ! unzip -Z1 "$IPA" | grep -q '\.iso$'
-          ! unzip -Z1 "$IPA" | grep -Eq 'qemu-(aarch64|i386|m68k|ppc|ppc64|riscv64)-softmmu\.framework/'
           grep -q 'Payload/Android iOSEmulator.app/LCAppInfo.plist' "$OUT/verified-contents.txt"
           grep -q 'Payload/Android iOSEmulator.app/BootstrapTweaks/AndroidGuestBootstrap.dylib' "$OUT/verified-contents.txt"
           grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' "$OUT/verified-contents.txt"
           grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/bliss-android13-preinstalled.qcow2' "$OUT/verified-contents.txt"
+          grep -q 'Payload/Android iOSEmulator.app/Frameworks/qemu-m68k-softmmu.framework/' "$OUT/verified-contents.txt"
           grep -q 'Payload/Android iOSEmulator.app/Frameworks/qemu-x86_64-softmmu.framework/' "$OUT/verified-contents.txt"
-          grep -q 'Android guest: BlissOS 16.9.7 / Android 13 x86_64' "$OUT/build-manifest.txt"
-          grep -q 'UTM runtime architectures: x86_64 only' "$OUT/build-manifest.txt"
+          ! grep -Eq 'qemu-(aarch64|i386|ppc|ppc64|riscv64)-softmmu\.framework/' "$OUT/verified-contents.txt"
+          grep -q '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executable-dependencies.txt"
+          grep -q 'Android disk compression: qcow2 zlib' "$OUT/build-manifest.txt"
+          grep -q 'UTM required QEMU frameworks: m68k and x86_64 retained' "$OUT/build-manifest.txt"
+          grep -q 'UTM executable dependencies: validated with otool' "$OUT/build-manifest.txt"
           grep -q 'Release delivery: one complete IPA asset; split parts forbidden' "$OUT/build-manifest.txt"
           SIZE="$(stat -f%z "$IPA")"
           test "$SIZE" -lt 2147483648
@@ -91,12 +94,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Android13-Single-IPA-diagnostics
+          name: Android13-Dyld-Fix-diagnostics
           path: |
             livecontainer-android13-build.log
             build/livecontainer-guest/ipa-contents.txt
             build/livecontainer-guest/verified-contents.txt
             build/livecontainer-guest/build-manifest.txt
+            build/livecontainer-guest/utm-executable-dependencies.txt
           if-no-files-found: warn
           retention-days: 30
 
@@ -112,13 +116,13 @@ jobs:
           compression-level: 0
           retention-days: 30
 
-      - name: Publish one-IPA Android 13 prerelease
+      - name: Publish dyld-safe Android 13 prerelease
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v0.2.1-android13-single-ipa
-          OLD_SPLIT_TAG: v0.2.0-android13-preinstalled
+          TAG: v0.2.2-android13-dyld-fix
+          BROKEN_TAG: v0.2.1-android13-single-ipa
         run: |
           set -euo pipefail
           OUT="build/livecontainer-guest"
@@ -129,8 +133,8 @@ jobs:
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" "$IPA" \
             --target "$GITHUB_SHA" \
-            --title "Android iOSEmulator — Android 13 single IPA" \
-            --notes "One complete unsigned LiveContainer guest IPA. BlissOS 16 / Android 13 is already installed on the bundled persistent disk. UTM SE is trimmed to the x86_64 runtime used by this guest. There is no installer ISO, debug-console boot, or split-file reconstruction step. Physical-device graphical boot still requires validation." \
+            --title "Android iOSEmulator — Android 13 dyld fix" \
+            --notes "One complete unsigned LiveContainer guest IPA. Restores qemu-m68k-softmmu because it is strongly linked by the UTM SE executable, and retains qemu-x86_64-softmmu for the Android guest. Other unused QEMU backends remain removed so the file stays below GitHub's 2 GiB ceiling. BlissOS 16 / Android 13 is already installed. No installer ISO, debug-console boot, or split-file reconstruction is required. Physical-device Android graphical boot still requires validation." \
             --prerelease
 
           RELEASE_JSON="$(gh release view "$TAG" --json assets,isPrerelease)"
@@ -139,4 +143,4 @@ jobs:
           test "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"
           test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = "true"
 
-          gh release delete "$OLD_SPLIT_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+          gh release delete "$BROKEN_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true

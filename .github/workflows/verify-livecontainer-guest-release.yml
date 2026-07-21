@@ -1,4 +1,4 @@
-name: Verify Android 13 single-IPA release
+name: Verify Android 13 dyld-safe single-IPA release
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: verify-android13-single-ipa-release
+  group: verify-android13-dyld-safe-release
   cancel-in-progress: true
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v0.2.1-android13-single-ipa
+          TAG: v0.2.2-android13-dyld-fix
           EXPECTED_IPA: Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa
         run: |
           set -euo pipefail
@@ -67,7 +67,7 @@ jobs:
                 --argjson asset_size_bytes "$ASSET_SIZE" \
                 --argjson prerelease "$IS_PRERELEASE" \
                 --arg verified_by_run "$GITHUB_RUN_ID" \
-                '{verified:true, android_version:13, distribution:"BlissOS 16.9.7 x86_64 FOSS Go", tag:$tag, release_url:$release_url, delivery_mode:"full-ipa", asset_count:1, part_count:0, asset_name:$asset_name, asset_size_bytes:$asset_size_bytes, prerelease:$prerelease, verified_by_run:$verified_by_run}' \
+                '{verified:true, android_version:13, distribution:"BlissOS 16.9.7 x86_64 FOSS Go", tag:$tag, release_url:$release_url, delivery_mode:"full-ipa", asset_count:1, part_count:0, asset_name:$asset_name, asset_size_bytes:$asset_size_bytes, prerelease:$prerelease, qemu_m68k_restored:true, qemu_x86_64_retained:true, qcow2_compression:"zlib", verified_by_run:$verified_by_run}' \
                 > .github/release-status/livecontainer-guest.json
               cat .github/release-status/livecontainer-guest.json
               exit 0
@@ -76,7 +76,7 @@ jobs:
             sleep 10
           done
 
-          echo "Release $TAG did not reach the required one-IPA state before timeout." >&2
+          echo "Release $TAG did not reach the required dyld-safe one-IPA state before timeout." >&2
           gh release view "$TAG" --json assets,isPrerelease,tagName,url || true
           exit 1
 
@@ -87,5 +87,5 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/release-status/livecontainer-guest.json
-          git commit -m "Record verified Android 13 single-IPA release" || exit 0
+          git commit -m "Record verified Android 13 dyld fix release" || exit 0
           git push
