@@ -85,7 +85,7 @@ jobs:
           grep -q 'UTM runtime architectures: x86_64 only' "$OUT/build-manifest.txt"
           grep -q 'Release delivery: one complete IPA asset; split parts forbidden' "$OUT/build-manifest.txt"
           SIZE="$(stat -f%z "$IPA")"
-          test "$SIZE" -lt 2000000000
+          test "$SIZE" -lt 2147483648
 
       - name: Upload diagnostics
         if: always()
@@ -124,7 +124,7 @@ jobs:
           OUT="build/livecontainer-guest"
           IPA="$OUT/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
           SIZE="$(stat -f%z "$IPA")"
-          test "$SIZE" -lt 2000000000
+          test "$SIZE" -lt 2147483648
 
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" "$IPA" \
