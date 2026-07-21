@@ -15,7 +15,12 @@ def build_config(disk_name: str) -> dict[str, object]:
         "ConfigurationVersion": 2,
         "System": {
             "Architecture": "x86_64",
-            "CPU": "default",
+            # UTM omits -cpu entirely for an x86_64 guest on an ARM iPhone when
+            # this is "default". QEMU then falls back to qemu64, which does not
+            # reliably expose the SSE4.2 capability required by BlissOS 16.
+            # The TCG "max" model exposes all instructions implemented by this
+            # QEMU build, including SSE4.2, without depending on host passthrough.
+            "CPU": "max",
             "CPUFlags": [],
             "Memory": 3072,
             "CPUCount": 2,
@@ -79,7 +84,8 @@ def build_config(disk_name: str) -> dict[str, object]:
             "IconCustom": False,
             "Notes": (
                 "Preinstalled BlissOS 16 / Android 13 guest. Boots from the "
-                "bundled persistent disk with no installer ISO or debug shell."
+                "bundled persistent disk with no installer ISO or debug shell. "
+                "Uses QEMU TCG CPU=max so BlissOS receives SSE4.2."
             ),
         },
     }
@@ -114,6 +120,7 @@ def main() -> int:
     with (bundle / "config.plist").open("rb") as stream:
         decoded = plistlib.load(stream)
     assert decoded["System"]["Architecture"] == "x86_64"
+    assert decoded["System"]["CPU"] == "max"
     assert decoded["System"]["Target"] == "q35"
     assert decoded["System"]["UseHypervisor"] is False
     assert decoded["System"]["BootDevice"] == "disk"
