@@ -1,0 +1,180 @@
+name: Build preloaded LiveContainer UTM SE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/preloaded-livecontainer-utm-se
+    paths:
+      - .github/workflows/build-preloaded-livecontainer-utm-se.yml
+      - scripts/patch_livecontainer_preinstalled_utm.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preloaded-livecontainer-utm-se-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LIVE_CONTAINER_COMMIT: e370a92dfc03ce109ebce00ed4a7cfc64ad1c801
+  UTM_VERSION: v4.7.5
+  UTM_SE_URL: https://github.com/utmapp/UTM/releases/download/v4.7.5/UTM-SE.ipa
+
+jobs:
+  build:
+    name: macOS 26 / LiveContainer plus UTM SE
+    runs-on: macos-26
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout conversion project
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [[ -d /Applications/Xcode_26.2.app ]]; then
+            sudo xcode-select -s /Applications/Xcode_26.2.app/Contents/Developer
+          else
+            XCODE_APP=$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)
+            test -n "$XCODE_APP"
+            sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+          fi
+          xcodebuild -version
+          sw_vers
+
+      - name: Clone pinned LiveContainer
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --recursive https://github.com/LiveContainer/LiveContainer.git upstream/LiveContainer
+          cd upstream/LiveContainer
+          git checkout "$LIVE_CONTAINER_COMMIT"
+          git submodule update --init --recursive
+          git rev-parse HEAD
+
+      - name: Patch first-launch preinstall support
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 scripts/patch_livecontainer_preinstalled_utm.py upstream/LiveContainer
+          grep -n "installBundledUTMIfNeeded" upstream/LiveContainer/LiveContainerSwiftUI/App/LiveContainerSwiftUIApp.swift
+
+      - name: Download official UTM SE runtime
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p upstream/utm-se
+          curl --fail --location --retry 5 --retry-delay 5 "$UTM_SE_URL" -o upstream/utm-se/UTM-SE.ipa
+          unzip -q upstream/utm-se/UTM-SE.ipa -d upstream/utm-se/extracted
+          UTM_APP=$(find upstream/utm-se/extracted/Payload -maxdepth 1 -type d -name '*.app' | head -1)
+          test -n "$UTM_APP"
+          test -f "$UTM_APP/Info.plist"
+          du -sh "$UTM_APP"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$UTM_APP/Info.plist"
+
+      - name: Archive LiveContainer host
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p build ci-logs
+          cd upstream/LiveContainer
+          FILE_TYPE=$(ls -1 *.xcworkspace >/dev/null 2>&1 && echo workspace || echo project)
+          if [[ "$FILE_TYPE" == workspace ]]; then
+            FILE_TO_BUILD=$(ls -1 *.xcworkspace | head -1)
+          else
+            FILE_TO_BUILD=$(ls -1 *.xcodeproj | head -1)
+          fi
+          set +e
+          xcodebuild archive \
+            -archivePath "$GITHUB_WORKSPACE/build/AndroidContainer" \
+            -scheme LiveContainer \
+            -"$FILE_TYPE" "$FILE_TO_BUILD" \
+            -sdk iphoneos \
+            -arch arm64 \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            2>&1 | tee "$GITHUB_WORKSPACE/ci-logs/livecontainer-xcodebuild.log"
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          exit "$STATUS"
+
+      - name: Inject UTM SE and create combined IPA
+        shell: bash
+        run: |
+          set -euxo pipefail
+          HOST_APP=$(find build/AndroidContainer.xcarchive/Products/Applications -maxdepth 1 -type d -name '*.app' | head -1)
+          UTM_APP=$(find upstream/utm-se/extracted/Payload -maxdepth 1 -type d -name '*.app' | head -1)
+          test -n "$HOST_APP"
+          test -n "$UTM_APP"
+
+          mkdir -p "$HOST_APP/PreinstalledApps"
+          ditto "$UTM_APP" "$HOST_APP/PreinstalledApps/UTM SE.app"
+
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Android iOSEmulator' "$HOST_APP/Info.plist" || true
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleName Android iOSEmulator' "$HOST_APP/Info.plist" || true
+
+          find "$HOST_APP" -type d -name _CodeSignature -prune -exec rm -rf {} +
+          find "$HOST_APP" -name embedded.mobileprovision -type f -delete
+
+          rm -rf package
+          mkdir -p 'package/Payload'
+          ditto "$HOST_APP" 'package/Payload/Android iOSEmulator.app'
+
+          cat > package/build-manifest.txt <<MANIFEST
+          Product: Android iOSEmulator full SE base
+          Host: LiveContainer $LIVE_CONTAINER_COMMIT
+          Embedded runtime: UTM SE $UTM_VERSION
+          Runtime mode: QEMU threaded interpreter, no JIT
+          Android guest image: not bundled in this artifact
+          Architecture: arm64 iPhoneOS host
+          Signing: unsigned
+          MANIFEST
+
+          cd package
+          zip -qry ../Android-iOSEmulator-Full-SE-unsigned.ipa Payload
+          cd ..
+          shasum -a 256 Android-iOSEmulator-Full-SE-unsigned.ipa | tee Android-iOSEmulator-Full-SE-unsigned.ipa.sha256
+          du -h Android-iOSEmulator-Full-SE-unsigned.ipa
+
+      - name: Verify combined IPA
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf verify
+          mkdir verify
+          unzip -q Android-iOSEmulator-Full-SE-unsigned.ipa -d verify
+          HOST_APP='verify/Payload/Android iOSEmulator.app'
+          test -d "$HOST_APP"
+          test -d "$HOST_APP/PreinstalledApps/UTM SE.app"
+          test -f "$HOST_APP/PreinstalledApps/UTM SE.app/Info.plist"
+          ! find verify -type d -name _CodeSignature | grep -q .
+          ! find verify -type f -name embedded.mobileprovision | grep -q .
+          file "$HOST_APP/LiveContainer"
+          UTM_EXEC=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$HOST_APP/PreinstalledApps/UTM SE.app/Info.plist")
+          file "$HOST_APP/PreinstalledApps/UTM SE.app/$UTM_EXEC"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$HOST_APP/Info.plist"
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Full-SE-build-logs
+          path: |
+            ci-logs
+            package/build-manifest.txt
+          if-no-files-found: warn
+
+      - name: Upload full SE IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Full-SE-unsigned
+          path: |
+            Android-iOSEmulator-Full-SE-unsigned.ipa
+            Android-iOSEmulator-Full-SE-unsigned.ipa.sha256
+            package/build-manifest.txt
+          if-no-files-found: error
