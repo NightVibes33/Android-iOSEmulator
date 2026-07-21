@@ -1,7 +1,12 @@
-name: Verify LiveContainer guest release
+name: Verify preinstalled Android 13 release
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Build preinstalled Android 13 LiveContainer guest
+    types:
+      - completed
   push:
     paths:
       - ".github/workflows/verify-livecontainer-guest-release.yml"
@@ -9,46 +14,100 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: verify-android13-release
+  cancel-in-progress: true
+
 jobs:
   verify:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Wait for and verify IPA-only release
+      - name: Wait for and verify Android 13 release assets
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v0.1.1-livecontainer-guest
-          EXPECTED_ASSET: Android-iOSEmulator-LiveContainer-Guest-unsigned.ipa
+          TAG: v0.2.0-android13-preinstalled
+          FULL_IPA: Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa
+          PART_PREFIX: Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa
         run: |
           set -euo pipefail
+
           for attempt in $(seq 1 120); do
-            RELEASE_JSON="$(gh release view "$TAG" --json assets,isPrerelease 2>/dev/null || true)"
-            if [[ -n "$RELEASE_JSON" ]]; then
-              ASSET_COUNT="$(jq '.assets | length' <<<"$RELEASE_JSON")"
-              ASSET_NAME="$(jq -r '.assets[0].name // ""' <<<"$RELEASE_JSON")"
-              ASSET_SIZE="$(jq '.assets[0].size // 0' <<<"$RELEASE_JSON")"
-              IS_PRERELEASE="$(jq '.isPrerelease' <<<"$RELEASE_JSON")"
-              if [[ "$ASSET_COUNT" -eq 1 && "$ASSET_NAME" == "$EXPECTED_ASSET" && "$ASSET_SIZE" -gt 500000000 ]]; then
-                mkdir -p .github/release-status
-                jq -n \
-                  --arg tag "$TAG" \
-                  --arg asset "$ASSET_NAME" \
-                  --argjson asset_count "$ASSET_COUNT" \
-                  --argjson asset_size "$ASSET_SIZE" \
-                  --argjson prerelease "$IS_PRERELEASE" \
-                  --arg verified_by_run "$GITHUB_RUN_ID" \
-                  '{verified:true, tag:$tag, asset_count:$asset_count, asset_name:$asset, asset_size_bytes:$asset_size, prerelease:$prerelease, verified_by_run:$verified_by_run}' \
-                  > .github/release-status/livecontainer-guest.json
-                exit 0
+            RELEASE_JSON="$(gh release view "$TAG" --json assets,isPrerelease,tagName,url 2>/dev/null || true)"
+            if [[ -z "$RELEASE_JSON" ]]; then
+              sleep 10
+              continue
+            fi
+
+            IS_PRERELEASE="$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")"
+            RELEASE_URL="$(jq -r '.url' <<<"$RELEASE_JSON")"
+            TAG_NAME="$(jq -r '.tagName' <<<"$RELEASE_JSON")"
+            ASSET_COUNT="$(jq '.assets | length' <<<"$RELEASE_JSON")"
+            FULL_COUNT="$(jq --arg name "$FULL_IPA" '[.assets[] | select(.name == $name)] | length' <<<"$RELEASE_JSON")"
+            FULL_SIZE="$(jq --arg name "$FULL_IPA" '[.assets[] | select(.name == $name)][0].size // 0' <<<"$RELEASE_JSON")"
+            SHA_COUNT="$(jq --arg name "$FULL_IPA.sha256" '[.assets[] | select(.name == $name)] | length' <<<"$RELEASE_JSON")"
+            MANIFEST_COUNT="$(jq '[.assets[] | select(.name == "build-manifest.txt")] | length' <<<"$RELEASE_JSON")"
+
+            mapfile -t PART_NAMES < <(
+              jq -r --arg prefix "$PART_PREFIX.part-" '.assets[].name | select(startswith($prefix))' <<<"$RELEASE_JSON" | sort
+            )
+            PART_COUNT="${#PART_NAMES[@]}"
+            PARTS_CONTIGUOUS=true
+            if (( PART_COUNT > 0 )); then
+              for index in "${!PART_NAMES[@]}"; do
+                printf -v suffix '%02d' "$index"
+                expected="$PART_PREFIX.part-$suffix"
+                if [[ "${PART_NAMES[$index]}" != "$expected" ]]; then
+                  PARTS_CONTIGUOUS=false
+                  break
+                fi
+              done
+            fi
+
+            PARTS_SHA_COUNT="$(jq '[.assets[] | select(.name == "parts.sha256")] | length' <<<"$RELEASE_JSON")"
+            PARTS_TOTAL_SIZE="$(jq --arg prefix "$PART_PREFIX.part-" '[.assets[] | select(.name | startswith($prefix)) | .size] | add // 0' <<<"$RELEASE_JSON")"
+
+            DELIVERY_MODE=""
+            VERIFIED=false
+            if [[ "$TAG_NAME" == "$TAG" && "$IS_PRERELEASE" == "true" && "$SHA_COUNT" -eq 1 && "$MANIFEST_COUNT" -eq 1 ]]; then
+              if [[ "$FULL_COUNT" -eq 1 && "$FULL_SIZE" -gt 500000000 && "$ASSET_COUNT" -eq 3 ]]; then
+                DELIVERY_MODE="full-ipa"
+                VERIFIED=true
+              elif [[ "$FULL_COUNT" -eq 0 && "$PART_COUNT" -ge 2 && "$PART_COUNT" -le 5 && "$PARTS_CONTIGUOUS" == "true" && "$PARTS_SHA_COUNT" -eq 1 && "$PARTS_TOTAL_SIZE" -gt 2000000000 && "$ASSET_COUNT" -eq $((PART_COUNT + 3)) ]]; then
+                DELIVERY_MODE="split-parts"
+                VERIFIED=true
               fi
             fi
+
+            if [[ "$VERIFIED" == "true" ]]; then
+              mkdir -p .github/release-status
+              ASSETS_JSON="$(jq '[.assets[] | {name, size_bytes: .size}] | sort_by(.name)' <<<"$RELEASE_JSON")"
+              jq -n \
+                --arg tag "$TAG" \
+                --arg release_url "$RELEASE_URL" \
+                --arg delivery_mode "$DELIVERY_MODE" \
+                --argjson asset_count "$ASSET_COUNT" \
+                --argjson part_count "$PART_COUNT" \
+                --argjson payload_size_bytes "$([[ "$DELIVERY_MODE" == "full-ipa" ]] && echo "$FULL_SIZE" || echo "$PARTS_TOTAL_SIZE")" \
+                --argjson prerelease "$IS_PRERELEASE" \
+                --argjson assets "$ASSETS_JSON" \
+                --arg verified_by_run "$GITHUB_RUN_ID" \
+                '{verified:true, android_version:13, distribution:"BlissOS 16.9.7 x86_64 FOSS Go", tag:$tag, release_url:$release_url, delivery_mode:$delivery_mode, asset_count:$asset_count, part_count:$part_count, payload_size_bytes:$payload_size_bytes, prerelease:$prerelease, assets:$assets, verified_by_run:$verified_by_run}' \
+                > .github/release-status/livecontainer-guest.json
+              cat .github/release-status/livecontainer-guest.json
+              exit 0
+            fi
+
             sleep 10
           done
-          echo "Release $TAG did not reach the expected one-IPA state before timeout." >&2
+
+          echo "Release $TAG did not reach a valid Android 13 asset state before timeout." >&2
+          gh release view "$TAG" --json assets,isPrerelease,tagName,url || true
           exit 1
 
       - name: Commit verification status
@@ -58,5 +117,5 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/release-status/livecontainer-guest.json
-          git commit -m "Record verified LiveContainer guest release" || exit 0
+          git commit -m "Record verified Android 13 release" || exit 0
           git push
