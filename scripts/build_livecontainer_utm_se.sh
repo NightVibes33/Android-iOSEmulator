@@ -25,7 +25,7 @@ if [[ -z "$UTM_APP" ]]; then
   exit 1
 fi
 
-echo "[3/7] Patching LiveContainer startup and branding"
+echo "[3/7] Patching LiveContainer startup, Xcode compatibility and branding"
 LC_APP_SOURCE="$(find "$WORK/LiveContainer" -type f -name 'LiveContainerSwiftUIApp.swift' -print -quit)"
 if [[ -z "$LC_APP_SOURCE" ]]; then
   echo "Could not locate LiveContainerSwiftUIApp.swift in LiveContainer ${LC_TAG}." >&2
@@ -33,6 +33,35 @@ if [[ -z "$LC_APP_SOURCE" ]]; then
   exit 1
 fi
 printf 'LiveContainer startup source: %s\n' "$LC_APP_SOURCE"
+
+LC_BOOTSTRAP_SOURCE="$(find "$WORK/LiveContainer" -type f -name 'LCBootstrap.m' -print -quit)"
+if [[ -z "$LC_BOOTSTRAP_SOURCE" ]]; then
+  echo "Could not locate LCBootstrap.m in LiveContainer ${LC_TAG}." >&2
+  exit 1
+fi
+printf 'LiveContainer bootstrap source: %s\n' "$LC_BOOTSTRAP_SOURCE"
+
+python3 - "$LC_BOOTSTRAP_SOURCE" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text()
+replacements = {
+    'for(int i = 0; i < header->ncmds > 0; ++i) {':
+        'for(int i = 0; i < header->ncmds; ++i) {',
+    'static BOOL checkJITEnabled() {':
+        'static BOOL checkJITEnabled(void) {',
+}
+
+for old, new in replacements.items():
+    if old in text:
+        text = text.replace(old, new)
+    elif new not in text:
+        raise SystemExit(f'Expected LiveContainer compatibility source was not found: {old}')
+
+path.write_text(text)
+PY
 
 python3 - "$LC_APP_SOURCE" <<'PY'
 from pathlib import Path
