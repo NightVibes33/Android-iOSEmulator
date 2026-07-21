@@ -6,6 +6,7 @@ on:
     paths:
       - "scripts/build_livecontainer_utm_se.sh"
       - "scripts/patch_livecontainer_apk_flow.py"
+      - "scripts/fix_livecontainer_apk_flow_compile.py"
       - ".github/workflows/build-full-livecontainer-android.yml"
       - "docs/FULL_LIVECONTAINER_BUILD.md"
   push:
@@ -14,6 +15,7 @@ on:
     paths:
       - "scripts/build_livecontainer_utm_se.sh"
       - "scripts/patch_livecontainer_apk_flow.py"
+      - "scripts/fix_livecontainer_apk_flow_compile.py"
       - ".github/workflows/build-full-livecontainer-android.yml"
       - "docs/FULL_LIVECONTAINER_BUILD.md"
 
