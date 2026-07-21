@@ -11,7 +11,7 @@ GUEST_BUNDLE_ID="com.nightvibes33.androidiosemulator.livecontainer"
 GUEST_INSTALL_FOLDER="${GUEST_BUNDLE_ID}.app"
 GUEST_CONTAINER="AndroidRuntimeData"
 OUTPUT_IPA="Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
-GITHUB_RELEASE_LIMIT=2000000000
+GITHUB_RELEASE_LIMIT=2147483648
 
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK" "$OUT"
