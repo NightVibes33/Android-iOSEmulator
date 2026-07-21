@@ -2,7 +2,7 @@
 
 static NSString *const AndroidVMName = @"Android.utm";
 static NSString *const AndroidDiskName = @"bliss-android13-preinstalled.qcow2";
-static NSString *const AndroidRuntimeVersion = @"bliss16-android13-v2-graphics-handoff";
+static NSString *const AndroidRuntimeVersion = @"bliss16-android13-v3-cpu-max-sse42";
 
 static BOOL AndroidCopyItemIfMissing(NSFileManager *fileManager, NSURL *source, NSURL *destination, NSError **error) {
     if ([fileManager fileExistsAtPath:destination.path]) {
