@@ -83,6 +83,24 @@ jobs:
             exit 1
           fi
 
+      - name: Split IPA for bridge delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="build/full-livecontainer/Android-iOSEmulator-Full-Android-x86-unsigned.ipa"
+          PARTS="build/full-livecontainer/parts"
+          mkdir -p "$PARTS"
+          split -b 300000000 -d -a 2 "$IPA" "$PARTS/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.part-"
+          test "$(find "$PARTS" -type f -name '*.part-*' | wc -l | tr -d ' ')" -eq 4
+          shasum -a 256 "$PARTS"/*.part-* > "$PARTS/parts.sha256"
+          cp build/full-livecontainer/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.sha256 "$PARTS/"
+          cp build/full-livecontainer/build-manifest.txt "$PARTS/"
+          cat > "$PARTS/REASSEMBLE.txt" <<'EOF'
+          Concatenate part-00 through part-03 in numeric order.
+          macOS/Linux: cat Android-iOSEmulator-Full-Android-x86-unsigned.ipa.part-* > Android-iOSEmulator-Full-Android-x86-unsigned.ipa
+          Then verify the SHA-256 value in Android-iOSEmulator-Full-Android-x86-unsigned.ipa.sha256.
+          EOF
+
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -106,5 +124,42 @@ jobs:
             build/full-livecontainer/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.sha256
             build/full-livecontainer/build-manifest.txt
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload bridge part 00
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Full-Android-part-00
+          path: build/full-livecontainer/parts/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.part-00
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload bridge part 01
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Full-Android-part-01
+          path: build/full-livecontainer/parts/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.part-01
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload bridge part 02
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Full-Android-part-02
+          path: build/full-livecontainer/parts/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.part-02
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload bridge part 03 and metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Full-Android-part-03-metadata
+          path: |
+            build/full-livecontainer/parts/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.part-03
+            build/full-livecontainer/parts/parts.sha256
+            build/full-livecontainer/parts/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.sha256
+            build/full-livecontainer/parts/build-manifest.txt
+            build/full-livecontainer/parts/REASSEMBLE.txt
           compression-level: 0
           retention-days: 30
