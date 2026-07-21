@@ -10,6 +10,51 @@ struct RouteProbeResult: Codable {
     let message: String
 }
 
+private final class RouteProbeCompletion: @unchecked Sendable {
+    private let lock = NSLock()
+    private var completed = false
+    private var connection: NWConnection?
+    private let continuation: CheckedContinuation<RouteProbeResult, Never>
+    private let host: String
+    private let port: UInt16
+
+    init(
+        continuation: CheckedContinuation<RouteProbeResult, Never>,
+        host: String,
+        port: UInt16
+    ) {
+        self.continuation = continuation
+        self.host = host
+        self.port = port
+    }
+
+    func attach(connection: NWConnection) {
+        lock.lock()
+        self.connection = connection
+        lock.unlock()
+    }
+
+    func finish(reachable: Bool, message: String) {
+        lock.lock()
+        guard !completed else {
+            lock.unlock()
+            return
+        }
+        completed = true
+        let activeConnection = connection
+        lock.unlock()
+
+        activeConnection?.cancel()
+        continuation.resume(returning: RouteProbeResult(
+            timestamp: Date(),
+            host: host,
+            port: port,
+            reachable: reachable,
+            message: message
+        ))
+    }
+}
+
 enum LocalDevVPNCoordinator {
     static let host = "10.7.0.1"
     static let port: UInt16 = 49_152
@@ -24,37 +69,35 @@ enum LocalDevVPNCoordinator {
     }
 
     static func probe(timeout: TimeInterval = 4.0) async -> RouteProbeResult {
-        await withCheckedContinuation { continuation in
+        let targetHost = host
+        let targetPort = port
+
+        return await withCheckedContinuation { continuation in
             let queue = DispatchQueue(label: "com.nightvibes.androidiosemulator.route-probe")
             let connection = NWConnection(
-                host: NWEndpoint.Host(host),
-                port: NWEndpoint.Port(rawValue: port)!,
+                host: NWEndpoint.Host(targetHost),
+                port: NWEndpoint.Port(rawValue: targetPort)!,
                 using: .tcp
             )
-            let lock = NSLock()
-            var completed = false
-
-            func finish(reachable: Bool, message: String) {
-                lock.lock()
-                defer { lock.unlock() }
-                guard !completed else { return }
-                completed = true
-                connection.cancel()
-                continuation.resume(returning: RouteProbeResult(
-                    timestamp: Date(),
-                    host: host,
-                    port: port,
-                    reachable: reachable,
-                    message: message
-                ))
-            }
+            let completion = RouteProbeCompletion(
+                continuation: continuation,
+                host: targetHost,
+                port: targetPort
+            )
+            completion.attach(connection: connection)
 
             connection.stateUpdateHandler = { state in
                 switch state {
                 case .ready:
-                    finish(reachable: true, message: "LocalDevVPN debug route accepted a TCP connection")
+                    completion.finish(
+                        reachable: true,
+                        message: "LocalDevVPN debug route accepted a TCP connection"
+                    )
                 case .failed(let error):
-                    finish(reachable: false, message: "Connection failed: \(error.localizedDescription)")
+                    completion.finish(
+                        reachable: false,
+                        message: "Connection failed: \(error.localizedDescription)"
+                    )
                 case .cancelled:
                     break
                 default:
@@ -64,7 +107,10 @@ enum LocalDevVPNCoordinator {
 
             connection.start(queue: queue)
             queue.asyncAfter(deadline: .now() + timeout) {
-                finish(reachable: false, message: "Timed out connecting to \(host):\(port)")
+                completion.finish(
+                    reachable: false,
+                    message: "Timed out connecting to \(targetHost):\(targetPort)"
+                )
             }
         }
     }
