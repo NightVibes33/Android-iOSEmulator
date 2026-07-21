@@ -267,7 +267,7 @@ find "$PAYLOAD" -name '_CodeSignature' -type d -prune -exec rm -rf {} + || true
 find "$PAYLOAD" -name 'embedded.mobileprovision' -type f -delete || true
 (
   cd "$WORK/package"
-  zip -0qry "$OUT/$OUTPUT_IPA" Payload
+  zip -qry "$OUT/$OUTPUT_IPA" Payload
 )
 
 echo "[9/10] Verifying package contents"
