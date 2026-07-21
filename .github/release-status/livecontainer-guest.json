@@ -2,16 +2,19 @@
   "verified": true,
   "android_version": 13,
   "distribution": "BlissOS 16.9.7 x86_64 FOSS Go",
-  "tag": "v0.2.2-android13-dyld-fix",
-  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.2.2-android13-dyld-fix",
+  "tag": "v0.2.3-android13-livecontainer-import-fix",
+  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.2.3-android13-livecontainer-import-fix",
   "delivery_mode": "full-ipa",
   "asset_count": 1,
   "part_count": 0,
   "asset_name": "Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa",
-  "asset_size_bytes": 2102010159,
+  "asset_size_bytes": 2102009989,
   "prerelease": true,
   "qemu_m68k_restored": true,
   "qemu_x86_64_retained": true,
   "qcow2_compression": "zlib",
-  "verified_by_run": "29813346749"
+  "livecontainer_import_metadata_verified": true,
+  "archive_metadata_first": true,
+  "unknown_app_fallback_blocked": true,
+  "verified_by_run": "29813384413"
 }
