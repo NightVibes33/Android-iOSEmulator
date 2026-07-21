@@ -17,6 +17,7 @@ BLISS_SHA256_URL="${BLISS_SHA256_URL:-${BLISS_ISO_URL}.sha256}"
 DISK_SIZE_GIB="${DISK_SIZE_GIB:-8}"
 EFI_VOLUME_GIB="${EFI_VOLUME_GIB:-7}"
 DATA_SIZE_GIB="${DATA_SIZE_GIB:-3}"
+QCOW2_COMPRESSION_TYPE="${QCOW2_COMPRESSION_TYPE:-zstd}"
 
 for command in curl 7zz mformat mmd mcopy mdir qemu-img truncate sgdisk dd; do
   if ! command -v "$command" >/dev/null 2>&1; then
@@ -122,9 +123,11 @@ mdir -i "$RAW_DISK@@$PARTITION_OFFSET" ::/EFI/BOOT/BOOTX64.EFI >/dev/null
 mdir -i "$RAW_DISK@@$PARTITION_OFFSET" ::/EFI/BOOT/grub.cfg >/dev/null
 mdir -i "$RAW_DISK@@$PARTITION_OFFSET" ::/blissos/android.boot >/dev/null
 
-printf '[android13 6/7] Compressing the installed disk as qcow2\n'
+printf '[android13 6/7] Compressing the installed disk as qcow2 (%s)\n' "$QCOW2_COMPRESSION_TYPE"
 rm -f "$OUTPUT"
-qemu-img convert -p -f raw -O qcow2 -c "$RAW_DISK" "$OUTPUT"
+qemu-img convert -p -f raw -O qcow2 -c \
+  -o "compat=1.1,compression_type=${QCOW2_COMPRESSION_TYPE}" \
+  "$RAW_DISK" "$OUTPUT"
 qemu-img check "$OUTPUT"
 
 printf '[android13 7/7] Recording disk metadata\n'
@@ -144,5 +147,6 @@ Debug console enabled: no
 Persistent data image: ${DATA_SIZE_GIB} GiB ext4
 Virtual disk capacity: ${DISK_SIZE_GIB} GiB
 System image: ${SYSTEM_BASENAME}
+QCOW2 compression: ${QCOW2_COMPRESSION_TYPE}
 EOF
 printf 'Created preinstalled Android 13 disk: %s\n' "$OUTPUT"
