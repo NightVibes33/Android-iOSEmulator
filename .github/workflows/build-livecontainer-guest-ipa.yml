@@ -1,174 +1,25 @@
-name: Build preinstalled Android 13 LiveContainer guest
+name: Retired BlissOS x86_64 experiment
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "runtime/livecontainer-guest/**"
-      - "scripts/build_bliss_android13_disk.sh"
-      - "scripts/build_livecontainer_guest_ipa.sh"
-      - "scripts/make_bliss_android13_utm.py"
-      - ".github/workflows/build-livecontainer-guest-ipa.yml"
-  push:
-    branches: [main]
-    paths:
-      - "runtime/livecontainer-guest/**"
-      - "scripts/build_bliss_android13_disk.sh"
-      - "scripts/build_livecontainer_guest_ipa.sh"
-      - "scripts/make_bliss_android13_utm.py"
-      - ".github/workflows/build-livecontainer-guest-ipa.yml"
 
 permissions:
-  contents: write
-
-concurrency:
-  group: livecontainer-android13-${{ github.ref }}
-  cancel-in-progress: true
+  contents: read
 
 jobs:
-  build:
-    name: Boot-safe UTM SE + preinstalled BlissOS Android 13
-    runs-on: macos-26
-    timeout-minutes: 360
+  retired:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Select Xcode 26
+      - name: Explain retired build lane
         shell: bash
         run: |
-          set -euo pipefail
-          XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
-          test -n "$XCODE_PATH"
-          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
-          xcodebuild -version
+          cat <<'EOF'
+          This x86_64 BlissOS/UTM SE build lane is retired.
 
-      - name: Install Android disk build tools
-        shell: bash
-        run: |
-          set -euo pipefail
-          brew install bash qemu sevenzip mtools e2fsprogs gptfdisk
-          echo "$(brew --prefix e2fsprogs)/sbin" >> "$GITHUB_PATH"
-          "$(brew --prefix)/bin/bash" --version
-          qemu-img --version
-          7zz --help >/dev/null
-          mformat -V
-          sgdisk --version
-          "$(brew --prefix e2fsprogs)/sbin/mkfs.ext4" -V
+          It proved LiveContainer import and packaging behavior, but it did not
+          prove a usable Android graphical boot on ARM iPhone hardware. It no
+          longer builds artifacts or publishes releases.
 
-      - name: Build boot-safe Android 13 guest IPA
-        shell: bash
-        run: |
-          set -o pipefail
-          rm -f livecontainer-android13-build.log
-          "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_guest_ipa.sh 2>&1 | tee livecontainer-android13-build.log
-
-      - name: Verify final IPA exactly as LiveContainer imports it
-        shell: bash
-        run: |
-          set -euo pipefail
-          OUT="build/livecontainer-guest"
-          IPA="$OUT/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
-          UTM_CONFIG="$OUT/../livecontainer-guest/../livecontainer-guest"
-          test -f "$IPA"
-          unzip -t "$IPA" >/dev/null
-          unzip -Z1 "$IPA" | tee "$OUT/verified-contents.txt"
-          test "$(grep -Ec '^Payload/[^/]+\.app/$' "$OUT/archive-entry-order.txt")" -eq 1
-          test "$(sed -n '1p' "$OUT/archive-entry-order.txt")" = 'Payload/'
-          test "$(sed -n '2p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/'
-          test "$(sed -n '3p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/Info.plist'
-          test "$(sed -n '4p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/UTM SE'
-          test "$(sed -n '5p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/LCAppInfo.plist'
-          tail -n 1 "$OUT/archive-entry-order.txt" | grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/bliss-android13-preinstalled.qcow2'
-          ! unzip -Z1 "$IPA" | grep -q 'PreloadedApps/'
-          ! unzip -Z1 "$IPA" | grep -Eq '^Payload/[^/]+\.app/.+\.app/'
-          ! unzip -Z1 "$IPA" | grep -q '\.iso$'
-          grep -q 'Payload/Android iOSEmulator.app/LCAppInfo.plist' "$OUT/verified-contents.txt"
-          grep -q 'Payload/Android iOSEmulator.app/BootstrapTweaks/AndroidGuestBootstrap.dylib' "$OUT/verified-contents.txt"
-          grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' "$OUT/verified-contents.txt"
-          grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/bliss-android13-preinstalled.qcow2' "$OUT/verified-contents.txt"
-          grep -q 'Payload/Android iOSEmulator.app/Frameworks/qemu-m68k-softmmu.framework/' "$OUT/verified-contents.txt"
-          grep -q 'Payload/Android iOSEmulator.app/Frameworks/qemu-x86_64-softmmu.framework/' "$OUT/verified-contents.txt"
-          ! grep -Eq 'qemu-(aarch64|i386|ppc|ppc64|riscv64)-softmmu\.framework/' "$OUT/verified-contents.txt"
-          grep -q '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executable-dependencies.txt"
-          grep -q '^bundleIdentifier=com.nightvibes33.androidiosemulator.livecontainer$' "$OUT/livecontainer-import-metadata.txt"
-          grep -q '^executable=UTM SE$' "$OUT/livecontainer-import-metadata.txt"
-          grep -q 'LiveContainer import metadata: extracted and parsed from final IPA' "$OUT/build-manifest.txt"
-          grep -q 'Unknown.app fallback: blocked by post-archive bundle identifier and executable checks' "$OUT/build-manifest.txt"
-          grep -q 'Release delivery: one complete IPA asset; split parts forbidden' "$OUT/build-manifest.txt"
-
-          VERIFY_DIR="$(mktemp -d)"
-          trap 'rm -rf "$VERIFY_DIR"' EXIT
-          unzip -q "$IPA" \
-            'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' \
-            'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Android13RuntimeManifest.txt' \
-            -d "$VERIFY_DIR"
-          CONFIG="$VERIFY_DIR/Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist"
-          RUNTIME_MANIFEST="$VERIFY_DIR/Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Android13RuntimeManifest.txt"
-          test "$(/usr/libexec/PlistBuddy -c 'Print :System:CPU' "$CONFIG")" = 'max'
-          test "$(/usr/libexec/PlistBuddy -c 'Print :System:Architecture' "$CONFIG")" = 'x86_64'
-          grep -q '^Graphics mode: SwiftShader ANGLE software rendering$' "$RUNTIME_MANIFEST"
-          grep -q '^SELinux checkreqprot override: 0$' "$RUNTIME_MANIFEST"
-          grep -q '^Virtual A/B OTA support: unavailable by design' "$RUNTIME_MANIFEST"
-
-          SIZE="$(stat -f%z "$IPA")"
-          test "$SIZE" -lt 2147483648
-
-      - name: Upload diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Android13-Boot-Fix-diagnostics
-          path: |
-            livecontainer-android13-build.log
-            build/livecontainer-guest/ipa-contents.txt
-            build/livecontainer-guest/verified-contents.txt
-            build/livecontainer-guest/archive-entry-order.txt
-            build/livecontainer-guest/livecontainer-import-metadata.txt
-            build/livecontainer-guest/build-manifest.txt
-            build/livecontainer-guest/utm-executable-dependencies.txt
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Upload complete Android 13 IPA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned
-          path: |
-            build/livecontainer-guest/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa
-            build/livecontainer-guest/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa.sha256
-            build/livecontainer-guest/build-manifest.txt
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 30
-
-      - name: Publish Android 13 boot-fix prerelease
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: v0.2.4-android13-boot-fix
-          BROKEN_TAG: v0.2.3-android13-livecontainer-import-fix
-        run: |
-          set -euo pipefail
-          OUT="build/livecontainer-guest"
-          IPA="$OUT/Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
-          SIZE="$(stat -f%z "$IPA")"
-          test "$SIZE" -lt 2147483648
-          grep -q '^bundleIdentifier=com.nightvibes33.androidiosemulator.livecontainer$' "$OUT/livecontainer-import-metadata.txt"
-          grep -q '^executable=UTM SE$' "$OUT/livecontainer-import-metadata.txt"
-
-          gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
-          gh release create "$TAG" "$IPA" \
-            --target "$GITHUB_SHA" \
-            --title "Android iOSEmulator — Android 13 boot fix" \
-            --notes "One complete unsigned LiveContainer guest IPA. Keeps the Unknown.app import fix and changes the cross-architecture QEMU CPU from the implicit qemu64/default model to CPU=max so BlissOS receives its required SSE4.2 instruction set. The guest also uses the VM-safe SwiftShader ANGLE path, sets SELinux checkreqprot=0, and treats the Virtual A/B message as an expected no-OTA warning. Delete the previous LiveContainer app entry before importing this build so its older VM configuration is not reused." \
-            --prerelease
-
-          RELEASE_JSON="$(gh release view "$TAG" --json assets,isPrerelease)"
-          test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
-          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$(basename "$IPA")"
-          test "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"
-          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = "true"
-
-          gh release delete "$BROKEN_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+          Use .github/workflows/build-arm64-fvp-livecontainer-ipa.yml with a
+          verified official AOSP FVP ARM64 product-output archive.
+          EOF
