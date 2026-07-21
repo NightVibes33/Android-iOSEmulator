@@ -26,7 +26,15 @@ if [[ -z "$UTM_APP" ]]; then
 fi
 
 echo "[3/7] Patching LiveContainer startup and branding"
-python3 - "$WORK/LiveContainer/LiveContainerSwiftUI/App/LiveContainerSwiftUIApp.swift" <<'PY'
+LC_APP_SOURCE="$(find "$WORK/LiveContainer" -type f -name 'LiveContainerSwiftUIApp.swift' -print -quit)"
+if [[ -z "$LC_APP_SOURCE" ]]; then
+  echo "Could not locate LiveContainerSwiftUIApp.swift in LiveContainer ${LC_TAG}." >&2
+  find "$WORK/LiveContainer" -maxdepth 4 -type f -name '*App*.swift' -print >&2 || true
+  exit 1
+fi
+printf 'LiveContainer startup source: %s\n' "$LC_APP_SOURCE"
+
+python3 - "$LC_APP_SOURCE" <<'PY'
 from pathlib import Path
 import sys
 
