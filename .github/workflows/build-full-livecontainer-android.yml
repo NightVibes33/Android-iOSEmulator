@@ -45,7 +45,10 @@ jobs:
 
       - name: Build full unsigned IPA
         shell: bash
-        run: bash ./scripts/build_livecontainer_utm_se.sh
+        run: |
+          set -o pipefail
+          mkdir -p build/full-livecontainer
+          bash -x ./scripts/build_livecontainer_utm_se.sh 2>&1 | tee build/full-livecontainer/full-build.log
 
       - name: Verify LiveContainer frontend and embedded UTM SE
         shell: bash
@@ -68,11 +71,12 @@ jobs:
         with:
           name: Android-iOSEmulator-LiveContainer-build-diagnostics
           path: |
+            build/full-livecontainer/full-build.log
             build/full-livecontainer/xcodebuild.log
             build/full-livecontainer/ipa-contents.txt
             build/full-livecontainer/verified-contents.txt
             build/full-livecontainer/build-manifest.txt
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
       - name: Upload full unsigned IPA
         uses: actions/upload-artifact@v4
