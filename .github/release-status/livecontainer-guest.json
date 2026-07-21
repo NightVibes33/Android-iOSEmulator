@@ -2,13 +2,16 @@
   "verified": true,
   "android_version": 13,
   "distribution": "BlissOS 16.9.7 x86_64 FOSS Go",
-  "tag": "v0.2.1-android13-single-ipa",
-  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.2.1-android13-single-ipa",
+  "tag": "v0.2.2-android13-dyld-fix",
+  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/untagged-b98f108981f04f4c4a62",
   "delivery_mode": "full-ipa",
   "asset_count": 1,
   "part_count": 0,
   "asset_name": "Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa",
-  "asset_size_bytes": 2078462641,
+  "asset_size_bytes": 2102010159,
   "prerelease": true,
-  "verified_by_run": "29809300706"
+  "qemu_m68k_restored": true,
+  "qemu_x86_64_retained": true,
+  "qcow2_compression": "zlib",
+  "verified_by_run": "29809388722"
 }
