@@ -3,7 +3,7 @@
   "android_version": 13,
   "distribution": "BlissOS 16.9.7 x86_64 FOSS Go",
   "tag": "v0.2.2-android13-dyld-fix",
-  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/untagged-b98f108981f04f4c4a62",
+  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.2.2-android13-dyld-fix",
   "delivery_mode": "full-ipa",
   "asset_count": 1,
   "part_count": 0,
@@ -13,5 +13,5 @@
   "qemu_m68k_restored": true,
   "qemu_x86_64_retained": true,
   "qcow2_compression": "zlib",
-  "verified_by_run": "29809388722"
+  "verified_by_run": "29809917520"
 }
