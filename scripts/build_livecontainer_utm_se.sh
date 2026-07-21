@@ -126,6 +126,7 @@ path.write_text(text)
 PY
 
 python3 "$ROOT/scripts/patch_livecontainer_apk_flow.py" "$LC_APP_LIST_SOURCE"
+python3 "$ROOT/scripts/fix_livecontainer_apk_flow_compile.py" "$LC_APP_LIST_SOURCE"
 
 echo "[4/7] Building the real LiveContainer frontend"
 cd "$WORK/LiveContainer"
