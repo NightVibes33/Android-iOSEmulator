@@ -130,7 +130,7 @@ printf '[7/8] Packaging the unsigned LiveContainer guest IPA\n'
 printf '[8/8] Validating the final IPA\n'
 unzip -t "$OUT/$OUTPUT_IPA" >/dev/null
 unzip -l "$OUT/$OUTPUT_IPA" > "$OUT/ipa-contents.txt"
-TOP_LEVEL_APPS="$(awk '/Payload\/[^/]+\.app\/$/ { count++ } END { print count+0 }' "$OUT/ipa-contents.txt")"
+TOP_LEVEL_APPS="$(unzip -Z1 "$OUT/$OUTPUT_IPA" | grep -Ec '^Payload/[^/]+\.app/$')"
 [[ "$TOP_LEVEL_APPS" == "1" ]]
 grep -q 'Payload/Android iOSEmulator.app/LCAppInfo.plist' "$OUT/ipa-contents.txt"
 grep -q 'Payload/Android iOSEmulator.app/BootstrapTweaks/AndroidGuestBootstrap.dylib' "$OUT/ipa-contents.txt"
