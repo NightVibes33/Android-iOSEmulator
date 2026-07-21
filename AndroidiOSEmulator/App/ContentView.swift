@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var model: DiagnosticsModel
+    @State private var showingShortcutSetup = false
 
     var body: some View {
         NavigationStack {
@@ -57,11 +58,19 @@ struct ContentView: View {
                         }
                     }
 
-                    Text("Assign \(model.selectedProtocol.scriptName) to this app in StikDebug before testing.")
+                    Text("Assign \(model.selectedProtocol.scriptName) to Android iOSEmulator in StikDebug before testing.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
-                    Button("Run StikDebug Shortcut") {
+                    Button("Set Up JIT Shortcut") {
+                        showingShortcutSetup = true
+                    }
+
+                    Button("Open Configured Shortcut") {
+                        _ = ShortcutCoordinator.openConfiguredShortcut()
+                    }
+
+                    Button("Run Configured Shortcut") {
                         model.runShortcut()
                     }
                 }
@@ -115,12 +124,64 @@ struct ContentView: View {
                 }
 
                 Section("Important") {
-                    Text("Do not tap Execute JIT Probe unless StikDebug is attached and the selected script matches the selected protocol. A mismatched breakpoint handler can stop or terminate the app.")
+                    Text("The shortcut cannot be empty. It must contain StikDebug's Enable JIT action with App set to Android iOSEmulator. Do not execute the probe until StikDebug has attached and the selected script matches the selected protocol.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Android iOSEmulator")
+            .sheet(isPresented: $showingShortcutSetup) {
+                shortcutSetupSheet
+            }
+        }
+    }
+
+    private var shortcutSetupSheet: some View {
+        NavigationStack {
+            List {
+                Section("Required shortcut") {
+                    Text(ShortcutCoordinator.shortcutName)
+                        .font(.headline.monospaced())
+                        .textSelection(.enabled)
+
+                    Button("Copy Exact Shortcut Name") {
+                        ShortcutCoordinator.copyShortcutName()
+                    }
+                }
+
+                Section("Add exactly one action") {
+                    SetupStep(number: 1, text: "Open the empty shortcut and tap Add Action.")
+                    SetupStep(number: 2, text: "Search for Enable JIT.")
+                    SetupStep(number: 3, text: "Choose Enable JIT from StikDebug, not another app.")
+                    SetupStep(number: 4, text: "Tap the blue App field inside the action.")
+                    SetupStep(number: 5, text: "Select Android iOSEmulator (\(ShortcutCoordinator.targetBundleID)).")
+                    SetupStep(number: 6, text: "Rename the shortcut exactly as shown above, then run it once manually and approve any prompts.")
+                }
+
+                Section("Open Shortcuts") {
+                    Button("Create a New Shortcut") {
+                        _ = ShortcutCoordinator.createShortcut()
+                    }
+
+                    Button("Open Existing Shortcut") {
+                        _ = ShortcutCoordinator.openConfiguredShortcut()
+                    }
+                }
+
+                Section("Expected action") {
+                    Text("StikDebug → Enable JIT → App: Android iOSEmulator")
+                        .font(.callout.monospaced())
+                        .textSelection(.enabled)
+                }
+            }
+            .navigationTitle("Set Up JIT Shortcut")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        showingShortcutSetup = false
+                    }
+                }
+            }
         }
     }
 
@@ -132,6 +193,23 @@ struct ContentView: View {
     private var probeStatus: String {
         guard let outcome = model.probeOutcome else { return "Not run" }
         return outcome.success ? "Returned 42" : "Failed"
+    }
+}
+
+private struct SetupStep: View {
+    let number: Int
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(String(number))
+                .font(.caption.bold())
+                .frame(width: 24, height: 24)
+                .background(.secondary.opacity(0.15), in: Circle())
+            Text(text)
+                .font(.callout)
+        }
+        .padding(.vertical, 2)
     }
 }
 

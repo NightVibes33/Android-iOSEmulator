@@ -15,13 +15,31 @@ An unsigned IPA cannot grant entitlements by itself. The signer and provisioning
 
 1. Open StikDebug and import the current pairing record.
 2. Assign `universal.js` to **Android iOSEmulator**.
-3. In Shortcuts, add StikDebug's **Enable JIT** action.
-4. Select Android iOSEmulator as the target.
-5. Name the shortcut exactly:
+3. Open Shortcuts and edit the shortcut named exactly:
 
 ```text
 Start Android iOSEmulator JIT
 ```
+
+4. The shortcut must not be empty. Tap **Add Action**.
+5. Search for **Enable JIT**.
+6. Choose **Enable JIT** from **StikDebug**.
+7. Tap the blue **App** parameter inside the action.
+8. Select **Android iOSEmulator** with bundle identifier:
+
+```text
+com.nightvibes.androidiosemulator
+```
+
+9. The completed shortcut must contain this action:
+
+```text
+StikDebug → Enable JIT → App: Android iOSEmulator
+```
+
+10. Run the shortcut once manually and approve any Shortcuts, StikDebug, LocalDevVPN, pairing, or Developer Mode prompts.
+
+If Shortcuts says the shortcut “contains no actions,” the StikDebug **Enable JIT** action was never added. A shortcut name by itself cannot enable JIT.
 
 For legacy comparison, assign `UTM-Dolphin.js` in StikDebug and select **UTM legacy** inside the probe app.
 
@@ -31,13 +49,18 @@ For legacy comparison, assign `UTM-Dolphin.js` in StikDebug and select **UTM leg
 2. Confirm `get-task-allow` reports **Enabled**.
 3. Tap **Enable LocalDevVPN**.
 4. Return to the app and tap **Probe Local Route**.
-5. Tap **Run StikDebug Shortcut**.
-6. When Android iOSEmulator reopens under the debugger, tap **Execute JIT Probe**.
-7. Success means generated ARM64 code returned `42` through the RX alias.
-8. Export the diagnostic JSON after success or failure.
+5. Tap **Open Configured Shortcut** and verify it contains the StikDebug action above.
+6. Return to Android iOSEmulator and tap **Run Configured Shortcut**.
+7. When Android iOSEmulator reopens under the debugger, confirm **Debugger attached** reports **Yes**.
+8. Tap **Execute JIT Probe**.
+9. Success means generated ARM64 code returned `42` through the RX alias.
+10. Export the diagnostic JSON after success or failure.
 
 ## Failure meanings
 
+- **Shortcut contains no actions:** add StikDebug's **Enable JIT** action and select Android iOSEmulator.
+- **App is blank inside Enable JIT:** tap the App parameter and select `com.nightvibes.androidiosemulator`.
+- **Android iOSEmulator is not listed:** open StikDebug, start its tunnel, refresh the installed-app list, and confirm the emulator is installed and development-signed.
 - **get-task-allow missing:** the IPA was signed with an incompatible profile or signer configuration.
 - **10.7.0.1:49152 unreachable:** LocalDevVPN is disconnected, another VPN conflicts, or the pairing route is unavailable.
 - **E96 / socket not connected:** StikDebug reached debugserver but could not complete attachment; preserve the entire log.
