@@ -6,21 +6,21 @@ WORK="$ROOT/.build/livecontainer-guest"
 OUT="$ROOT/build/livecontainer-guest"
 UTM_TAG="${UTM_TAG:-v5.0.2}"
 UTM_IPA_URL="https://github.com/utmapp/UTM/releases/download/${UTM_TAG}/UTM-SE.ipa"
-ANDROID_ISO_NAME="android-x86_64-9.0-r2.iso"
-ANDROID_ISO_SHA1="1cc85b5ed7c830ff71aecf8405c7281a9c995aa0"
-ANDROID_ISO_URL="${ANDROID_ISO_URL:-https://downloads.sourceforge.net/project/android-x86/Release%209.0/android-x86_64-9.0-r2.iso}"
+ANDROID_DISK_NAME="bliss-android13-preinstalled.qcow2"
 GUEST_BUNDLE_ID="com.nightvibes33.androidiosemulator.livecontainer"
 GUEST_INSTALL_FOLDER="${GUEST_BUNDLE_ID}.app"
 GUEST_CONTAINER="AndroidRuntimeData"
-OUTPUT_IPA="Android-iOSEmulator-LiveContainer-Guest-unsigned.ipa"
+OUTPUT_IPA="Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa"
 
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK" "$OUT"
 
-if ! command -v qemu-img >/dev/null 2>&1; then
-  echo "qemu-img is required to create the persistent Android disk." >&2
-  exit 1
-fi
+for command in qemu-img 7zz mformat mcopy; do
+  if ! command -v "$command" >/dev/null 2>&1; then
+    echo "$command is required to build the preinstalled Android 13 guest." >&2
+    exit 1
+  fi
+done
 
 printf '[1/8] Downloading official UTM SE %s\n' "$UTM_TAG"
 curl --fail --location --retry 4 --retry-delay 2 "$UTM_IPA_URL" -o "$WORK/UTM-SE.ipa"
@@ -32,17 +32,15 @@ if [[ -z "$UTM_APP" ]]; then
   exit 1
 fi
 
-printf '[2/8] Downloading and verifying Android-x86 9.0-r2\n'
-curl --fail --location --retry 5 --retry-delay 3 "$ANDROID_ISO_URL" -o "$WORK/$ANDROID_ISO_NAME"
-printf '%s  %s\n' "$ANDROID_ISO_SHA1" "$WORK/$ANDROID_ISO_NAME" | shasum -a 1 -c -
+printf '[2/8] Building a preinstalled BlissOS 16 / Android 13 disk\n'
+bash "$ROOT/scripts/build_bliss_android13_disk.sh" \
+  "$WORK/android13-disk-work" \
+  "$WORK/$ANDROID_DISK_NAME"
 
-printf '[3/8] Creating the writable disk and Android UTM bundle\n'
-qemu-img create -f qcow2 "$WORK/android-data.qcow2" 8G
-qemu-img check "$WORK/android-data.qcow2"
-python3 "$ROOT/scripts/make_android_x86_utm.py" \
+printf '[3/8] Creating the Android 13 UTM bundle\n'
+python3 "$ROOT/scripts/make_bliss_android13_utm.py" \
   --output "$WORK/Android.utm" \
-  --iso "$WORK/$ANDROID_ISO_NAME" \
-  --disk "$WORK/android-data.qcow2"
+  --disk "$WORK/$ANDROID_DISK_NAME"
 plutil -lint "$WORK/Android.utm/config.plist"
 
 printf '[4/8] Creating the real LiveContainer guest application\n'
@@ -62,8 +60,9 @@ INFO_PLIST="$GUEST_APP/Info.plist"
 
 mkdir -p "$GUEST_APP/PreloadedData"
 cp -R "$WORK/Android.utm" "$GUEST_APP/PreloadedData/Android.utm"
+cp "$WORK/$ANDROID_DISK_NAME.manifest.txt" "$GUEST_APP/PreloadedData/Android.utm/Android13RuntimeManifest.txt"
 
-printf '[5/8] Compiling the guest bootstrap tweak\n'
+printf '[5/8] Compiling the Android 13 guest bootstrap tweak\n'
 mkdir -p "$GUEST_APP/BootstrapTweaks"
 xcrun --sdk iphoneos clang \
   -arch arm64 \
@@ -86,7 +85,7 @@ install_folder = sys.argv[2]
 container = sys.argv[3]
 metadata = {
     "LCDataUUID": container,
-    "LCContainers": [{"folderName": container, "name": "Android"}],
+    "LCContainers": [{"folderName": container, "name": "Android 13"}],
     "LCTweakFolder": f"../Applications/{install_folder}/BootstrapTweaks",
     "isJITNeeded": False,
     "dontInjectTweakLoader": False,
@@ -98,7 +97,7 @@ with output.open("wb") as stream:
     plistlib.dump(metadata, stream, fmt=plistlib.FMT_BINARY, sort_keys=False)
 PY
 
-printf '[6/8] Verifying guest layout before packaging\n'
+printf '[6/8] Verifying the preinstalled Android 13 guest layout\n'
 EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO_PLIST")"
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO_PLIST")"
 DISPLAY_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$INFO_PLIST")"
@@ -108,9 +107,13 @@ DISPLAY_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$INFO_P
 file "$GUEST_APP/$EXECUTABLE" | grep -q 'Mach-O 64-bit executable arm64'
 file "$GUEST_APP/BootstrapTweaks/AndroidGuestBootstrap.dylib" | grep -q 'Mach-O 64-bit dynamically linked shared library arm64'
 [[ -f "$GUEST_APP/PreloadedData/Android.utm/config.plist" ]]
-[[ -f "$GUEST_APP/PreloadedData/Android.utm/Images/$ANDROID_ISO_NAME" ]]
-[[ -f "$GUEST_APP/PreloadedData/Android.utm/Images/android-data.qcow2" ]]
+[[ -f "$GUEST_APP/PreloadedData/Android.utm/Images/$ANDROID_DISK_NAME" ]]
+[[ -f "$GUEST_APP/PreloadedData/Android.utm/Android13RuntimeManifest.txt" ]]
 [[ -f "$GUEST_APP/LCAppInfo.plist" ]]
+if find "$GUEST_APP/PreloadedData/Android.utm/Images" -type f -name '*.iso' -print -quit | grep -q .; then
+  echo "The Android 13 guest must not contain an installer ISO." >&2
+  exit 1
+fi
 if [[ -d "$GUEST_APP/PreloadedApps" ]]; then
   echo "Nested LiveContainer PreloadedApps directory is forbidden in the guest IPA." >&2
   exit 1
@@ -121,7 +124,7 @@ if find "$GUEST_APP" -mindepth 1 -type d -name '*.app' -print -quit | grep -q .;
   exit 1
 fi
 
-printf '[7/8] Packaging the unsigned LiveContainer guest IPA\n'
+printf '[7/8] Packaging the unsigned Android 13 LiveContainer guest IPA\n'
 (
   cd "$WORK/package"
   zip -qry "$OUT/$OUTPUT_IPA" Payload
@@ -135,7 +138,12 @@ TOP_LEVEL_APPS="$(unzip -Z1 "$OUT/$OUTPUT_IPA" | grep -Ec '^Payload/[^/]+\.app/$
 grep -q 'Payload/Android iOSEmulator.app/LCAppInfo.plist' "$OUT/ipa-contents.txt"
 grep -q 'Payload/Android iOSEmulator.app/BootstrapTweaks/AndroidGuestBootstrap.dylib' "$OUT/ipa-contents.txt"
 grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' "$OUT/ipa-contents.txt"
-grep -q "Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/$ANDROID_ISO_NAME" "$OUT/ipa-contents.txt"
+grep -q "Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/$ANDROID_DISK_NAME" "$OUT/ipa-contents.txt"
+grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Android13RuntimeManifest.txt' "$OUT/ipa-contents.txt"
+if grep -q '\.iso$' "$OUT/ipa-contents.txt"; then
+  echo "The final IPA unexpectedly contains an installer ISO." >&2
+  exit 1
+fi
 if grep -q 'PreloadedApps/' "$OUT/ipa-contents.txt"; then
   echo "The final IPA still contains a nested app host." >&2
   exit 1
@@ -146,6 +154,7 @@ if grep -Eq '(_CodeSignature|embedded.mobileprovision)' "$OUT/ipa-contents.txt";
 fi
 
 shasum -a 256 "$OUT/$OUTPUT_IPA" > "$OUT/$OUTPUT_IPA.sha256"
+IPA_SIZE="$(stat -f%z "$OUT/$OUTPUT_IPA")"
 cat > "$OUT/build-manifest.txt" <<EOF
 Package type: LiveContainer guest IPA
 Top-level app: Android iOSEmulator.app (UTM SE ${UTM_TAG})
@@ -154,13 +163,18 @@ Bundle identifier: ${GUEST_BUNDLE_ID}
 Expected LiveContainer installed folder: ${GUEST_INSTALL_FOLDER}
 LiveContainer data container: ${GUEST_CONTAINER}
 Guest bootstrap: BootstrapTweaks/AndroidGuestBootstrap.dylib
-Bootstrap behavior: copies config and writable qcow2; symlinks the read-only ISO
-Android guest: Android-x86 9.0-r2 x86_64
+Android guest: BlissOS 16.9.7 / Android 13 x86_64
+Android state: preinstalled persistent disk
+Installer ISO: absent
+Debug console boot: disabled
+Boot target: disk / UEFI / zero-second GRUB
 Execution mode: UTM SE QEMU TCI / no JIT
+Persistent Android data: 3 GiB ext4 image inside the guest disk
 Nested LiveContainer host: absent
 Nested .app bundles: absent
 Signing: unsigned; import into a configured LiveContainer JITLess installation
-Physical-device VM boot verification: pending
+IPA size: ${IPA_SIZE} bytes
+Physical-device graphical boot verification: pending
 EOF
 
-printf 'Built LiveContainer guest: %s\n' "$OUT/$OUTPUT_IPA"
+printf 'Built preinstalled Android 13 LiveContainer guest: %s\n' "$OUT/$OUTPUT_IPA"

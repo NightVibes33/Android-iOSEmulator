@@ -1,8 +1,8 @@
 #import <Foundation/Foundation.h>
 
 static NSString *const AndroidVMName = @"Android.utm";
-static NSString *const AndroidISOName = @"android-x86_64-9.0-r2.iso";
-static NSString *const AndroidDiskName = @"android-data.qcow2";
+static NSString *const AndroidDiskName = @"bliss-android13-preinstalled.qcow2";
+static NSString *const AndroidRuntimeVersion = @"bliss16-android13-v1";
 
 static BOOL AndroidCopyItemIfMissing(NSFileManager *fileManager, NSURL *source, NSURL *destination, NSError **error) {
     if ([fileManager fileExistsAtPath:destination.path]) {
@@ -15,6 +15,14 @@ static BOOL AndroidCopyItemIfMissing(NSFileManager *fileManager, NSURL *source, 
                                      userInfo:@{NSLocalizedDescriptionKey:
                                                     [NSString stringWithFormat:@"Bundled file is missing: %@", source.path]}];
         }
+        return NO;
+    }
+    return [fileManager copyItemAtURL:source toURL:destination error:error];
+}
+
+static BOOL AndroidReplaceFile(NSFileManager *fileManager, NSURL *source, NSURL *destination, NSError **error) {
+    if ([fileManager fileExistsAtPath:destination.path] &&
+        ![fileManager removeItemAtURL:destination error:error]) {
         return NO;
     }
     return [fileManager copyItemAtURL:source toURL:destination error:error];
@@ -39,8 +47,25 @@ static void AndroidGuestBootstrap(void) {
         NSURL *destinationVM = [documentsURL URLByAppendingPathComponent:AndroidVMName isDirectory:YES];
         NSURL *sourceImages = [sourceVM URLByAppendingPathComponent:@"Images" isDirectory:YES];
         NSURL *destinationImages = [destinationVM URLByAppendingPathComponent:@"Images" isDirectory:YES];
+        NSURL *markerURL = [destinationVM URLByAppendingPathComponent:@"AndroidGuestBootstrap.plist"];
+
+        NSDictionary *existingMarker = [NSDictionary dictionaryWithContentsOfURL:markerURL];
+        NSString *existingVersion = [existingMarker[@"runtimeVersion"] isKindOfClass:NSString.class]
+            ? existingMarker[@"runtimeVersion"]
+            : nil;
 
         NSError *error = nil;
+        if ([fileManager fileExistsAtPath:destinationVM.path] &&
+            ![existingVersion isEqualToString:AndroidRuntimeVersion]) {
+            NSLog(@"[AndroidGuestBootstrap] Replacing the old Android runtime (%@) with %@.",
+                  existingVersion ?: @"legacy", AndroidRuntimeVersion);
+            if (![fileManager removeItemAtURL:destinationVM error:&error]) {
+                NSLog(@"[AndroidGuestBootstrap] Failed to remove the old Android VM: %@", error);
+                return;
+            }
+        }
+
+        error = nil;
         if (![fileManager createDirectoryAtURL:destinationImages
                     withIntermediateDirectories:YES
                                      attributes:nil
@@ -51,8 +76,9 @@ static void AndroidGuestBootstrap(void) {
 
         NSURL *sourceConfig = [sourceVM URLByAppendingPathComponent:@"config.plist"];
         NSURL *destinationConfig = [destinationVM URLByAppendingPathComponent:@"config.plist"];
-        if (!AndroidCopyItemIfMissing(fileManager, sourceConfig, destinationConfig, &error)) {
-            NSLog(@"[AndroidGuestBootstrap] Failed to install VM configuration: %@", error);
+        error = nil;
+        if (!AndroidReplaceFile(fileManager, sourceConfig, destinationConfig, &error)) {
+            NSLog(@"[AndroidGuestBootstrap] Failed to install Android 13 VM configuration: %@", error);
             return;
         }
 
@@ -60,30 +86,24 @@ static void AndroidGuestBootstrap(void) {
         NSURL *destinationDisk = [destinationImages URLByAppendingPathComponent:AndroidDiskName];
         error = nil;
         if (!AndroidCopyItemIfMissing(fileManager, sourceDisk, destinationDisk, &error)) {
-            NSLog(@"[AndroidGuestBootstrap] Failed to install writable Android disk: %@", error);
+            NSLog(@"[AndroidGuestBootstrap] Failed to install the preinstalled Android 13 disk: %@", error);
             return;
-        }
-
-        NSURL *sourceISO = [sourceImages URLByAppendingPathComponent:AndroidISOName];
-        NSURL *destinationISO = [destinationImages URLByAppendingPathComponent:AndroidISOName];
-        if (![fileManager fileExistsAtPath:destinationISO.path]) {
-            error = nil;
-            if (![fileManager createSymbolicLinkAtURL:destinationISO
-                                    withDestinationURL:sourceISO
-                                                 error:&error]) {
-                NSLog(@"[AndroidGuestBootstrap] Failed to link bundled Android ISO: %@", error);
-                return;
-            }
         }
 
         NSDictionary *marker = @{
             @"installed": @YES,
+            @"runtimeVersion": AndroidRuntimeVersion,
+            @"androidVersion": @"13",
+            @"distribution": @"BlissOS 16",
             @"sourceBundle": NSBundle.mainBundle.bundleIdentifier ?: @"unknown",
             @"vm": AndroidVMName,
-            @"isoLinked": @YES
+            @"installerISO": @NO,
+            @"preinstalledDisk": @YES
         };
-        NSURL *markerURL = [destinationVM URLByAppendingPathComponent:@"AndroidGuestBootstrap.plist"];
-        [marker writeToURL:markerURL atomically:YES];
-        NSLog(@"[AndroidGuestBootstrap] Android VM is ready at %@", destinationVM.path);
+        if (![marker writeToURL:markerURL atomically:YES]) {
+            NSLog(@"[AndroidGuestBootstrap] Failed to write the Android runtime marker.");
+            return;
+        }
+        NSLog(@"[AndroidGuestBootstrap] Preinstalled Android 13 VM is ready at %@", destinationVM.path);
     }
 }
