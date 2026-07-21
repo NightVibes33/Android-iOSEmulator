@@ -33,7 +33,7 @@ if [[ -z "$UTM_APP" ]]; then
   exit 1
 fi
 
-printf '[2/9] Building a zstd-compressed preinstalled BlissOS 16 / Android 13 disk\n'
+printf '[2/9] Building a compact preinstalled BlissOS 16 / Android 13 disk\n'
 bash "$ROOT/scripts/build_bliss_android13_disk.sh" \
   "$WORK/android13-disk-work" \
   "$WORK/$ANDROID_DISK_NAME"
@@ -59,25 +59,32 @@ if [[ -z "$EXECUTABLE" || ! -f "$GUEST_APP/$EXECUTABLE" ]]; then
   exit 1
 fi
 
-printf '[5/9] Preserving every framework required by the UTM SE executable\n'
+printf '[5/9] Keeping the QEMU frameworks required by dyld and Android x86_64\n'
 REQUIRED_QEMU_FRAMEWORKS=(
+  qemu-m68k-softmmu.framework
+  qemu-x86_64-softmmu.framework
+)
+UNUSED_QEMU_FRAMEWORKS=(
   qemu-aarch64-softmmu.framework
   qemu-i386-softmmu.framework
-  qemu-m68k-softmmu.framework
   qemu-ppc-softmmu.framework
   qemu-ppc64-softmmu.framework
   qemu-riscv64-softmmu.framework
-  qemu-x86_64-softmmu.framework
 )
 for framework in "${REQUIRED_QEMU_FRAMEWORKS[@]}"; do
   if [[ ! -d "$GUEST_APP/Frameworks/$framework" ]]; then
-    echo "UTM SE is missing linked framework: $framework" >&2
+    echo "UTM SE is missing required framework: $framework" >&2
     exit 1
   fi
 done
 
-# These firmware blobs are for non-x86 guest machines. The linked frameworks stay intact.
 UTM_SIZE_BEFORE_KIB="$(du -sk "$GUEST_APP" | awk '{print $1}')"
+for framework in "${UNUSED_QEMU_FRAMEWORKS[@]}"; do
+  rm -rf "$GUEST_APP/Frameworks/$framework"
+done
+
+# These firmware blobs are for non-x86 guest machines. The m68k framework remains
+# because the UTM SE executable itself strongly links it during dlopen.
 rm -f \
   "$GUEST_APP/qemu/edk2-arm-code.fd" \
   "$GUEST_APP/qemu/edk2-aarch64-code.fd" \
@@ -91,8 +98,8 @@ rm -f \
 UTM_SIZE_AFTER_KIB="$(du -sk "$GUEST_APP" | awk '{print $1}')"
 UTM_TRIMMED_KIB=$((UTM_SIZE_BEFORE_KIB - UTM_SIZE_AFTER_KIB))
 
-# Prevent the exact dlopen failure reported on-device: every @rpath framework
-# referenced by the main Mach-O must exist at its expected app-relative path.
+# Prevent the exact device failure: every @rpath framework strongly linked by
+# the UTM SE Mach-O must still exist at its expected path before packaging.
 MISSING_LINKED_FRAMEWORK=0
 while IFS= read -r dependency; do
   case "$dependency" in
@@ -110,6 +117,7 @@ if (( MISSING_LINKED_FRAMEWORK != 0 )); then
 fi
 
 otool -L "$GUEST_APP/$EXECUTABLE" > "$OUT/utm-executable-dependencies.txt"
+grep -q '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executable-dependencies.txt"
 
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $GUEST_BUNDLE_ID" "$INFO_PLIST"
 /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Android iOSEmulator" "$INFO_PLIST" 2>/dev/null || \
@@ -156,7 +164,7 @@ with output.open("wb") as stream:
     plistlib.dump(metadata, stream, fmt=plistlib.FMT_BINARY, sort_keys=False)
 PY
 
-printf '[7/9] Verifying the complete preinstalled Android 13 guest layout\n'
+printf '[7/9] Verifying the preinstalled Android 13 guest layout\n'
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO_PLIST")"
 DISPLAY_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$INFO_PLIST")"
 [[ "$BUNDLE_ID" == "$GUEST_BUNDLE_ID" ]]
@@ -166,11 +174,14 @@ file "$GUEST_APP/BootstrapTweaks/AndroidGuestBootstrap.dylib" | grep -q 'Mach-O 
 for framework in "${REQUIRED_QEMU_FRAMEWORKS[@]}"; do
   [[ -d "$GUEST_APP/Frameworks/$framework" ]]
 done
+for framework in "${UNUSED_QEMU_FRAMEWORKS[@]}"; do
+  [[ ! -e "$GUEST_APP/Frameworks/$framework" ]]
+done
 [[ -f "$GUEST_APP/PreloadedData/Android.utm/config.plist" ]]
 [[ -f "$GUEST_APP/PreloadedData/Android.utm/Images/$ANDROID_DISK_NAME" ]]
 [[ -f "$GUEST_APP/PreloadedData/Android.utm/Android13RuntimeManifest.txt" ]]
 [[ -f "$GUEST_APP/LCAppInfo.plist" ]]
-grep -q 'QCOW2 compression: zstd' "$GUEST_APP/PreloadedData/Android.utm/Android13RuntimeManifest.txt"
+grep -q 'QCOW2 compression: zlib' "$GUEST_APP/PreloadedData/Android.utm/Android13RuntimeManifest.txt"
 if find "$GUEST_APP/PreloadedData/Android.utm/Images" -type f -name '*.iso' -print -quit | grep -q .; then
   echo "The Android 13 guest must not contain an installer ISO." >&2
   exit 1
@@ -184,13 +195,13 @@ if find "$GUEST_APP" -mindepth 1 -type d -name '*.app' -print -quit | grep -q .;
   exit 1
 fi
 
-printf '[8/9] Packaging the unsigned Android 13 LiveContainer guest IPA at maximum ZIP compression\n'
+printf '[8/9] Packaging the unsigned Android 13 LiveContainer guest IPA\n'
 (
   cd "$WORK/package"
   zip -9 -qry "$OUT/$OUTPUT_IPA" Payload
 )
 
-printf '[9/9] Validating the final dependency-complete single-file IPA\n'
+printf '[9/9] Validating the final dyld-safe single-file IPA\n'
 unzip -t "$OUT/$OUTPUT_IPA" >/dev/null
 unzip -l "$OUT/$OUTPUT_IPA" > "$OUT/ipa-contents.txt"
 TOP_LEVEL_APPS="$(unzip -Z1 "$OUT/$OUTPUT_IPA" | grep -Ec '^Payload/[^/]+\.app/$')"
@@ -201,6 +212,12 @@ grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist'
 grep -q "Payload/Android iOSEmulator.app/PreloadedData/Android.utm/Images/$ANDROID_DISK_NAME" "$OUT/ipa-contents.txt"
 for framework in "${REQUIRED_QEMU_FRAMEWORKS[@]}"; do
   grep -q "Payload/Android iOSEmulator.app/Frameworks/$framework/" "$OUT/ipa-contents.txt"
+done
+for framework in "${UNUSED_QEMU_FRAMEWORKS[@]}"; do
+  if grep -q "Payload/Android iOSEmulator.app/Frameworks/$framework/" "$OUT/ipa-contents.txt"; then
+    echo "The final IPA still contains unused framework: $framework" >&2
+    exit 1
+  fi
 done
 if grep -q '\.iso$' "$OUT/ipa-contents.txt"; then
   echo "The final IPA unexpectedly contains an installer ISO." >&2
@@ -217,7 +234,7 @@ fi
 
 IPA_SIZE="$(stat -f%z "$OUT/$OUTPUT_IPA")"
 if (( IPA_SIZE >= GITHUB_RELEASE_LIMIT )); then
-  echo "The dependency-complete IPA is ${IPA_SIZE} bytes and exceeds the single GitHub release asset limit of ${GITHUB_RELEASE_LIMIT} bytes." >&2
+  echo "The dyld-safe IPA is ${IPA_SIZE} bytes and exceeds the single GitHub release asset limit of ${GITHUB_RELEASE_LIMIT} bytes." >&2
   exit 1
 fi
 
@@ -232,14 +249,14 @@ LiveContainer data container: ${GUEST_CONTAINER}
 Guest bootstrap: BootstrapTweaks/AndroidGuestBootstrap.dylib
 Android guest: BlissOS 16.9.7 / Android 13 x86_64
 Android state: preinstalled persistent disk
-Android disk compression: qcow2 zstd
+Android disk compression: qcow2 zlib
 Installer ISO: absent
 Debug console boot: disabled
 Boot target: disk / UEFI / zero-second GRUB
 Execution mode: UTM SE QEMU TCI / no JIT
-UTM linked QEMU frameworks: all retained
+UTM required QEMU frameworks: m68k and x86_64 retained
 UTM executable dependencies: validated with otool
-Removed unused non-x86 firmware: ${UTM_TRIMMED_KIB} KiB
+Removed unused QEMU frameworks and firmware: ${UTM_TRIMMED_KIB} KiB
 Persistent Android data: 3 GiB ext4 image inside the guest disk
 Nested LiveContainer host: absent
 Nested .app bundles: absent
@@ -249,4 +266,4 @@ IPA size: ${IPA_SIZE} bytes
 Physical-device graphical boot verification: pending
 EOF
 
-printf 'Built dependency-complete preinstalled Android 13 LiveContainer guest: %s\n' "$OUT/$OUTPUT_IPA"
+printf 'Built dyld-safe preinstalled Android 13 LiveContainer guest: %s\n' "$OUT/$OUTPUT_IPA"
