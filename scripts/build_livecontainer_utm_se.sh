@@ -25,7 +25,7 @@ if [[ -z "$UTM_APP" ]]; then
   exit 1
 fi
 
-echo "[3/7] Patching LiveContainer startup, Xcode compatibility and branding"
+echo "[3/7] Patching LiveContainer startup and Xcode compatibility"
 LC_APP_SOURCE="$(find "$WORK/LiveContainer" -type f -name 'LiveContainerSwiftUIApp.swift' -print -quit)"
 if [[ -z "$LC_APP_SOURCE" ]]; then
   echo "Could not locate LiveContainerSwiftUIApp.swift in LiveContainer ${LC_TAG}." >&2
@@ -118,23 +118,6 @@ if replacement not in text:
 path.write_text(text)
 PY
 
-# Rebrand visible host metadata while preserving LiveContainer internals and UI.
-python3 - "$WORK/LiveContainer" <<'PY'
-from pathlib import Path
-import sys
-
-root = Path(sys.argv[1])
-for path in root.rglob('Info.plist'):
-    try:
-        text = path.read_text()
-    except UnicodeDecodeError:
-        continue
-    original = text
-    text = text.replace('<string>LiveContainer</string>', '<string>Android iOSEmulator</string>')
-    if text != original:
-        path.write_text(text)
-PY
-
 echo "[4/7] Building the real LiveContainer frontend"
 cd "$WORK/LiveContainer"
 FILE_TYPE="project"
@@ -174,8 +157,23 @@ cp -R "$UTM_APP" "$HOST_APP/PreloadedApps/UTM SE.app"
 find "$HOST_APP/PreloadedApps/UTM SE.app" -name '_CodeSignature' -type d -prune -exec rm -rf {} + || true
 find "$HOST_APP/PreloadedApps/UTM SE.app" -name 'embedded.mobileprovision' -type f -delete || true
 
+# Change only the user-visible name. CFBundleExecutable and CFBundleName must
+# continue to match the compiled LiveContainer binary.
 /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Android iOSEmulator" "$HOST_APP/Info.plist" 2>/dev/null || \
 /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Android iOSEmulator" "$HOST_APP/Info.plist"
+
+HOST_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$HOST_APP/Info.plist")"
+UTM_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$HOST_APP/PreloadedApps/UTM SE.app/Info.plist")"
+if [[ ! -f "$HOST_APP/$HOST_EXECUTABLE" ]]; then
+  echo "Host CFBundleExecutable does not exist: $HOST_EXECUTABLE" >&2
+  exit 1
+fi
+if [[ ! -f "$HOST_APP/PreloadedApps/UTM SE.app/$UTM_EXECUTABLE" ]]; then
+  echo "UTM SE CFBundleExecutable does not exist: $UTM_EXECUTABLE" >&2
+  exit 1
+fi
+file "$HOST_APP/$HOST_EXECUTABLE"
+file "$HOST_APP/PreloadedApps/UTM SE.app/$UTM_EXECUTABLE"
 
 echo "[6/7] Packaging unsigned combined IPA"
 PAYLOAD="$WORK/package/Payload"
@@ -205,6 +203,8 @@ Guest runtime: UTM SE ${UTM_TAG}
 Execution mode: QEMU threaded interpreter / no JIT
 Target: iPhoneOS arm64
 Signing: unsigned
+Host executable: ${HOST_EXECUTABLE}
+UTM executable: ${UTM_EXECUTABLE}
 Preloaded guest path: PreloadedApps/UTM SE.app
 First-launch installed guest: Documents/Applications/Android Runtime.app
 EOF
