@@ -25,7 +25,7 @@ if [[ -z "$UTM_APP" ]]; then
   exit 1
 fi
 
-echo "[3/7] Patching LiveContainer startup and Xcode compatibility"
+echo "[3/7] Patching LiveContainer startup, APK flow and Xcode compatibility"
 LC_APP_SOURCE="$(find "$WORK/LiveContainer" -type f -name 'LiveContainerSwiftUIApp.swift' -print -quit)"
 if [[ -z "$LC_APP_SOURCE" ]]; then
   echo "Could not locate LiveContainerSwiftUIApp.swift in LiveContainer ${LC_TAG}." >&2
@@ -33,6 +33,13 @@ if [[ -z "$LC_APP_SOURCE" ]]; then
   exit 1
 fi
 printf 'LiveContainer startup source: %s\n' "$LC_APP_SOURCE"
+
+LC_APP_LIST_SOURCE="$(find "$WORK/LiveContainer" -type f -name 'LCAppListView.swift' -print -quit)"
+if [[ -z "$LC_APP_LIST_SOURCE" ]]; then
+  echo "Could not locate LCAppListView.swift in LiveContainer ${LC_TAG}." >&2
+  exit 1
+fi
+printf 'LiveContainer app list source: %s\n' "$LC_APP_LIST_SOURCE"
 
 LC_BOOTSTRAP_SOURCE="$(find "$WORK/LiveContainer" -type f -name 'LCBootstrap.m' -print -quit)"
 if [[ -z "$LC_BOOTSTRAP_SOURCE" ]]; then
@@ -117,6 +124,9 @@ if replacement not in text:
 
 path.write_text(text)
 PY
+
+python3 "$ROOT/scripts/patch_livecontainer_apk_flow.py" "$LC_APP_LIST_SOURCE"
+python3 "$ROOT/scripts/fix_livecontainer_apk_flow_compile.py" "$LC_APP_LIST_SOURCE"
 
 echo "[4/7] Building the real LiveContainer frontend"
 cd "$WORK/LiveContainer"
@@ -205,6 +215,7 @@ Target: iPhoneOS arm64
 Signing: unsigned
 Host executable: ${HOST_EXECUTABLE}
 UTM executable: ${UTM_EXECUTABLE}
+APK workflow: persistent LiveContainer library + Android runtime inbox + launch attempt
 Preloaded guest path: PreloadedApps/UTM SE.app
 First-launch installed guest: Documents/Applications/Android Runtime.app
 EOF
