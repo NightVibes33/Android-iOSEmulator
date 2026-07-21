@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          brew install qemu p7zip mtools e2fsprogs gptfdisk
+          brew install qemu sevenzip mtools e2fsprogs gptfdisk
           echo "$(brew --prefix e2fsprogs)/sbin" >> "$GITHUB_PATH"
           qemu-img --version
           7zz --help >/dev/null
