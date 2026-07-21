@@ -47,8 +47,8 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          mkdir -p build/full-livecontainer
-          bash -x ./scripts/build_livecontainer_utm_se.sh 2>&1 | tee build/full-livecontainer/full-build.log
+          rm -f full-build.log
+          bash -x ./scripts/build_livecontainer_utm_se.sh 2>&1 | tee full-build.log
 
       - name: Verify LiveContainer frontend and embedded UTM SE
         shell: bash
@@ -71,7 +71,7 @@ jobs:
         with:
           name: Android-iOSEmulator-LiveContainer-build-diagnostics
           path: |
-            build/full-livecontainer/full-build.log
+            full-build.log
             build/full-livecontainer/xcodebuild.log
             build/full-livecontainer/ipa-contents.txt
             build/full-livecontainer/verified-contents.txt
