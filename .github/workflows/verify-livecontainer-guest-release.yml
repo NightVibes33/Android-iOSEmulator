@@ -26,28 +26,29 @@ jobs:
         run: |
           set -euo pipefail
           for attempt in $(seq 1 120); do
-            if gh release view "$TAG" >/dev/null 2>&1; then
-              ASSET_COUNT="$(gh release view "$TAG" --json assets --jq '.assets | length')"
-              ASSET_NAME="$(gh release view "$TAG" --json assets --jq '.assets[0].name')"
-              ASSET_SIZE="$(gh release view "$TAG" --json assets --jq '.assets[0].size')"
-              IS_PRERELEASE="$(gh release view "$TAG" --json isPrerelease --jq '.isPrerelease')"
-              test "$ASSET_COUNT" -eq 1
-              test "$ASSET_NAME" = "$EXPECTED_ASSET"
-              mkdir -p .github/release-status
-              jq -n \
-                --arg tag "$TAG" \
-                --arg asset "$ASSET_NAME" \
-                --argjson asset_count "$ASSET_COUNT" \
-                --argjson asset_size "$ASSET_SIZE" \
-                --argjson prerelease "$IS_PRERELEASE" \
-                --arg verified_by_run "$GITHUB_RUN_ID" \
-                '{verified:true, tag:$tag, asset_count:$asset_count, asset_name:$asset, asset_size_bytes:$asset_size, prerelease:$prerelease, verified_by_run:$verified_by_run}' \
-                > .github/release-status/livecontainer-guest.json
-              exit 0
+            RELEASE_JSON="$(gh release view "$TAG" --json assets,isPrerelease 2>/dev/null || true)"
+            if [[ -n "$RELEASE_JSON" ]]; then
+              ASSET_COUNT="$(jq '.assets | length' <<<"$RELEASE_JSON")"
+              ASSET_NAME="$(jq -r '.assets[0].name // ""' <<<"$RELEASE_JSON")"
+              ASSET_SIZE="$(jq '.assets[0].size // 0' <<<"$RELEASE_JSON")"
+              IS_PRERELEASE="$(jq '.isPrerelease' <<<"$RELEASE_JSON")"
+              if [[ "$ASSET_COUNT" -eq 1 && "$ASSET_NAME" == "$EXPECTED_ASSET" && "$ASSET_SIZE" -gt 500000000 ]]; then
+                mkdir -p .github/release-status
+                jq -n \
+                  --arg tag "$TAG" \
+                  --arg asset "$ASSET_NAME" \
+                  --argjson asset_count "$ASSET_COUNT" \
+                  --argjson asset_size "$ASSET_SIZE" \
+                  --argjson prerelease "$IS_PRERELEASE" \
+                  --arg verified_by_run "$GITHUB_RUN_ID" \
+                  '{verified:true, tag:$tag, asset_count:$asset_count, asset_name:$asset, asset_size_bytes:$asset_size, prerelease:$prerelease, verified_by_run:$verified_by_run}' \
+                  > .github/release-status/livecontainer-guest.json
+                exit 0
+              fi
             fi
             sleep 10
           done
-          echo "Release $TAG was not published before the verifier timed out." >&2
+          echo "Release $TAG did not reach the expected one-IPA state before timeout." >&2
           exit 1
 
       - name: Commit verification status
