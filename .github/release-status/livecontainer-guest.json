@@ -2,34 +2,13 @@
   "verified": true,
   "android_version": 13,
   "distribution": "BlissOS 16.9.7 x86_64 FOSS Go",
-  "tag": "v0.2.0-android13-preinstalled",
-  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.2.0-android13-preinstalled",
-  "delivery_mode": "split-parts",
-  "asset_count": 5,
-  "part_count": 2,
-  "payload_size_bytes": 2238135843,
+  "tag": "v0.2.1-android13-single-ipa",
+  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.2.1-android13-single-ipa",
+  "delivery_mode": "full-ipa",
+  "asset_count": 1,
+  "part_count": 0,
+  "asset_name": "Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa",
+  "asset_size_bytes": 2078462641,
   "prerelease": true,
-  "assets": [
-    {
-      "name": "Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa.part-00",
-      "size_bytes": 1992294400
-    },
-    {
-      "name": "Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa.part-01",
-      "size_bytes": 245841443
-    },
-    {
-      "name": "Android-iOSEmulator-Android13-Preinstalled-LiveContainer-Guest-unsigned.ipa.sha256",
-      "size_bytes": 227
-    },
-    {
-      "name": "build-manifest.txt",
-      "size_bytes": 911
-    },
-    {
-      "name": "parts.sha256",
-      "size_bytes": 364
-    }
-  ],
-  "verified_by_run": "29806581026"
+  "verified_by_run": "29806617103"
 }
