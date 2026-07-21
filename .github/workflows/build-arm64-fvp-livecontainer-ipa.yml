@@ -1,0 +1,122 @@
+name: Build AOSP FVP ARM64 LiveContainer IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      product_out_url:
+        description: Direct URL to a zip/tar archive containing kernel, combined-ramdisk.img, system-qemu.img and userdata.img
+        required: true
+        type: string
+      product_out_sha256:
+        description: SHA-256 of the product-out archive
+        required: true
+        type: string
+      variant:
+        description: AOSP FVP product variant
+        required: true
+        default: mini
+        type: choice
+        options:
+          - mini
+          - full
+      publish_release:
+        description: Publish the unsigned IPA to an ARM64 prerelease
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aosp-fvp-arm64-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26 and install tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
+          test -n "$XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          brew install qemu
+
+      - name: Download verified AOSP FVP product output
+        shell: bash
+        env:
+          URL: ${{ inputs.product_out_url }}
+          SHA256: ${{ inputs.product_out_sha256 }}
+        run: |
+          set -euo pipefail
+          mkdir -p .build/fvp-download .build/fvp-product
+          curl --fail --location --retry 4 --retry-delay 2 "$URL" -o .build/fvp-download/product-out.archive
+          printf '%s  %s\n' "$SHA256" .build/fvp-download/product-out.archive | shasum -a 256 -c -
+          if unzip -t .build/fvp-download/product-out.archive >/dev/null 2>&1; then
+            unzip -q .build/fvp-download/product-out.archive -d .build/fvp-product
+          else
+            tar -xf .build/fvp-download/product-out.archive -C .build/fvp-product
+          fi
+          PRODUCT_OUT="$(find .build/fvp-product -type f -name system-qemu.img -exec dirname {} \; | head -1)"
+          test -n "$PRODUCT_OUT"
+          for required in kernel combined-ramdisk.img system-qemu.img userdata.img; do
+            test -f "$PRODUCT_OUT/$required"
+          done
+          echo "PRODUCT_OUT=$PRODUCT_OUT" >> "$GITHUB_ENV"
+
+      - name: Build ARM64 LiveContainer IPA
+        shell: bash
+        run: |
+          set -o pipefail
+          bash -x ./scripts/build_livecontainer_arm64_fvp_ipa.sh "$PRODUCT_OUT" '${{ inputs.variant }}' 2>&1 | tee arm64-fvp-build.log
+
+      - name: Verify final architecture contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-arm64-fvp
+          IPA="$OUT/Android-iOSEmulator-AOSP-FVP-ARM64-${{ inputs.variant }}-unsigned.ipa"
+          test -f "$IPA"
+          unzip -t "$IPA" >/dev/null
+          grep -q '^Runtime architecture: aarch64$' "$OUT/build-manifest.txt"
+          grep -q '^QEMU machine: virt,mte=on$' "$OUT/build-manifest.txt"
+          grep -q '^UTM backend retained: qemu-aarch64-softmmu$' "$OUT/build-manifest.txt"
+          grep -q '^x86_64 backend retained: no$' "$OUT/build-manifest.txt"
+          unzip -Z1 "$IPA" | grep -q 'qemu-aarch64-softmmu.framework/'
+          ! unzip -Z1 "$IPA" | grep -q 'qemu-x86_64-softmmu.framework/'
+
+      - name: Upload ARM64 IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-AOSP-FVP-ARM64-${{ inputs.variant }}-unsigned
+          path: |
+            build/livecontainer-arm64-fvp/*.ipa
+            build/livecontainer-arm64-fvp/*.sha256
+            build/livecontainer-arm64-fvp/build-manifest.txt
+            arm64-fvp-build.log
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish ARM64 prerelease
+        if: inputs.publish_release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VARIANT: ${{ inputs.variant }}
+        run: |
+          set -euo pipefail
+          TAG="v0.3.0-aosp-fvp-arm64-${VARIANT}"
+          IPA="build/livecontainer-arm64-fvp/Android-iOSEmulator-AOSP-FVP-ARM64-${VARIANT}-unsigned.ipa"
+          gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+          gh release create "$TAG" "$IPA" \
+            --target "$GITHUB_SHA" \
+            --title "Android iOSEmulator — AOSP FVP ARM64 ${VARIANT}" \
+            --notes "Unsigned development build using the official AOSP FVP ARM64 QEMU contract: aarch64, virt,mte=on, CPU=max, VirtIO block/network/GPU. This replaces the unsupported BlissOS x86_64 experiment. Physical-device Android UI boot is still a validation gate, not a completed claim." \
+            --prerelease
