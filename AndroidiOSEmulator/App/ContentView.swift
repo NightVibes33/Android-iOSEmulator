@@ -1,231 +1,581 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
-    @ObservedObject var model: DiagnosticsModel
-    @State private var showingShortcutSetup = false
+    @ObservedObject var model: AndroidAppModel
+
+    var body: some View {
+        TabView {
+            HomeScreen(model: model)
+                .tabItem { Label("Home", systemImage: "house.fill") }
+
+            AppLibraryScreen(model: model)
+                .tabItem { Label("Apps", systemImage: "square.grid.2x2.fill") }
+
+            RuntimeScreen(model: model)
+                .tabItem { Label("Runtime", systemImage: "cpu.fill") }
+
+            SettingsScreen(model: model)
+                .tabItem { Label("Settings", systemImage: "gearshape.fill") }
+        }
+        .tint(.green)
+        .fileImporter(
+            isPresented: $model.isImporterPresented,
+            allowedContentTypes: [.item],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first { model.importPackage(from: url) }
+            case .failure(let error):
+                model.alertMessage = "The package picker failed: \(error.localizedDescription)"
+            }
+        }
+        .alert(
+            "Android iOSEmulator",
+            isPresented: Binding(
+                get: { model.alertMessage != nil },
+                set: { visible in if !visible { model.alertMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { model.alertMessage = nil }
+        } message: {
+            Text(model.alertMessage ?? "")
+        }
+    }
+}
+
+private struct HomeScreen: View {
+    @ObservedObject var model: AndroidAppModel
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("Gate 0 status") {
-                    StatusRow(
-                        title: "Development entitlement",
-                        value: model.signing.getTaskAllowDescription,
-                        passed: model.signing.getTaskAllow == true
-                    )
-                    StatusRow(
-                        title: "Debugger attached",
-                        value: model.debuggerAttached ? "Yes" : "No",
-                        passed: model.debuggerAttached
-                    )
-                    StatusRow(
-                        title: "Local route",
-                        value: routeStatus,
-                        passed: model.routeResult?.reachable == true
-                    )
-                    StatusRow(
-                        title: "Generated code",
-                        value: probeStatus,
-                        passed: model.probeOutcome?.success == true
-                    )
-                }
+            ScrollView {
+                VStack(spacing: 16) {
+                    RuntimeHero(model: model)
 
-                Section("1. LocalDevVPN") {
-                    Text("Creates the on-device route StikDebug uses. It does not enable JIT by itself.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    ActionGrid(model: model)
 
-                    Button("Enable LocalDevVPN") {
-                        model.enableLocalDevVPN()
-                    }
+                    SectionHeader(title: "Android apps", trailing: "\(model.packages.count)")
 
-                    Button {
-                        model.probeLocalRoute()
-                    } label: {
-                        HStack {
-                            Text("Probe Local Route")
-                            Spacer()
-                            if model.isProbingRoute { ProgressView() }
+                    if model.packages.isEmpty {
+                        EmptyLibraryCard {
+                            model.isImporterPresented = true
                         }
-                    }
-                    .disabled(model.isProbingRoute)
-                }
-
-                Section("2. StikDebug") {
-                    Picker("JIT protocol", selection: $model.selectedProtocol) {
-                        ForEach(ProbeProtocol.allCases) { item in
-                            Text(item.title).tag(item)
+                    } else {
+                        VStack(spacing: 10) {
+                            ForEach(model.packages.prefix(4)) { package in
+                                PackageRow(package: package) {
+                                    model.launch(package)
+                                } deleteAction: {
+                                    model.deletePackage(package)
+                                }
+                            }
                         }
                     }
 
-                    Text("Assign \(model.selectedProtocol.scriptName) to Android iOSEmulator in StikDebug before testing.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-
-                    Button("Set Up JIT Shortcut") {
-                        showingShortcutSetup = true
-                    }
-
-                    Button("Open Configured Shortcut") {
-                        _ = ShortcutCoordinator.openConfiguredShortcut()
-                    }
-
-                    Button("Run Configured Shortcut") {
-                        model.runShortcut()
-                    }
+                    StatusCard(model: model)
                 }
-
-                Section("3. Execute") {
-                    Button {
-                        model.runProbe()
-                    } label: {
-                        HStack {
-                            Text("Execute JIT Probe")
-                            Spacer()
-                            if model.isRunningProbe { ProgressView() }
-                        }
-                    }
-                    .disabled(model.isRunningProbe)
-
-                    if let outcome = model.probeOutcome {
-                        LabeledContent("Result", value: outcome.success ? "PASS" : "FAIL")
-                        LabeledContent("Status code", value: String(outcome.statusCode))
-                        LabeledContent("Generated value", value: String(outcome.generatedResult))
-                        LabeledContent("RW alias", value: outcome.writableAddress)
-                        LabeledContent("RX alias", value: outcome.executableAddress)
-                        Text(outcome.message)
-                            .font(.footnote.monospaced())
-                            .textSelection(.enabled)
-                    }
-                }
-
-                Section("Diagnostics") {
-                    Button("Refresh Signing Status") {
-                        model.refreshSigning()
-                    }
-
-                    Button("Create Diagnostic JSON") {
-                        model.exportDiagnostics()
-                    }
-
-                    if let exportURL = model.exportURL {
-                        ShareLink(item: exportURL) {
-                            Label("Share Diagnostic JSON", systemImage: "square.and.arrow.up")
-                        }
-                    }
-
-                    DisclosureGroup("Live log") {
-                        ForEach(Array(model.logs.enumerated()), id: \.offset) { _, line in
-                            Text(line)
-                                .font(.caption.monospaced())
-                                .textSelection(.enabled)
-                        }
-                    }
-                }
-
-                Section("Important") {
-                    Text("The shortcut cannot be empty. It must contain StikDebug's Enable JIT action with App set to Android iOSEmulator. Do not execute the probe until StikDebug has attached and the selected script matches the selected protocol.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
+                .frame(maxWidth: 760)
+                .frame(maxWidth: .infinity)
             }
-            .navigationTitle("Android iOSEmulator")
-            .sheet(isPresented: $showingShortcutSetup) {
-                shortcutSetupSheet
-            }
-        }
-    }
-
-    private var shortcutSetupSheet: some View {
-        NavigationStack {
-            List {
-                Section("Required shortcut") {
-                    Text(ShortcutCoordinator.shortcutName)
-                        .font(.headline.monospaced())
-                        .textSelection(.enabled)
-
-                    Button("Copy Exact Shortcut Name") {
-                        ShortcutCoordinator.copyShortcutName()
-                    }
-                }
-
-                Section("Add exactly one action") {
-                    SetupStep(number: 1, text: "Open the empty shortcut and tap Add Action.")
-                    SetupStep(number: 2, text: "Search for Enable JIT.")
-                    SetupStep(number: 3, text: "Choose Enable JIT from StikDebug, not another app.")
-                    SetupStep(number: 4, text: "Tap the blue App field inside the action.")
-                    SetupStep(number: 5, text: "Select Android iOSEmulator (\(ShortcutCoordinator.targetBundleID)).")
-                    SetupStep(number: 6, text: "Rename the shortcut exactly as shown above, then run it once manually and approve any prompts.")
-                }
-
-                Section("Open Shortcuts") {
-                    Button("Create a New Shortcut") {
-                        _ = ShortcutCoordinator.createShortcut()
-                    }
-
-                    Button("Open Existing Shortcut") {
-                        _ = ShortcutCoordinator.openConfiguredShortcut()
-                    }
-                }
-
-                Section("Expected action") {
-                    Text("StikDebug → Enable JIT → App: Android iOSEmulator")
-                        .font(.callout.monospaced())
-                        .textSelection(.enabled)
-                }
-            }
-            .navigationTitle("Set Up JIT Shortcut")
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("Android")
+            .navigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        showingShortcutSetup = false
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        model.isImporterPresented = true
+                    } label: {
+                        Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Import Android package")
+                }
+            }
+        }
+    }
+}
+
+private struct RuntimeHero: View {
+    @ObservedObject var model: AndroidAppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(.green.gradient)
+                    Image(systemName: "smartphone")
+                        .font(.system(size: 30, weight: .semibold))
+                        .foregroundStyle(.black)
+                }
+                .frame(width: 64, height: 64)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Android SE")
+                        .font(.title2.bold())
+                    Text(model.statusTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(statusColor)
+                    Text(model.runtimeDetail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+
+            Button {
+                if model.runtimePhase == .running {
+                    model.stopRuntime()
+                } else {
+                    model.startRuntime()
+                }
+            } label: {
+                Label(
+                    model.runtimePhase == .running ? "Stop Android" : "Start Android",
+                    systemImage: model.runtimePhase == .running ? "stop.fill" : "play.fill"
+                )
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(model.runtimePhase == .running ? .red : .green)
+            .foregroundStyle(model.runtimePhase == .running ? .white : .black)
+        }
+        .padding(16)
+        .background(.background, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
+    private var statusColor: Color {
+        switch model.runtimePhase {
+        case .running: return .green
+        case .failed: return .red
+        case .blocked: return .orange
+        default: return .secondary
+        }
+    }
+}
+
+private struct ActionGrid: View {
+    @ObservedObject var model: AndroidAppModel
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                actionButton(title: "Import APK", subtitle: "APK, APKS, XAPK", icon: "square.and.arrow.down.fill") {
+                    model.isImporterPresented = true
+                }
+                actionButton(title: "Check Runtime", subtitle: "Core and guest files", icon: "checkmark.shield.fill") {
+                    model.refreshRuntimeAvailability()
+                }
+            }
+
+            VStack(spacing: 12) {
+                actionButton(title: "Import APK", subtitle: "APK, APKS, XAPK", icon: "square.and.arrow.down.fill") {
+                    model.isImporterPresented = true
+                }
+                actionButton(title: "Check Runtime", subtitle: "Core and guest files", icon: "checkmark.shield.fill") {
+                    model.refreshRuntimeAvailability()
                 }
             }
         }
     }
 
-    private var routeStatus: String {
-        guard let result = model.routeResult else { return "Not tested" }
-        return result.reachable ? "Reachable" : "Unavailable"
-    }
-
-    private var probeStatus: String {
-        guard let outcome = model.probeOutcome else { return "Not run" }
-        return outcome.success ? "Returned 42" : "Failed"
+    private func actionButton(
+        title: String,
+        subtitle: String,
+        icon: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .frame(width: 34, height: 34)
+                    .background(.green.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.subheadline.bold())
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
 
-private struct SetupStep: View {
-    let number: Int
-    let text: String
+private struct StatusCard: View {
+    @ObservedObject var model: AndroidAppModel
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(String(number))
-                .font(.caption.bold())
-                .frame(width: 24, height: 24)
-                .background(.secondary.opacity(0.15), in: Circle())
-            Text(text)
-                .font(.callout)
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Build status", trailing: nil)
+            ChecklistRow(
+                title: "Phone interface",
+                detail: "Responsive app library and importer",
+                passed: true
+            )
+            ChecklistRow(
+                title: "SE runtime core",
+                detail: "UTM/QEMU threaded interpreter bridge",
+                passed: model.runtimeCoreAvailable
+            )
+            ChecklistRow(
+                title: "Android guest",
+                detail: "Kernel, initramfs, system and userdata",
+                passed: model.runtimeAssets.filter(\.required).allSatisfy(\.present)
+            )
         }
-        .padding(.vertical, 2)
+        .padding(16)
+        .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
-private struct StatusRow: View {
+private struct AppLibraryScreen: View {
+    @ObservedObject var model: AndroidAppModel
+    private let columns = [GridItem(.adaptive(minimum: 132, maximum: 190), spacing: 14)]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                if model.packages.isEmpty {
+                    EmptyLibraryCard {
+                        model.isImporterPresented = true
+                    }
+                    .padding(16)
+                } else {
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(model.packages) { package in
+                            PackageTile(package: package) {
+                                model.launch(package)
+                            } deleteAction: {
+                                model.deletePackage(package)
+                            }
+                        }
+                    }
+                    .padding(16)
+                }
+            }
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("Apps")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        model.isImporterPresented = true
+                    } label: {
+                        Label("Import", systemImage: "plus")
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct RuntimeScreen: View {
+    @ObservedObject var model: AndroidAppModel
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Execution mode")
+                            .font(.headline)
+                        Picker("Execution mode", selection: $model.runtimeMode) {
+                            ForEach(AndroidRuntimeMode.allCases) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        Text(model.runtimeMode.detail)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .cardStyle()
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        SectionHeader(title: "Runtime components", trailing: nil)
+                        ChecklistRow(
+                            title: "android_qemu_se_start",
+                            detail: "Native SE bridge symbol",
+                            passed: model.runtimeCoreAvailable
+                        )
+                        ForEach(model.runtimeAssets) { asset in
+                            ChecklistRow(
+                                title: asset.title,
+                                detail: asset.required ? asset.filename : "\(asset.filename) · optional",
+                                passed: asset.present
+                            )
+                        }
+                        Button("Refresh Runtime Check") {
+                            model.refreshRuntimeAvailability()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .cardStyle()
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("Runtime log").font(.headline)
+                            Spacer()
+                            Button("Export") { model.exportLogs() }
+                                .font(.subheadline)
+                        }
+
+                        if model.logs.isEmpty {
+                            Text("No runtime events yet.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ScrollView(.horizontal) {
+                                Text(model.logs.suffix(80).joined(separator: "\n"))
+                                    .font(.caption.monospaced())
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(minHeight: 180)
+                        }
+
+                        if let url = model.exportedLogURL {
+                            ShareLink(item: url) {
+                                Label("Share exported log", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                    }
+                    .cardStyle()
+                }
+                .padding(16)
+                .frame(maxWidth: 760)
+                .frame(maxWidth: .infinity)
+            }
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("Runtime")
+        }
+    }
+}
+
+private struct SettingsScreen: View {
+    @ObservedObject var model: AndroidAppModel
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Android runtime") {
+                    LabeledContent("Default mode", value: model.runtimeMode.rawValue)
+                    LabeledContent("Runtime state", value: model.statusTitle)
+                    LabeledContent("Imported packages", value: String(model.packages.count))
+                }
+
+                Section("Compatibility") {
+                    Label("ARM64 Android packages are the primary target", systemImage: "cpu")
+                    Label("SE mode does not need StikDebug or LocalDevVPN", systemImage: "checkmark.shield")
+                    Label("JIT remains disabled on the current iOS 27 beta", systemImage: "exclamationmark.triangle")
+                }
+
+                Section("Storage") {
+                    Button("Import Android Package") {
+                        model.isImporterPresented = true
+                    }
+                    Button("Refresh Runtime Files") {
+                        model.refreshRuntimeAvailability()
+                    }
+                }
+
+                Section("About") {
+                    LabeledContent("Interface", value: "LiveContainer-style")
+                    LabeledContent("Runtime target", value: "UTM/QEMU SE")
+                    LabeledContent("Guest target", value: "AOSP ARM64")
+                    Text("The app reports missing runtime components honestly. It never marks Android as running unless the native bridge starts successfully.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("Settings")
+        }
+    }
+}
+
+private struct PackageTile: View {
+    let package: AndroidPackageRecord
+    let launchAction: () -> Void
+    let deleteAction: () -> Void
+
+    var body: some View {
+        Button(action: launchAction) {
+            VStack(alignment: .leading, spacing: 10) {
+                PackageIcon(name: package.displayName, size: 58)
+                Text(package.displayName)
+                    .font(.subheadline.bold())
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(package.formattedSize)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                StateBadge(state: package.state)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, minHeight: 174, alignment: .topLeading)
+            .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button("Launch", action: launchAction)
+            Button("Delete", role: .destructive, action: deleteAction)
+        }
+    }
+}
+
+private struct PackageRow: View {
+    let package: AndroidPackageRecord
+    let launchAction: () -> Void
+    let deleteAction: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            PackageIcon(name: package.displayName, size: 48)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(package.displayName)
+                    .font(.subheadline.bold())
+                    .lineLimit(1)
+                Text("\(package.formattedSize) · \(package.state.rawValue.capitalized)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            Button(action: launchAction) {
+                Image(systemName: "play.fill")
+                    .frame(width: 38, height: 38)
+                    .background(.green, in: Circle())
+                    .foregroundStyle(.black)
+            }
+            .buttonStyle(.plain)
+            Menu {
+                Button("Delete", role: .destructive, action: deleteAction)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .frame(width: 34, height: 38)
+            }
+        }
+        .padding(12)
+        .background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private struct PackageIcon: View {
+    let name: String
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+                .fill(.green.gradient)
+            Text(initials)
+                .font(.system(size: size * 0.3, weight: .black, design: .rounded))
+                .foregroundStyle(.black)
+        }
+        .frame(width: size, height: size)
+    }
+
+    private var initials: String {
+        let words = name.split(separator: " ").prefix(2)
+        let value = words.compactMap(\.first).map(String.init).joined()
+        return value.isEmpty ? "A" : value.uppercased()
+    }
+}
+
+private struct StateBadge: View {
+    let state: AndroidPackageRecord.State
+
+    var body: some View {
+        Text(state.rawValue.capitalized)
+            .font(.caption2.bold())
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(color.opacity(0.15), in: Capsule())
+            .foregroundStyle(color)
+    }
+
+    private var color: Color {
+        switch state {
+        case .installed: return .green
+        case .failed: return .red
+        case .installing: return .orange
+        case .imported: return .secondary
+        }
+    }
+}
+
+private struct EmptyLibraryCard: View {
+    let importAction: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "square.stack.3d.up.slash")
+                .font(.system(size: 42))
+                .foregroundStyle(.secondary)
+            Text("No Android apps yet")
+                .font(.headline)
+            Text("Import an APK, APKS, or XAPK package. It will stay in the app library between launches.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button("Import Package", action: importAction)
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+                .foregroundStyle(.black)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(.background, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+}
+
+private struct ChecklistRow: View {
     let title: String
-    let value: String
+    let detail: String
     let passed: Bool
 
     var body: some View {
-        HStack {
-            Image(systemName: passed ? "checkmark.circle.fill" : "exclamationmark.circle")
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: passed ? "checkmark.circle.fill" : "xmark.circle.fill")
                 .foregroundStyle(passed ? .green : .orange)
-            Text(title)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
         }
+    }
+}
+
+private struct SectionHeader: View {
+    let title: String
+    let trailing: String?
+
+    var body: some View {
+        HStack {
+            Text(title).font(.headline)
+            Spacer()
+            if let trailing {
+                Text(trailing).font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private extension View {
+    func cardStyle() -> some View {
+        self
+            .padding(16)
+            .background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }

@@ -2,14 +2,11 @@ import SwiftUI
 
 @main
 struct AndroidiOSEmulatorApp: App {
-    @StateObject private var diagnostics = DiagnosticsModel()
+    @StateObject private var model = AndroidAppModel()
 
     var body: some Scene {
         WindowGroup {
-            ContentView(model: diagnostics)
-                .onOpenURL { url in
-                    diagnostics.handle(url: url)
-                }
+            ContentView(model: model)
         }
     }
 }
