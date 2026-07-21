@@ -5,19 +5,24 @@ on:
   pull_request:
     paths:
       - "scripts/build_livecontainer_utm_se.sh"
+      - "scripts/make_android_x86_utm.py"
       - "scripts/patch_livecontainer_apk_flow.py"
       - "scripts/fix_livecontainer_apk_flow_compile.py"
+      - "runtime/android-x86/**"
       - ".github/workflows/build-full-livecontainer-android.yml"
       - "docs/FULL_LIVECONTAINER_BUILD.md"
+      - "docs/ANDROID_GUEST_BUILD.md"
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "scripts/build_livecontainer_utm_se.sh"
+      - "scripts/make_android_x86_utm.py"
       - "scripts/patch_livecontainer_apk_flow.py"
       - "scripts/fix_livecontainer_apk_flow_compile.py"
+      - "runtime/android-x86/**"
       - ".github/workflows/build-full-livecontainer-android.yml"
       - "docs/FULL_LIVECONTAINER_BUILD.md"
+      - "docs/ANDROID_GUEST_BUILD.md"
 
 permissions:
   contents: read
@@ -28,9 +33,9 @@ concurrency:
 
 jobs:
   build:
-    name: LiveContainer UI + UTM SE runtime
+    name: LiveContainer APK UI + UTM SE + Android guest
     runs-on: macos-26
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - name: Checkout Android iOSEmulator
         uses: actions/checkout@v4
@@ -40,31 +45,39 @@ jobs:
         run: |
           set -euo pipefail
           XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
-          if [[ -z "$XCODE_PATH" ]]; then
-            echo "No Xcode 26 installation was found." >&2
-            exit 1
-          fi
+          test -n "$XCODE_PATH"
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
           xcodebuild -version
 
-      - name: Build full unsigned IPA
+      - name: Install qemu-img
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v qemu-img >/dev/null 2>&1; then brew install qemu; fi
+          qemu-img --version
+
+      - name: Build full unsigned Android IPA
         shell: bash
         run: |
           set -o pipefail
           rm -f full-build.log
           bash -x ./scripts/build_livecontainer_utm_se.sh 2>&1 | tee full-build.log
 
-      - name: Verify LiveContainer frontend and embedded UTM SE
+      - name: Verify APK frontend, runtime and Android guest
         shell: bash
         run: |
           set -euo pipefail
-          IPA="build/full-livecontainer/Android-iOSEmulator-LiveContainer-UTM-SE-unsigned.ipa"
+          IPA="build/full-livecontainer/Android-iOSEmulator-Full-Android-x86-unsigned.ipa"
           test -f "$IPA"
           unzip -t "$IPA" >/dev/null
           unzip -l "$IPA" | tee build/full-livecontainer/verified-contents.txt
           grep -q 'Payload/Android iOSEmulator.app/PreloadedApps/UTM SE.app/' build/full-livecontainer/verified-contents.txt
+          grep -q 'Payload/Android iOSEmulator.app/PreloadedData/Android.utm/config.plist' build/full-livecontainer/verified-contents.txt
+          grep -q 'android-x86_64-9.0-r2.iso' build/full-livecontainer/verified-contents.txt
+          grep -q 'android-data.qcow2' build/full-livecontainer/verified-contents.txt
           grep -q 'LiveContainer' build/full-livecontainer/xcodebuild.log
           grep -q 'APK workflow: persistent LiveContainer library' build/full-livecontainer/build-manifest.txt
+          grep -q 'Physical iPhone Android boot verification: pending' build/full-livecontainer/build-manifest.txt
           if grep -Eq '(_CodeSignature|embedded.mobileprovision)' build/full-livecontainer/verified-contents.txt; then
             echo "Signing artifacts found in unsigned IPA." >&2
             exit 1
@@ -74,7 +87,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Android-iOSEmulator-LiveContainer-build-diagnostics
+          name: Android-iOSEmulator-Full-Android-build-diagnostics
           path: |
             full-build.log
             build/full-livecontainer/xcodebuild.log
@@ -82,13 +95,16 @@ jobs:
             build/full-livecontainer/verified-contents.txt
             build/full-livecontainer/build-manifest.txt
           if-no-files-found: warn
+          retention-days: 30
 
-      - name: Upload full unsigned IPA
+      - name: Upload full unsigned Android IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Android-iOSEmulator-LiveContainer-UTM-SE-unsigned
+          name: Android-iOSEmulator-Full-Android-x86-unsigned
           path: |
-            build/full-livecontainer/Android-iOSEmulator-LiveContainer-UTM-SE-unsigned.ipa
-            build/full-livecontainer/Android-iOSEmulator-LiveContainer-UTM-SE-unsigned.ipa.sha256
+            build/full-livecontainer/Android-iOSEmulator-Full-Android-x86-unsigned.ipa
+            build/full-livecontainer/Android-iOSEmulator-Full-Android-x86-unsigned.ipa.sha256
             build/full-livecontainer/build-manifest.txt
           if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
