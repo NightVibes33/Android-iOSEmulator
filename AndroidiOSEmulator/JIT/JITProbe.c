@@ -1,9 +1,12 @@
 #include "JITProbe.h"
 
+#include <CoreFoundation/CoreFoundation.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <libkern/OSCacheControl.h>
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -59,6 +62,59 @@ static void jit26_prepare_utm_legacy(void *address, size_t length) {
     );
 }
 #endif
+
+typedef CFTypeRef (*SecTaskCreateFromSelfFunction)(CFAllocatorRef allocator);
+typedef CFTypeRef (*SecTaskCopyValueForEntitlementFunction)(CFTypeRef task,
+                                                            CFStringRef entitlement,
+                                                            CFErrorRef *error);
+
+int32_t jitprobe_entitlement_boolean(const char *key) {
+    if (key == NULL || key[0] == '\0') {
+        return -1;
+    }
+
+    SecTaskCreateFromSelfFunction create_task =
+        (SecTaskCreateFromSelfFunction)dlsym(RTLD_DEFAULT, "SecTaskCreateFromSelf");
+    SecTaskCopyValueForEntitlementFunction copy_entitlement =
+        (SecTaskCopyValueForEntitlementFunction)dlsym(RTLD_DEFAULT, "SecTaskCopyValueForEntitlement");
+
+    if (create_task == NULL || copy_entitlement == NULL) {
+        return -1;
+    }
+
+    CFTypeRef task = create_task(kCFAllocatorDefault);
+    if (task == NULL) {
+        return -1;
+    }
+
+    CFStringRef entitlement_key = CFStringCreateWithCString(
+        kCFAllocatorDefault,
+        key,
+        kCFStringEncodingUTF8
+    );
+    if (entitlement_key == NULL) {
+        CFRelease(task);
+        return -1;
+    }
+
+    CFErrorRef error = NULL;
+    CFTypeRef value = copy_entitlement(task, entitlement_key, &error);
+    int32_t result = 0;
+
+    if (value != NULL && CFGetTypeID(value) == CFBooleanGetTypeID()) {
+        result = CFBooleanGetValue((CFBooleanRef)value) ? 1 : 0;
+    }
+
+    if (value != NULL) {
+        CFRelease(value);
+    }
+    if (error != NULL) {
+        CFRelease(error);
+    }
+    CFRelease(entitlement_key);
+    CFRelease(task);
+    return result;
+}
 
 int32_t jitprobe_is_debugger_attached(void) {
     int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()};
