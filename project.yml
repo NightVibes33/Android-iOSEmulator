@@ -32,8 +32,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.nightvibes.androidiosemulator
         PRODUCT_NAME: AndroidiOSEmulator
         PRODUCT_MODULE_NAME: AndroidiOSEmulator
-        MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.2.0"
+        CURRENT_PROJECT_VERSION: "2"
         CODE_SIGN_ENTITLEMENTS: AndroidiOSEmulator/Config/AndroidiOSEmulator.entitlements
         SWIFT_OBJC_BRIDGING_HEADER: AndroidiOSEmulator/JIT/BridgingHeader.h
         INFOPLIST_FILE: AndroidiOSEmulator/Config/Info.plist
