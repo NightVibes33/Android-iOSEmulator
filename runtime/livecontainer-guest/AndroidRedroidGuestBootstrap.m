@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 
 static NSString *const AndroidVMName = @"Android-Redroid-ARM64-SE.utm";
-static NSString *const AndroidRuntimeVersion = @"redroid13-arm64-se-v2-pinned-ci-boot";
+static NSString *const AndroidRuntimeVersion = @"redroid13-arm64-se-v3-metadata-preserved";
 
 __attribute__((constructor))
 static void AndroidRedroidGuestBootstrap(void) {
@@ -54,6 +54,7 @@ static void AndroidRedroidGuestBootstrap(void) {
             @"hostBootconfigMasked": @YES,
             @"binderfsRequired": @YES,
             @"dmaBufSystemHeapRequired": @YES,
+            @"filesystemMetadataPreserved": @YES,
             @"ciAndroidBootRequired": @YES,
             @"vm": AndroidVMName,
         };
