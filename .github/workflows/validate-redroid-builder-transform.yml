@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "scripts/build_redroid_arm64_rootfs.sh"
       - ".github/workflows/validate-redroid-builder-transform.yml"
   workflow_dispatch:
 
@@ -80,29 +81,44 @@ jobs:
               exec(transform_code, {'__name__': '__main__'})
           finally:
               sys.argv = old_argv
+
+          generated = transformed.read_text(encoding='utf-8')
+          c_marker = "<<'BINDERFS_ALLOCATOR'\n"
+          c_start = generated.index(c_marker) + len(c_marker)
+          c_end = generated.index('\nBINDERFS_ALLOCATOR\n', c_start)
+          Path('/tmp/binderfs-device.c').write_text(generated[c_start:c_end] + '\n', encoding='utf-8')
           PY
 
           bash -n /tmp/redroid-builder-transformed.sh
+          cc -O2 -Wall -Wextra -Werror -c /tmp/binderfs-device.c -o /tmp/binderfs-device.o
           grep -Fq 'test -L "$BUNDLE/rootfs/init"' /tmp/redroid-builder-transformed.sh
           grep -Fq 'BUNDLE_INIT_TARGET=' /tmp/redroid-builder-transformed.sh
           grep -Fq 'Android init symlink is missing from the ext4 image' /tmp/redroid-builder-transformed.sh
           grep -Fq 'Android init target checksum differs' /tmp/redroid-builder-transformed.sh
           grep -Fq 'rsync -aHAX --numeric-ids' /tmp/redroid-builder-transformed.sh
+          grep -Fq 'BINDER_CTL_ADD' /tmp/redroid-builder-transformed.sh
+          grep -Fq '/usr/local/sbin/binderfs-device binder hwbinder vndbinder' /tmp/redroid-builder-transformed.sh
+          grep -Fq 'test -x "$ROOTFS/usr/local/sbin/binderfs-device"' /tmp/redroid-builder-transformed.sh
           ! grep -Fq 'test -x "$BUNDLE/rootfs/init"' /tmp/redroid-builder-transformed.sh
 
           mkdir -p .github/release-status
           sha256sum /tmp/redroid-builder-transformed.sh | awk '{print $1}' > /tmp/transformed.sha
+          sha256sum /tmp/binderfs-device.c | awk '{print $1}' > /tmp/binderfs.sha
           jq -n \
             --arg source_commit "$GITHUB_SHA" \
             --arg transformed_sha256 "$(cat /tmp/transformed.sha)" \
+            --arg binderfs_allocator_sha256 "$(cat /tmp/binderfs.sha)" \
             '{
               valid: true,
               source_commit: $source_commit,
               transformed_builder_sha256: $transformed_sha256,
+              binderfs_allocator_source_sha256: $binderfs_allocator_sha256,
               shell_syntax_valid: true,
               init_symlink_aware: true,
               init_guest_target_verified: true,
-              ext4_metadata_preserved: true
+              ext4_metadata_preserved: true,
+              binderfs_allocator_compile_valid: true,
+              binderfs_devices_created_via_control_ioctl: true
             }' > .github/release-status/redroid-builder-transform.json
 
           git config user.name github-actions[bot]
