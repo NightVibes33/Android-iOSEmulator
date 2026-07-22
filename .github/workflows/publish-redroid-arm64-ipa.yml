@@ -1,0 +1,166 @@
+name: Publish verified ARM64 Redroid IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Workflow run containing the validated unsigned IPA artifact
+        required: true
+        default: "29949669780"
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-redroid-arm64-ipa.yml"
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-redroid-arm64-ipa
+  cancel-in-progress: false
+
+env:
+  DEFAULT_SOURCE_RUN_ID: "29949669780"
+  SOURCE_COMMIT: "988f8005012506867fe7485151816541a3ddd7b8"
+  RELEASE_TAG: v0.4.0-redroid13-arm64-se-nojit
+  IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+  ARTIFACT_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned
+
+jobs:
+  publish:
+    name: Publish already validated IPA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download validated IPA artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          SOURCE_RUN_ID="${INPUT_SOURCE_RUN_ID:-$DEFAULT_SOURCE_RUN_ID}"
+          mkdir -p downloaded-ipa
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$ARTIFACT_NAME" \
+            --dir downloaded-ipa
+          IPA="$(find downloaded-ipa -type f -name "$IPA_NAME" -print -quit)"
+          test -n "$IPA"
+          echo "SOURCE_RUN_ID=$SOURCE_RUN_ID" >> "$GITHUB_ENV"
+          echo "IPA=$IPA" >> "$GITHUB_ENV"
+
+      - name: Reverify exact release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$IPA"
+          unzip -t "$IPA" >/dev/null
+          IPA_SIZE="$(stat -c%s "$IPA")"
+          test "$IPA_SIZE" -lt 2147483648
+          shasum -a 256 "$IPA" | tee "$IPA.sha256"
+          MANIFEST="$(find downloaded-ipa -type f -name build-manifest.txt -print -quit)"
+          IMPORT_METADATA="$(find downloaded-ipa -type f -name livecontainer-import-metadata.txt -print -quit)"
+          test -n "$MANIFEST"
+          test -n "$IMPORT_METADATA"
+          grep -q '^Guest architecture: aarch64$' "$MANIFEST"
+          grep -q '^Android runtime: Redroid 13 64-bit only$' "$MANIFEST"
+          grep -q '^CI Android boot verification: passed$' "$MANIFEST"
+          grep -q '^JIT required by LiveContainer: no$' "$MANIFEST"
+          grep -q '^isJITNeeded=false$' "$IMPORT_METADATA"
+          echo "IPA_SIZE=$IPA_SIZE" >> "$GITHUB_ENV"
+
+      - name: Create clean prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
+          git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SOURCE_COMMIT" \
+            --title "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \
+            --notes "One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate." \
+            --prerelease
+
+      - name: Upload complete IPA with retries
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          UPLOADED=0
+          for ATTEMPT in 1 2 3; do
+            echo "Release asset upload attempt $ATTEMPT"
+            if gh release upload "$RELEASE_TAG" "$IPA" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber; then
+              UPLOADED=1
+              break
+            fi
+            sleep $((ATTEMPT * 20))
+          done
+          test "$UPLOADED" -eq 1
+
+      - name: Verify published asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease,targetCommitish)"
+          test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
+          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$IPA_NAME"
+          test "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$IPA_SIZE"
+          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
+          echo "$RELEASE_JSON" > release.json
+
+      - name: Record verified release marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_URL="$(jq -r .url release.json)"
+          mkdir -p .github/release-status
+          jq -n \
+            --arg tag "$RELEASE_TAG" \
+            --arg release_url "$RELEASE_URL" \
+            --arg asset_name "$IPA_NAME" \
+            --argjson asset_size_bytes "$IPA_SIZE" \
+            --arg workflow_run_id "$SOURCE_RUN_ID" \
+            --arg source_commit "$SOURCE_COMMIT" \
+            '{
+              verified: true,
+              android_version: 13,
+              android_sys_boot_completed: true,
+              runtime: "Redroid 13 arm64-only",
+              guest_architecture: "aarch64",
+              ci_runner_architecture: "aarch64",
+              execution_mode: "UTM SE interpreter",
+              jit_required: false,
+              binderfs: true,
+              dma_buf_system_heap: true,
+              linux_page_size_kib: 4,
+              x86_guest_present: false,
+              tag: $tag,
+              release_url: $release_url,
+              asset_name: $asset_name,
+              asset_size_bytes: $asset_size_bytes,
+              workflow_run_id: $workflow_run_id,
+              source_commit: $source_commit,
+              physical_iphone_boot_verified: false
+            }' > .github/release-status/redroid-arm64-se.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-arm64-se.json
+          git commit -m "Record verified no-JIT ARM64 Android release"
+          git pull --rebase origin main
+          git push origin HEAD:main
