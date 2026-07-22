@@ -1,5 +1,5 @@
 name: Report active Redroid run
-# Refresh after snapshot boot and BinderFS allocator fixes.
+# Refresh exact status after workflow commit bf83ea2f.
 
 on:
   push:
