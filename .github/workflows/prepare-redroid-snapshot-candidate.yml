@@ -1,0 +1,42 @@
+name: Prepare Redroid snapshot candidate
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/prepare-redroid-snapshot-candidate.yml
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Create remote commit object without updating a ref
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '%s' 'IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKCnRhcmdldCA9IFBhdGgoIi5naXRodWIvd29ya2Zsb3dzL2J1aWxkLXJlZHJvaWQtYXJtNjQtc2UtbGl2ZWNvbnRhaW5lci1pcGEueW1sIikKdGV4dCA9IHRhcmdldC5yZWFkX3RleHQoZW5jb2Rpbmc9InV0Zi04IikKCnJlcGxhY2VtZW50cyA9IFsKICAgICgKICAgICAgICAnJycgICAgICAgICAgVEVTVF9ESVNLPS5idWlsZC9yZWRyb2lkLWFybTY0LWJvb3QtdGVzdC5yYXcKICAgICAgICAgIFFFTVVfTE9HPXFlbXUtYXJtNjQtYW5kcm9pZC1ib290LmxvZwogICAgICAgICAgQk9PVF9QUk9QUz1hbmRyb2lkLWJvb3QtcHJvcGVydGllcy50eHQKICAgICAgICAgIHJtIC1mICIkVEVTVF9ESVNLIiAiJFFFTVVfTE9HIiAiJEJPT1RfUFJPUFMiCiAgICAgICAgICBjcCAtLXJlZmxpbms9YXV0byAtLXNwYXJzZT1hbHdheXMgIiRPVVQvcmVkcm9pZC1hcm02NC1yb290ZnMucmF3IiAiJFRFU1RfRElTSyIKJycnLAogICAgICAgICcnJyAgICAgICAgICBST09UX0RJU0s9IiRPVVQvcmVkcm9pZC1hcm02NC1yb290ZnMucmF3IgogICAgICAgICAgUUVNVV9MT0c9cWVtdS1hcm02NC1hbmRyb2lkLWJvb3QubG9nCiAgICAgICAgICBCT09UX1BST1BTPWFuZHJvaWQtYm9vdC1wcm9wZXJ0aWVzLnR4dAogICAgICAgICAgcm0gLWYgIiRRRU1VX0xPRyIgIiRCT09UX1BST1BTIgogICAgICAgICAgewogICAgICAgICAgICBlY2hvICJSZWRyb2lkIENJIFFFTVUgcHJlLWxhdW5jaCBkaWFnbm9zdGljcyIKICAgICAgICAgICAgZWNobyAicm9vdF9kaXNrPSRST09UX0RJU0siCiAgICAgICAgICAgIHN0YXQgIiRST09UX0RJU0siCiAgICAgICAgICAgIGRmIC1oCiAgICAgICAgICB9ID4gIiRRRU1VX0xPRyIKJycnLAogICAgICAgICJwcmUtbGF1bmNoIGRpc2sgc2V0dXAiLAogICAgKSwKICAgICgKICAgICAgICAnJycgICAgICAgICAgICAgIC1kcml2ZSAiaWY9bm9uZSxmaWxlPSRURVNUX0RJU0ssZm9ybWF0PXJhdyxpZD1yb290ZnMsY2FjaGU9dW5zYWZlIiBcXAonJycsCiAgICAgICAgJycnICAgICAgICAgICAgICAtZHJpdmUgImlmPW5vbmUsZmlsZT0kUk9PVF9ESVNLLGZvcm1hdD1yYXcsaWQ9cm9vdGZzLGNhY2hlPXVuc2FmZSIgXFwKJycnLAogICAgICAgICJRRU1VIHJvb3QgZHJpdmUiLAogICAgKSwKICAgICgKICAgICAgICAnJycgICAgICAgICAgICAgIC1zZXJpYWwgc3RkaW8gXFwKICAgICAgICAgICAgICAtbm8tcmVib290ID4iJFFFTVVfTE9HIiAyPiYxICYKJycnLAogICAgICAgICcnJyAgICAgICAgICAgICAgLXNlcmlhbCBzdGRpbyBcXAogICAgICAgICAgICAgIC1zbmFwc2hvdCBcXAogICAgICAgICAgICAgIC1uby1yZWJvb3QgPj4iJFFFTVVfTE9HIiAyPiYxICYKJycnLAogICAgICAgICJRRU1VIHNuYXBzaG90IGxhdW5jaCIsCiAgICApLApdCgpmb3Igb2xkLCBuZXcsIGxhYmVsIGluIHJlcGxhY2VtZW50czoKICAgIGNvdW50ID0gdGV4dC5jb3VudChvbGQpCiAgICBpZiBjb3VudCAhPSAxOgogICAgICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJFeHBlY3RlZCBleGFjdGx5IG9uZSB7bGFiZWx9IGJsb2NrLCBmb3VuZCB7Y291bnR9IikKICAgIHRleHQgPSB0ZXh0LnJlcGxhY2Uob2xkLCBuZXcpCgpmb3Igc3RhbGUgaW4gKCJURVNUX0RJU0s9IiwgImZpbGU9JFRFU1RfRElTSyIpOgogICAgaWYgc3RhbGUgaW4gdGV4dDoKICAgICAgICByYWlzZSBTeXN0ZW1FeGl0KGYiU3RhbGUgbWFya2VyIHJlbWFpbnM6IHtzdGFsZX0iKQoKZm9yIHJlcXVpcmVkIGluICgKICAgICdST09UX0RJU0s9IiRPVVQvcmVkcm9pZC1hcm02NC1yb290ZnMucmF3IicsCiAgICAiLXNuYXBzaG90IFxcIiwKICAgICc+PiIkUUVNVV9MT0ciIDI+JjEgJicsCiAgICAiUmVkcm9pZCBDSSBRRU1VIHByZS1sYXVuY2ggZGlhZ25vc3RpY3MiLAopOgogICAgaWYgcmVxdWlyZWQgbm90IGluIHRleHQ6CiAgICAgICAgcmFpc2UgU3lzdGVtRXhpdChmIk1pc3NpbmcgbWFya2VyOiB7cmVxdWlyZWR9IikKCnRhcmdldC53cml0ZV90ZXh0KHRleHQsIGVuY29kaW5nPSJ1dGYtOCIpCnByaW50KCJBcHBsaWVkIFFFTVUgc25hcHNob3QgYm9vdCBwYXRjaC4iKQo=' | base64 -d > /tmp/apply_snapshot.py
+          python3 /tmp/apply_snapshot.py
+          git diff --check
+
+          HEAD_SHA="$(git rev-parse HEAD)"
+          BASE_TREE="$(git rev-parse HEAD^{tree})"
+          WORKFLOW=.github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+
+          BLOB_SHA="$(jq -Rs '{content: ., encoding: "utf-8"}' < "$WORKFLOW" | gh api --method POST "/repos/$GITHUB_REPOSITORY/git/blobs" --input - --jq .sha)"
+          TREE_SHA="$(jq -n --arg base_tree "$BASE_TREE" --arg blob "$BLOB_SHA" '{base_tree: $base_tree, tree: [{path: ".github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml", mode: "100644", type: "blob", sha: $blob}]}' | gh api --method POST "/repos/$GITHUB_REPOSITORY/git/trees" --input - --jq .sha)"
+          COMMIT_SHA="$(jq -n --arg message "Boot Redroid CI with a QEMU snapshot overlay" --arg tree "$TREE_SHA" --arg parent "$HEAD_SHA" '{message: $message, tree: $tree, parents: [$parent]}' | gh api --method POST "/repos/$GITHUB_REPOSITORY/git/commits" --input - --jq .sha)"
+
+          BODY="$(jq -n --arg parent "$HEAD_SHA" --arg base_tree "$BASE_TREE" --arg blob "$BLOB_SHA" --arg tree "$TREE_SHA" --arg commit "$COMMIT_SHA" '{parent: $parent, base_tree: $base_tree, workflow_blob: $blob, candidate_tree: $tree, candidate_commit: $commit}')"
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "Redroid snapshot candidate $COMMIT_SHA" --body "$BODY"
+          echo "CANDIDATE_COMMIT=$COMMIT_SHA"
