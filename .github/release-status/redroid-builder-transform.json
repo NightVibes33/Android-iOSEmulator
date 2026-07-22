@@ -1,0 +1,9 @@
+{
+  "valid": true,
+  "source_commit": "c4188a65101051fee073e223bf5fe2ca176a0430",
+  "transformed_builder_sha256": "c04c509050862bd979bd1c19c40d2dc4c5aafd7fea8f6195661486e81af1577c",
+  "shell_syntax_valid": true,
+  "init_symlink_aware": true,
+  "init_guest_target_verified": true,
+  "ext4_metadata_preserved": true
+}
