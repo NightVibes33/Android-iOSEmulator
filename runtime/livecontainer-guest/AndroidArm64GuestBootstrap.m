@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 
 static NSString *const AndroidVMName = @"Android-ARM64-SE.utm";
-static NSString *const AndroidRuntimeVersion = @"aosp-fvp-arm64-se-v2-interpreter-fastboot";
+static NSString *const AndroidRuntimeVersion = @"aosp-fvp-arm64-se-v3-fvpbase-virtio-mmio";
 
 __attribute__((constructor))
 static void AndroidArm64GuestBootstrap(void) {
@@ -52,6 +52,8 @@ static void AndroidArm64GuestBootstrap(void) {
             @"executionMode": @"UTM SE interpreter",
             @"jitRequired": @NO,
             @"directKernelBoot": @YES,
+            @"storageTransport": @"virtio-mmio",
+            @"networkTransport": @"virtio-mmio",
             @"vm": AndroidVMName,
         };
         if (![newMarker writeToURL:markerURL atomically:YES]) {
