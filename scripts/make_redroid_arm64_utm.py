@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import plistlib
 import shutil
 import sys
@@ -127,7 +128,15 @@ def main() -> int:
     images = output / "Images"
     images.mkdir(parents=True)
     for item in required:
-        shutil.copy2(source / item, images / item)
+        source_path = source / item
+        destination_path = images / item
+        if item == "redroid-arm64-rootfs.raw":
+            try:
+                os.link(source_path, destination_path)
+            except OSError:
+                shutil.copy2(source_path, destination_path)
+        else:
+            shutil.copy2(source_path, destination_path)
 
     config_path = output / "config.plist"
     with config_path.open("wb") as stream:
