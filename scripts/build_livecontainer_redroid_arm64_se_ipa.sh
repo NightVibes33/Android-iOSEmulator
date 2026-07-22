@@ -27,6 +27,12 @@ done
 for required in kernel initrd.img "$DISK_NAME" build-manifest.txt; do
   [[ -f "$GUEST_SOURCE/$required" ]] || { echo "missing ARM64 guest artifact: $required" >&2; exit 1; }
 done
+grep -q '^CI Android boot verification: passed$' "$GUEST_SOURCE/build-manifest.txt" || {
+  echo "refusing to package a guest that did not reach Android sys.boot_completed=1 in CI" >&2
+  exit 1
+}
+grep -q '^Redroid image: docker.io/redroid/redroid:13.0.0_64only-240527$' "$GUEST_SOURCE/build-manifest.txt"
+grep -q '^Host bootconfig masked from Android: yes$' "$GUEST_SOURCE/build-manifest.txt"
 
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK/utm" "$WORK/package/Payload" "$OUT"
@@ -207,7 +213,10 @@ cat > "$OUT/build-manifest.txt" <<MANIFEST
 Package type: LiveContainer guest IPA
 Guest architecture: aarch64
 Android runtime: Redroid 13 64-bit only
-Host guest: minimal ARM64 Linux with BinderFS
+Redroid image: docker.io/redroid/redroid:13.0.0_64only-240527
+Host guest: minimal ARM64 Linux with BinderFS and DMA-BUF system heap
+Host bootconfig masked from Android: yes
+CI Android boot verification: passed
 Execution mode: UTM SE interpreter / no JIT
 JIT required by LiveContainer: no
 QEMU target: virt
