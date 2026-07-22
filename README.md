@@ -6,46 +6,65 @@ A sideload-first native iOS project for running a compatible ARM64 Android guest
 
 The temporary BlissOS x86_64 experiment is retired. It proved LiveContainer import and IPA packaging behavior, but it did not prove usable Android graphical boot on ARM iPhone hardware and can no longer publish releases.
 
-The supported runtime target is now:
+The active iOS 27 beta fallback is now:
 
 ```text
 AOSP fvp_mini-userdebug / fvp-userdebug
         ↓
 ARM64 kernel + combined ramdisk
         ↓
-QEMU aarch64-softmmu
+UTM SE qemu-aarch64-softmmu interpreter
         ↓
 virt,mte=on + CPU=max
         ↓
-VirtIO block, network, input and GPU devices
+Direct kernel boot + sparse raw VirtIO disks
+        ↓
+No JIT requirement and no x86 translation
 ```
 
-The new manual workflow is `.github/workflows/build-arm64-fvp-livecontainer-ipa.yml`. It accepts a SHA-256-verified AOSP FVP product-output archive containing:
+UTM SE is deliberately used for this lane because it does not require JIT. It is slower than normal UTM, so physical-device boot time and full Android UI usability remain validation gates.
+
+The manual workflow is `.github/workflows/build-arm64-fvp-livecontainer-ipa.yml`. It accepts a SHA-256-verified AOSP FVP product-output archive containing:
 
 - `kernel`
 - `combined-ramdisk.img`
 - `system-qemu.img`
 - `userdata.img`
 
-The workflow compresses the two disk images, creates an ARM64 UTM bundle, retains `qemu-aarch64-softmmu`, rejects `qemu-x86_64-softmmu`, and packages an unsigned development IPA.
+The workflow creates sparse raw system and userdata disks, packages a direct-boot ARM64 UTM bundle, retains `qemu-aarch64-softmmu`, rejects `qemu-x86_64-softmmu`, verifies `isJITNeeded=false`, and packages an unsigned LiveContainer IPA.
 
-## Current milestone: Gate 0 — JITProbe
+## No-JIT speed profile
 
-The hardest dependency remains reliable executable-memory preparation on the real iPhone or iPad using **LocalDevVPN + StikDebug** on iOS 26/27.
+The no-JIT profile applies every host-side optimization that does not change the official AOSP FVP hardware contract:
 
-The diagnostic IPA verifies:
+- direct kernel/initramfs boot with no GRUB, ISO or installer,
+- native ARM64 guest with no x86 instruction translation,
+- one vCPU for `fvp_mini` and two vCPUs for full System UI,
+- 1536 MiB for `mini` and 2048 MiB for `full`,
+- sparse raw system/userdata disks instead of compressed QCOW2 runtime disks,
+- disabled UTM debug logging, sound, USB redirection and console blinking.
 
-- the app was signed for debugging (`get-task-allow`),
-- LocalDevVPN exposes the local device route,
-- StikDebug can attach to the app,
-- a split read/write + read/execute ARM64 mapping can execute generated code,
-- diagnostic output can be exported for failures such as `E96`.
+The official AOSP FVP product configuration supplies the guest-side fast-boot settings, including disabled boot animation and host-side dex optimization.
 
-The ARM64 packaging lane is implemented, but Android System UI boot on a physical iPhone is still a validation gate rather than a completed claim.
+## Current validation gates
+
+### Gate SE-1 — ARM64 shell
+
+Build `fvp_mini-userdebug`, package the no-JIT `mini` IPA, install it on the target iPhone, and verify that Android reaches a stable shell repeatedly.
+
+### Gate SE-2 — Android System UI
+
+Build `fvp-userdebug`, package the no-JIT `full` IPA, and verify that Zygote, System Server and SurfaceFlinger reach a usable Android interface without iOS memory-pressure termination.
+
+### Optional Gate JIT
+
+The original LocalDevVPN + StikDebug executable-memory work remains an optional acceleration lane. It is not required by the ARM64 SE IPA and does not block no-JIT testing.
+
+The ARM64 packaging lane is implemented, but physical-device Android boot has not yet been proven.
 
 ## Build
 
-GitHub Actions uses the official `macos-26` Apple Silicon runner and packages unsigned real-device IPAs. The IPA must be signed after download with a development provisioning profile that preserves `get-task-allow`.
+GitHub Actions uses the official `macos-26` Apple Silicon runner and packages unsigned real-device IPAs. The no-JIT SE artifact may be signed with any signing method that can install UTM SE; it does not request JIT.
 
 Run the Gate 0 diagnostic build locally on macOS 26:
 
