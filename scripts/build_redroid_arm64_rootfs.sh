@@ -81,6 +81,26 @@ mkdir -p \"$ROOTFS/var/lib/redroid/data\"
 """
 replacements.append((old_unpack, new_unpack, "OCI cleanup"))
 
+old_image = """truncate -s \"${ROOTFS_MIB}M\" \"$OUT/redroid-arm64-rootfs.raw\"
+mkfs.ext4 -F -L redroidroot -d \"$ROOTFS\" -E lazy_itable_init=0,lazy_journal_init=0 \"$OUT/redroid-arm64-rootfs.raw\"
+"""
+new_image = """truncate -s \"${ROOTFS_MIB}M\" \"$OUT/redroid-arm64-rootfs.raw\"
+mkfs.ext4 -F -L redroidroot -E lazy_itable_init=0,lazy_journal_init=0 \"$OUT/redroid-arm64-rootfs.raw\"
+ROOTFS_IMAGE_MOUNT=\"$WORK/rootfs-image\"
+mkdir -p \"$ROOTFS_IMAGE_MOUNT\"
+mount -o loop \"$OUT/redroid-arm64-rootfs.raw\" \"$ROOTFS_IMAGE_MOUNT\"
+if ! rsync -aHAX --numeric-ids \"$ROOTFS/\" \"$ROOTFS_IMAGE_MOUNT/\"; then
+  umount \"$ROOTFS_IMAGE_MOUNT\" || true
+  exit 1
+fi
+test -x \"$ROOTFS_IMAGE_MOUNT/opt/redroid/bundle/rootfs/init\"
+test -s \"$ROOTFS_IMAGE_MOUNT/opt/scrcpy/scrcpy-server\"
+sync
+umount \"$ROOTFS_IMAGE_MOUNT\"
+rmdir \"$ROOTFS_IMAGE_MOUNT\"
+"""
+replacements.append((old_image, new_image, "ext4 image population"))
+
 old_ui_env = """export XDG_RUNTIME_DIR=/run/weston
 export WAYLAND_DISPLAY=wayland-0
 export SDL_VIDEODRIVER=wayland
@@ -112,6 +132,15 @@ printf '%s  %s\\n' \"$SCRCPY_SERVER_SHA256\" \"$ROOTFS/opt/scrcpy/scrcpy-server\
 jq -e '.linux.maskedPaths | index(\"/proc/bootconfig\") != null' \"$BUNDLE/config.json\" >/dev/null
 """
 replacements.append((old_verify, new_verify, "scrcpy server verification"))
+
+old_manifest = """Root filesystem: sparse raw ext4
+Root filesystem size: ${ROOTFS_MIB} MiB
+"""
+new_manifest = """Root filesystem: sparse raw ext4
+Root filesystem metadata: ownership, hardlinks, ACLs and xattrs preserved
+Root filesystem size: ${ROOTFS_MIB} MiB
+"""
+replacements.append((old_manifest, new_manifest, "root filesystem manifest"))
 
 for old, new, label in replacements:
     count = text.count(old)
