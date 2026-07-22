@@ -1,0 +1,39 @@
+name: Capture ARM64 IPA release failure
+
+on:
+  workflow_run:
+    workflows: ["Publish verified ARM64 Redroid IPA"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  capture:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Capture failed publisher logs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+          {
+            echo "publisher_run_id=$PUBLISH_RUN_ID"
+            gh run view "$PUBLISH_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed
+          } > .github/release-status/redroid-release-rest-failure.log 2>&1
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-release-rest-failure.log
+          git commit -m "Capture direct REST release failure" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
