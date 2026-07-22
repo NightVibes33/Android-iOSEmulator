@@ -164,6 +164,18 @@ Environment=SCRCPY_SERVER_PATH=/opt/scrcpy/scrcpy-server
 """
 replacements.append((old_ui_service_env, new_ui_service_env, "systemd scrcpy server environment"))
 
+old_bundle_init_verify = """test -x \"$BUNDLE/rootfs/init\"
+"""
+new_bundle_init_verify = """test -L \"$BUNDLE/rootfs/init\"
+BUNDLE_INIT_LINK=\"$(readlink \"$BUNDLE/rootfs/init\")\"
+case \"$BUNDLE_INIT_LINK\" in
+  /*) BUNDLE_INIT_TARGET=\"$BUNDLE/rootfs$BUNDLE_INIT_LINK\" ;;
+  *) BUNDLE_INIT_TARGET=\"$BUNDLE/rootfs/$(dirname \"$BUNDLE_INIT_LINK\")/$(basename \"$BUNDLE_INIT_LINK\")\" ;;
+esac
+test -x \"$BUNDLE_INIT_TARGET\"
+"""
+replacements.append((old_bundle_init_verify, new_bundle_init_verify, "Android init static verification"))
+
 old_verify = """test -x \"$ROOTFS/usr/bin/scrcpy\"
 jq -e '.linux.maskedPaths | index(\"/proc/bootconfig\") != null' \"$BUNDLE/config.json\" >/dev/null
 """
