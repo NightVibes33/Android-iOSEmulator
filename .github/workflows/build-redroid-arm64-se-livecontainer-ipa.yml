@@ -49,7 +49,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             debootstrap qemu-user-static binfmt-support crossbuild-essential-arm64 \
             bc bison flex libssl-dev libelf-dev dwarves cpio rsync xz-utils \
-            e2fsprogs skopeo umoci jq git ca-certificates zstd
+            e2fsprogs skopeo umoci jq git ca-certificates zstd qemu-system-arm
           sudo update-binfmts --enable qemu-aarch64
           update-binfmts --display qemu-aarch64
 
@@ -59,6 +59,43 @@ jobs:
           set -o pipefail
           sudo --preserve-env=GITHUB_WORKSPACE bash -x ./scripts/build_redroid_arm64_rootfs.sh 2>&1 | tee redroid-arm64-guest-build.log
           sudo chown -R "$(id -u):$(id -g)" build/redroid-arm64-guest .build/redroid-arm64-rootfs
+
+      - name: Inject Binder boot proof service
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/redroid-arm64-guest
+          MOUNT_DIR="$(mktemp -d)"
+          LOOP_DEVICE="$(sudo losetup --find --show "$OUT/redroid-arm64-rootfs.raw")"
+          cleanup() {
+            sudo umount "$MOUNT_DIR" >/dev/null 2>&1 || true
+            sudo losetup -d "$LOOP_DEVICE" >/dev/null 2>&1 || true
+            rmdir "$MOUNT_DIR" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          sudo mount "$LOOP_DEVICE" "$MOUNT_DIR"
+          sudo tee "$MOUNT_DIR/etc/systemd/system/ci-binder-ready.service" >/dev/null <<'SERVICE'
+          [Unit]
+          Description=Emit CI proof after Binder devices and Redroid service are ready
+          Requires=redroid.service
+          After=redroid.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/sh -c 'test -e /dev/binder && test -e /dev/hwbinder && test -e /dev/vndbinder && echo ANDROID_GUEST_BINDER_READY > /dev/ttyAMA0'
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+          sudo ln -sf ../ci-binder-ready.service \
+            "$MOUNT_DIR/etc/systemd/system/multi-user.target.wants/ci-binder-ready.service"
+          sudo sync
+          sudo umount "$MOUNT_DIR"
+          sudo losetup -d "$LOOP_DEVICE"
+          trap - EXIT
+          rmdir "$MOUNT_DIR"
+          echo 'CI QEMU Binder boot marker: ANDROID_GUEST_BINDER_READY' >> "$OUT/build-manifest.txt"
+          (cd "$OUT" && sha256sum kernel initrd.img redroid-arm64-rootfs.raw > SHA256SUMS)
 
       - name: Verify guest contract
         shell: bash
@@ -74,8 +111,54 @@ jobs:
           grep -q '^BinderFS: enabled$' "$OUT/build-manifest.txt"
           grep -q '^Android runtime: Redroid 13 64-bit only$' "$OUT/build-manifest.txt"
           grep -q '^External AOSP product archive required: no$' "$OUT/build-manifest.txt"
+          grep -q '^CI QEMU Binder boot marker: ANDROID_GUEST_BINDER_READY$' "$OUT/build-manifest.txt"
           file "$OUT/kernel" | grep -Eq 'ARM aarch64|Linux kernel ARM64|data'
           sudo e2fsck -fn "$OUT/redroid-arm64-rootfs.raw"
+
+      - name: Smoke boot ARM64 Linux and BinderFS in QEMU
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/redroid-arm64-guest
+          LOG=qemu-arm64-binder-smoke.log
+          qemu-system-aarch64 \
+            -machine virt,highmem=off \
+            -accel tcg,thread=multi \
+            -cpu max \
+            -smp 2 \
+            -m 2048 \
+            -kernel "$OUT/kernel" \
+            -initrd "$OUT/initrd.img" \
+            -append 'root=/dev/vda rw rootwait rootfstype=ext4 console=ttyAMA0 systemd.show_status=auto loglevel=4' \
+            -drive "if=none,file=$OUT/redroid-arm64-rootfs.raw,format=raw,id=rootfs" \
+            -device virtio-blk-pci,drive=rootfs \
+            -netdev user,id=net0 \
+            -device virtio-net-pci,netdev=net0 \
+            -display none \
+            -monitor none \
+            -serial "file:$LOG" \
+            -snapshot \
+            -no-reboot &
+          QEMU_PID=$!
+          cleanup() { kill "$QEMU_PID" >/dev/null 2>&1 || true; wait "$QEMU_PID" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          READY=0
+          for _ in $(seq 1 900); do
+            if grep -q 'ANDROID_GUEST_BINDER_READY' "$LOG" 2>/dev/null; then
+              READY=1
+              break
+            fi
+            if ! kill -0 "$QEMU_PID" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$READY" -ne 1 ]]; then
+            tail -n 300 "$LOG" || true
+            exit 1
+          fi
+          ! grep -Eqi 'kernel panic|not syncing|VFS: Unable to mount root' "$LOG"
+          grep 'ANDROID_GUEST_BINDER_READY' "$LOG"
 
       - name: Compress sparse guest payload for transfer
         shell: bash
@@ -94,6 +177,7 @@ jobs:
           path: |
             redroid-arm64-guest.tar.zst
             redroid-arm64-guest-build.log
+            qemu-arm64-binder-smoke.log
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
@@ -230,6 +314,7 @@ jobs:
               execution_mode: "UTM SE interpreter",
               jit_required: false,
               binderfs: true,
+              ci_qemu_binder_boot_verified: true,
               linux_page_size_kib: 4,
               x86_guest_present: false,
               tag: $tag,
