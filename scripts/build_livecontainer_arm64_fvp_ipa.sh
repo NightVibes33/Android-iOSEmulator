@@ -11,12 +11,12 @@ PRODUCT_OUT="$(cd "$1" && pwd)"
 VARIANT="${2:-mini}"
 [[ "$VARIANT" == "mini" || "$VARIANT" == "full" ]]
 
-WORK="$ROOT/.build/livecontainer-arm64-fvp"
-OUT="$ROOT/build/livecontainer-arm64-fvp"
-UTM_TAG="${UTM_TAG:-v5.0.2}"
+WORK="$ROOT/.build/livecontainer-arm64-fvp-se"
+OUT="$ROOT/build/livecontainer-arm64-fvp-se"
+UTM_TAG="${UTM_TAG:-v5.0.3}"
 UTM_IPA_URL="https://github.com/utmapp/UTM/releases/download/${UTM_TAG}/UTM-SE.ipa"
-OUTPUT_IPA="Android-iOSEmulator-AOSP-FVP-ARM64-${VARIANT}-unsigned.ipa"
-BUNDLE_ID="com.nightvibes33.androidiosemulator.arm64"
+OUTPUT_IPA="Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${VARIANT}-unsigned.ipa"
+BUNDLE_ID="com.nightvibes33.androidiosemulator.arm64.se"
 GITHUB_RELEASE_LIMIT=2147483648
 
 for command in curl unzip zip zipinfo qemu-img otool xcrun plutil python3 shasum; do
@@ -30,32 +30,35 @@ done
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK/utm" "$WORK/package/Payload" "$OUT"
 
-printf '[1/8] Downloading official UTM SE %s\n' "$UTM_TAG"
+printf '[1/8] Downloading official no-JIT UTM SE %s\n' "$UTM_TAG"
 curl --fail --location --retry 4 --retry-delay 2 "$UTM_IPA_URL" -o "$WORK/UTM-SE.ipa"
 unzip -q "$WORK/UTM-SE.ipa" -d "$WORK/utm"
 UTM_APP="$(find "$WORK/utm/Payload" -maxdepth 1 -type d -name '*.app' -print -quit)"
 [[ -n "$UTM_APP" ]]
 
-printf '[2/8] Creating official AOSP FVP ARM64 UTM bundle\n'
+printf '[2/8] Staging direct-boot raw ARM64 images\n'
 STAGED_PRODUCT="$WORK/product-out"
 mkdir -p "$STAGED_PRODUCT"
 cp "$PRODUCT_OUT/kernel" "$STAGED_PRODUCT/kernel"
 cp "$PRODUCT_OUT/combined-ramdisk.img" "$STAGED_PRODUCT/combined-ramdisk.img"
-qemu-img convert -p -f raw -O qcow2 -c -o compat=1.1,compression_type=zlib \
-  "$PRODUCT_OUT/system-qemu.img" "$STAGED_PRODUCT/system-qemu.qcow2"
-qemu-img convert -p -f raw -O qcow2 -c -o compat=1.1,compression_type=zlib \
-  "$PRODUCT_OUT/userdata.img" "$STAGED_PRODUCT/userdata.qcow2"
-qemu-img check "$STAGED_PRODUCT/system-qemu.qcow2"
-qemu-img check "$STAGED_PRODUCT/userdata.qcow2"
+# Raw images avoid QCOW2 decompression and metadata writes during the already-slow
+# interpreter path. qemu-img preserves sparse zero regions so the IPA remains compressible.
+qemu-img convert -p -f raw -O raw -S 4k \
+  "$PRODUCT_OUT/system-qemu.img" "$STAGED_PRODUCT/system-qemu.raw.img"
+qemu-img convert -p -f raw -O raw -S 4k \
+  "$PRODUCT_OUT/userdata.img" "$STAGED_PRODUCT/userdata.raw.img"
+qemu-img info "$STAGED_PRODUCT/system-qemu.raw.img"
+qemu-img info "$STAGED_PRODUCT/userdata.raw.img"
 python3 "$ROOT/scripts/make_aosp_fvp_arm64_utm.py" \
   --product-out "$STAGED_PRODUCT" \
-  --output "$WORK/Android-ARM64.utm" \
+  --output "$WORK/Android-ARM64-SE.utm" \
   --variant "$VARIANT" \
-  --system-image-name system-qemu.qcow2 \
-  --userdata-image-name userdata.qcow2
+  --execution-mode interpreter \
+  --system-image-name system-qemu.raw.img \
+  --userdata-image-name userdata.raw.img
 
-printf '[3/8] Creating ARM64 LiveContainer guest application\n'
-GUEST_APP="$WORK/package/Payload/Android iOSEmulator ARM64.app"
+printf '[3/8] Creating ARM64 no-JIT LiveContainer guest application\n'
+GUEST_APP="$WORK/package/Payload/Android iOSEmulator ARM64 SE.app"
 cp -R "$UTM_APP" "$GUEST_APP"
 find "$GUEST_APP" -name _CodeSignature -type d -prune -exec rm -rf {} + || true
 find "$GUEST_APP" -name embedded.mobileprovision -type f -delete || true
@@ -63,10 +66,10 @@ INFO_PLIST="$GUEST_APP/Info.plist"
 EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO_PLIST")"
 [[ -n "$EXECUTABLE" && -f "$GUEST_APP/$EXECUTABLE" ]]
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$INFO_PLIST"
-/usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Android ARM64' "$INFO_PLIST" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string Android ARM64' "$INFO_PLIST"
-/usr/libexec/PlistBuddy -c 'Set :CFBundleName Android ARM64' "$INFO_PLIST" 2>/dev/null || \
-  /usr/libexec/PlistBuddy -c 'Add :CFBundleName string Android ARM64' "$INFO_PLIST"
+/usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Android ARM64 SE' "$INFO_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string Android ARM64 SE' "$INFO_PLIST"
+/usr/libexec/PlistBuddy -c 'Set :CFBundleName Android ARM64 SE' "$INFO_PLIST" 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c 'Add :CFBundleName string Android ARM64 SE' "$INFO_PLIST"
 plutil -lint "$INFO_PLIST"
 
 printf '[4/8] Retaining only dyld-required and ARM64 QEMU frameworks\n'
@@ -95,9 +98,9 @@ while IFS= read -r dependency; do
 done < <(otool -L "$GUEST_APP/$EXECUTABLE" | tail -n +2 | awk '{print $1}')
 (( MISSING_LINKED_FRAMEWORK == 0 ))
 
-printf '[5/8] Embedding the ARM64 Android runtime and bootstrap\n'
+printf '[5/8] Embedding the ARM64 Android runtime and replacement bootstrap\n'
 mkdir -p "$GUEST_APP/PreloadedData" "$GUEST_APP/BootstrapTweaks"
-cp -R "$WORK/Android-ARM64.utm" "$GUEST_APP/PreloadedData/Android-ARM64.utm"
+cp -R "$WORK/Android-ARM64-SE.utm" "$GUEST_APP/PreloadedData/Android-ARM64-SE.utm"
 xcrun --sdk iphoneos clang \
   -arch arm64 -miphoneos-version-min=15.0 -fobjc-arc -fmodules -dynamiclib \
   -framework Foundation -install_name '@rpath/AndroidArm64GuestBootstrap.dylib' \
@@ -108,10 +111,10 @@ from pathlib import Path
 import plistlib
 import sys
 metadata = {
-    "LCDataUUID": "AndroidArm64RuntimeData",
-    "LCContainers": [{"folderName": "AndroidArm64RuntimeData", "name": "Android ARM64"}],
-    "LCTweakFolder": "../Applications/com.nightvibes33.androidiosemulator.arm64.app/BootstrapTweaks",
-    "isJITNeeded": True,
+    "LCDataUUID": "AndroidArm64SERuntimeData",
+    "LCContainers": [{"folderName": "AndroidArm64SERuntimeData", "name": "Android ARM64 SE"}],
+    "LCTweakFolder": "../Applications/com.nightvibes33.androidiosemulator.arm64.se.app/BootstrapTweaks",
+    "isJITNeeded": False,
     "dontInjectTweakLoader": False,
     "doUseLCBundleId": False,
     "doSymlinkInbox": False,
@@ -122,26 +125,28 @@ with Path(sys.argv[1]).open("wb") as stream:
 PY
 plutil -lint "$GUEST_APP/LCAppInfo.plist"
 
-printf '[6/8] Verifying ARM64-only guest contract\n'
-CONFIG="$GUEST_APP/PreloadedData/Android-ARM64.utm/config.plist"
+printf '[6/8] Verifying no-JIT ARM64-only guest contract\n'
+CONFIG="$GUEST_APP/PreloadedData/Android-ARM64-SE.utm/config.plist"
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :System:Architecture' "$CONFIG")" == aarch64 ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :System:Target' "$CONFIG")" == virt ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :System:CPU' "$CONFIG")" == max ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :Debug:DebugLog' "$CONFIG")" == false ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :Display:DisplayCard' "$CONFIG")" == virtio-gpu-pci ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :isJITNeeded' "$GUEST_APP/LCAppInfo.plist")" == false ]]
 [[ -d "$GUEST_APP/Frameworks/qemu-aarch64-softmmu.framework" ]]
 ! find "$GUEST_APP/Frameworks" -maxdepth 1 -type d -name 'qemu-x86_64-softmmu.framework' -print -quit | grep -q .
 
-printf '[7/8] Packaging unsigned ARM64 IPA\n'
+printf '[7/8] Packaging unsigned no-JIT ARM64 IPA\n'
 (
   cd "$WORK/package"
   zip -9 -qry "$OUT/$OUTPUT_IPA" Payload
 )
 unzip -t "$OUT/$OUTPUT_IPA" >/dev/null
 zipinfo -1 "$OUT/$OUTPUT_IPA" > "$OUT/ipa-contents.txt"
-grep -q 'Payload/Android iOSEmulator ARM64.app/Frameworks/qemu-aarch64-softmmu.framework/' "$OUT/ipa-contents.txt"
+grep -q 'Payload/Android iOSEmulator ARM64 SE.app/Frameworks/qemu-aarch64-softmmu.framework/' "$OUT/ipa-contents.txt"
 ! grep -q 'qemu-x86_64-softmmu.framework/' "$OUT/ipa-contents.txt"
-grep -q 'PreloadedData/Android-ARM64.utm/Images/system-qemu.qcow2' "$OUT/ipa-contents.txt"
-grep -q 'PreloadedData/Android-ARM64.utm/Images/userdata.qcow2' "$OUT/ipa-contents.txt"
+grep -q 'PreloadedData/Android-ARM64-SE.utm/Images/system-qemu.raw.img' "$OUT/ipa-contents.txt"
+grep -q 'PreloadedData/Android-ARM64-SE.utm/Images/userdata.raw.img' "$OUT/ipa-contents.txt"
 
 printf '[8/8] Recording manifest and checksum\n'
 IPA_SIZE="$(stat -f%z "$OUT/$OUTPUT_IPA")"
@@ -153,16 +158,20 @@ shasum -a 256 "$OUT/$OUTPUT_IPA" > "$OUT/$OUTPUT_IPA.sha256"
 cat > "$OUT/build-manifest.txt" <<EOF
 Runtime architecture: aarch64
 Android target: AOSP fvpbase (${VARIANT})
+Execution mode: UTM SE interpreter
 QEMU machine: virt,mte=on
 QEMU CPU: max
 Graphics: virtio-gpu-pci
-System storage: compressed qcow2 from system-qemu.img
-Userdata storage: compressed qcow2 from userdata.img
-JIT required: yes
+System storage: sparse raw system-qemu image
+Userdata storage: sparse raw userdata image
+Direct kernel boot: yes
+Boot animation: disabled by official AOSP FVP product configuration
+Host dex optimization: enabled by official AOSP FVP product configuration
+JIT required: no
 UTM backend retained: qemu-aarch64-softmmu
 x86_64 backend retained: no
-Signing: unsigned development-signing required
+Signing: unsigned; any compatible signing service may be used
 IPA size: ${IPA_SIZE} bytes
 Physical iPhone graphical boot: not yet verified
 EOF
-printf 'Built ARM64 AOSP FVP LiveContainer IPA: %s\n' "$OUT/$OUTPUT_IPA"
+printf 'Built no-JIT ARM64 AOSP FVP LiveContainer IPA: %s\n' "$OUT/$OUTPUT_IPA"
