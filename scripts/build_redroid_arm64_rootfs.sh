@@ -8,6 +8,7 @@ BASE_COMMIT="b7fdee1c1310ac01dea284daf79936d0d0ea9853"
 BASE_BLOB="f1238c1e17501e53be3ddf64de5028fcf2d895df"
 SCRCPY_VERSION="3.3.4"
 SCRCPY_SERVER_SHA256="8588238c9a5a00aa542906b6ec7e6d5541d9ffb9b5d0f6e1bc0e365e2303079e"
+REDROID_EXPECTED_DIGEST="sha256:5a42a569ee1d7c71796c0385e906cbaa4c3e0a162a56d9f26b29bdb1befac13b"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PATCHED_IMPL="$ROOT/scripts/.build_redroid_arm64_rootfs.impl.sh"
 BUILD_WORK="$ROOT/.build/redroid-arm64-rootfs"
@@ -153,6 +154,9 @@ PY
 
 chmod 0755 "$PATCHED_IMPL"
 export SCRCPY_SERVER_SHA256
+# The base builder performs a starts-with comparison; exporting the full digest
+# makes that check an exact digest pin while preserving the pinned implementation.
+export REDROID_EXPECTED_DIGEST_PREFIX="$REDROID_EXPECTED_DIGEST"
 
 set +e
 bash "$PATCHED_IMPL" "$@"
