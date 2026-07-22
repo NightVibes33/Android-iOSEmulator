@@ -1,0 +1,42 @@
+name: Apply Redroid snapshot patch directly
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-redroid-snapshot-direct.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - run: |
+          set -euo pipefail
+          python3 -m py_compile scripts/apply_redroid_snapshot_patch.py
+          python3 scripts/apply_redroid_snapshot_patch.py
+          rm -f .github/workflows/patch-redroid-ci-snapshot.yml
+          rm -f scripts/apply_redroid_snapshot_patch.py
+          rm -f .github/workflows/capture-redroid-qemu-failure.yml
+          git rm .github/workflows/apply-redroid-snapshot-direct.yml
+          git diff --check
+          grep -q 'ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+          grep -q -- '-snapshot \\' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+          ! grep -q TEST_DISK .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Boot Redroid CI with a QEMU snapshot overlay"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
