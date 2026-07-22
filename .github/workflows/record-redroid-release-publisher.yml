@@ -1,0 +1,44 @@
+name: Record ARM64 IPA publisher result
+
+on:
+  workflow_run:
+    workflows: ["Publish verified ARM64 Redroid IPA"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record publisher conclusion
+        shell: bash
+        env:
+          PUBLISH_RUN_ID: ${{ github.event.workflow_run.id }}
+          PUBLISH_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          PUBLISH_URL: ${{ github.event.workflow_run.html_url }}
+          PUBLISH_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PUBLISH_EVENT: ${{ github.event.workflow_run.event }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+          jq -n \
+            --arg run_id "$PUBLISH_RUN_ID" \
+            --arg conclusion "$PUBLISH_CONCLUSION" \
+            --arg run_url "$PUBLISH_URL" \
+            --arg head_sha "$PUBLISH_HEAD_SHA" \
+            --arg event "$PUBLISH_EVENT" \
+            '{run_id:$run_id,conclusion:$conclusion,run_url:$run_url,head_sha:$head_sha,event:$event}' \
+            > .github/release-status/redroid-release-publisher.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-release-publisher.json
+          git commit -m "Record ARM64 IPA publisher result" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
