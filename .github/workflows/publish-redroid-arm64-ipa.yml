@@ -8,10 +8,9 @@ on:
         required: true
         default: "29949669780"
         type: string
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/publish-redroid-arm64-ipa.yml"
+  workflow_run:
+    workflows: ["Request verified ARM64 IPA release"]
+    types: [completed]
 
 permissions:
   actions: read
@@ -30,6 +29,7 @@ env:
 
 jobs:
   publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     name: Publish already validated IPA
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -38,13 +38,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+          token: ${{ github.token }}
 
       - name: Download validated IPA artifact
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          INPUT_SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          INPUT_SOURCE_RUN_ID: ${{ github.event.inputs.source_run_id }}
         run: |
           set -euo pipefail
           SOURCE_RUN_ID="${INPUT_SOURCE_RUN_ID:-$DEFAULT_SOURCE_RUN_ID}"
@@ -78,10 +78,10 @@ jobs:
           grep -q '^isJITNeeded=false$' "$IMPORT_METADATA"
           echo "IPA_SIZE=$IPA_SIZE" >> "$GITHUB_ENV"
 
-      - name: Create clean prerelease
+      - name: Create clean prerelease with repository token
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
@@ -96,15 +96,13 @@ jobs:
       - name: Upload complete IPA with retries
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           UPLOADED=0
           for ATTEMPT in 1 2 3; do
             echo "Release asset upload attempt $ATTEMPT"
-            if gh release upload "$RELEASE_TAG" "$IPA" \
-              --repo "$GITHUB_REPOSITORY" \
-              --clobber; then
+            if gh release upload "$RELEASE_TAG" "$IPA" --repo "$GITHUB_REPOSITORY" --clobber; then
               UPLOADED=1
               break
             fi
@@ -115,7 +113,7 @@ jobs:
       - name: Verify published asset
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease,targetCommitish)"
@@ -138,32 +136,11 @@ jobs:
             --argjson asset_size_bytes "$IPA_SIZE" \
             --arg workflow_run_id "$SOURCE_RUN_ID" \
             --arg source_commit "$SOURCE_COMMIT" \
-            '{
-              verified: true,
-              android_version: 13,
-              android_sys_boot_completed: true,
-              runtime: "Redroid 13 arm64-only",
-              guest_architecture: "aarch64",
-              ci_runner_architecture: "aarch64",
-              execution_mode: "UTM SE interpreter",
-              jit_required: false,
-              binderfs: true,
-              dma_buf_system_heap: true,
-              linux_page_size_kib: 4,
-              x86_guest_present: false,
-              tag: $tag,
-              release_url: $release_url,
-              asset_name: $asset_name,
-              asset_size_bytes: $asset_size_bytes,
-              workflow_run_id: $workflow_run_id,
-              source_commit: $source_commit,
-              physical_iphone_boot_verified: false
-            }' > .github/release-status/redroid-arm64-se.json
+            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' \
+            > .github/release-status/redroid-arm64-se.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/release-status/redroid-arm64-se.json
           git commit -m "Record verified no-JIT ARM64 Android release"
           git pull --rebase origin main
           git push origin HEAD:main
-
-# Manual release trigger: 2026-07-22
