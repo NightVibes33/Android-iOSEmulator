@@ -38,6 +38,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
 
       - name: Download validated IPA artifact
         shell: bash
@@ -80,7 +81,7 @@ jobs:
       - name: Create clean prerelease
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
           set -euo pipefail
           gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
@@ -95,7 +96,7 @@ jobs:
       - name: Upload complete IPA with retries
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
           set -euo pipefail
           UPLOADED=0
@@ -114,7 +115,7 @@ jobs:
       - name: Verify published asset
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
         run: |
           set -euo pipefail
           RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease,targetCommitish)"
