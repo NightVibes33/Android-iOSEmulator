@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 
 static NSString *const AndroidVMName = @"Android-Redroid-ARM64-SE.utm";
-static NSString *const AndroidRuntimeVersion = @"redroid13-arm64-se-v1-nojit";
+static NSString *const AndroidRuntimeVersion = @"redroid13-arm64-se-v2-pinned-ci-boot";
 
 __attribute__((constructor))
 static void AndroidRedroidGuestBootstrap(void) {
@@ -50,6 +50,11 @@ static void AndroidRedroidGuestBootstrap(void) {
             @"executionMode": @"UTM SE interpreter",
             @"jitRequired": @NO,
             @"androidRuntime": @"Redroid 13 64-bit only",
+            @"redroidImage": @"13.0.0_64only-240527",
+            @"hostBootconfigMasked": @YES,
+            @"binderfsRequired": @YES,
+            @"dmaBufSystemHeapRequired": @YES,
+            @"ciAndroidBootRequired": @YES,
             @"vm": AndroidVMName,
         };
         if (![newMarker writeToURL:markerURL atomically:YES]) {
