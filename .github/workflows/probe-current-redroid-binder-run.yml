@@ -1,4 +1,5 @@
 name: Probe current Binder-capable Redroid run
+# Retry status-only probe after concurrent workflow cleanup.
 
 on:
   push:
