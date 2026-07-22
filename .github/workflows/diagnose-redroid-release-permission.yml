@@ -1,0 +1,62 @@
+name: Diagnose Redroid release permission block
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/diagnose-redroid-release-permission.yml"
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Record tag, release and ruleset state
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v0.4.0-redroid13-arm64-se-nojit
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+          OUT=.github/release-status/redroid-release-permission.txt
+          : > "$OUT"
+          {
+            echo "repository=$GITHUB_REPOSITORY"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "tag=$RELEASE_TAG"
+            echo
+            echo "== remote tag =="
+            git ls-remote --tags origin "refs/tags/$RELEASE_TAG" || true
+            echo
+            echo "== release by tag =="
+            gh api -i "/repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" 2>&1 || true
+            echo
+            echo "== releases list =="
+            gh api -i "/repos/$GITHUB_REPOSITORY/releases?per_page=20" 2>&1 || true
+            echo
+            echo "== repository rulesets =="
+            gh api -i "/repos/$GITHUB_REPOSITORY/rulesets?includes_parents=true" 2>&1 || true
+            echo
+            echo "== workflow permission setting =="
+            gh api -i "/repos/$GITHUB_REPOSITORY/actions/permissions/workflow" 2>&1 || true
+          } >> "$OUT"
+          git rm .github/workflows/diagnose-redroid-release-permission.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$OUT"
+          git commit -m "Record Redroid release permission diagnostics"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
