@@ -120,7 +120,7 @@ jobs:
           XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
           test -n "$XCODE_PATH"
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
-          brew install zstd
+          brew install zstd jq
           xcodebuild -version
 
       - name: Extract and locate downloaded guest files
@@ -175,7 +175,7 @@ jobs:
           retention-days: 30
 
       - name: Publish no-JIT ARM64 prerelease
-        if: github.event_name == 'push' || inputs.publish_release
+        if: ${{ github.event_name == 'push' || inputs.publish_release == true }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -192,3 +192,56 @@ jobs:
             --title "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \
             --notes "One complete unsigned LiveContainer guest IPA. It contains no x86 Android guest and does not request JIT. Android 13 runs as the official ARM64-only Redroid container inside a minimal ARM64 Linux guest with a custom 4K-page BinderFS kernel. UTM SE uses interpreter execution, and Weston plus scrcpy presents Android automatically. This removes the unavailable AOSP FVP archive blocker. Physical iPhone 16 / iOS 27 beta 3 boot remains a device-validation gate rather than a completed claim." \
             --prerelease
+
+          RELEASE_JSON="$(gh release view "$TAG" --json url,assets,isPrerelease)"
+          test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
+          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$(basename "$IPA")"
+          test "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"
+          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
+          echo "$RELEASE_JSON" > "$OUT/release.json"
+
+      - name: Record verified release marker
+        if: ${{ github.event_name == 'push' || inputs.publish_release == true }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v0.4.0-redroid13-arm64-se-nojit
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa"
+          SIZE="$(stat -f%z "$IPA")"
+          RELEASE_URL="$(jq -r .url "$OUT/release.json")"
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          jq -n \
+            --arg tag "$TAG" \
+            --arg release_url "$RELEASE_URL" \
+            --arg asset_name "$(basename "$IPA")" \
+            --argjson asset_size_bytes "$SIZE" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg source_commit "$GITHUB_SHA" \
+            '{
+              verified: true,
+              android_version: 13,
+              runtime: "Redroid 13 arm64-only",
+              guest_architecture: "aarch64",
+              execution_mode: "UTM SE interpreter",
+              jit_required: false,
+              binderfs: true,
+              linux_page_size_kib: 4,
+              x86_guest_present: false,
+              tag: $tag,
+              release_url: $release_url,
+              asset_name: $asset_name,
+              asset_size_bytes: $asset_size_bytes,
+              workflow_run_id: $workflow_run_id,
+              source_commit: $source_commit,
+              physical_iphone_boot_verified: false
+            }' > .github/release-status/redroid-arm64-se.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-arm64-se.json
+          git commit -m "Record verified no-JIT ARM64 Android release"
+          git push origin HEAD:main
