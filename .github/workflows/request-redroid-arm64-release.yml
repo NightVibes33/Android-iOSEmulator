@@ -1,0 +1,21 @@
+name: Request verified ARM64 IPA release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/request-redroid-arm64-release.yml"
+      - ".github/release-request/redroid-arm64-se.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  request:
+    name: Authorize release handoff
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Confirm release request
+        run: |
+          echo "Requesting publication of validated ARM64 IPA from workflow run 29949669780."
