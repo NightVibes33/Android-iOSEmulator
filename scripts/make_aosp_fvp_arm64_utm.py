@@ -11,6 +11,10 @@ import uuid
 from pathlib import Path
 
 
+SYSTEM_DRIVE_ID = "drivesystem"
+USERDATA_DRIVE_ID = "driveuserdata"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--product-out", required=True, type=Path)
@@ -46,22 +50,43 @@ def build_config(
     variant: str,
     execution_mode: str,
 ) -> dict[str, object]:
-    # Keep the no-JIT guest small enough to avoid iOS memory-pressure termination.
+    # Keep the no-JIT guest small enough to reduce iOS memory-pressure termination.
     memory_mib = 1536 if variant == "mini" else 2048
     cpu_count = 1 if variant == "mini" else 2
     jit_cache_mib = 64 if execution_mode == "interpreter" else 512
+
+    # Match device/generic/goldfish/fvpbase/run_qemu rather than UTM's generic
+    # ARM Linux defaults. In particular, Android identifies itself as fvpbase
+    # and expects the first block device on QEMU virt's MMIO transport.
     kernel_command_line = " ".join(
         (
+            "qemu=1",
             "console=ttyAMA0",
-            "earlycon=pl011,0x09000000",
-            "androidboot.hardware=qemu",
+            "earlyprintk=ttyAMA0",
+            "androidboot.hardware=fvpbase",
             "androidboot.boot_devices=a003e00.virtio_mmio",
             "androidboot.serialno=ANDROIDIOSEMULATOR",
             "androidboot.force_normal_boot=1",
+            "printk.devkmsg=on",
+            "buildvariant=userdebug",
             "loglevel=4",
             "quiet",
         )
     )
+
+    # UTM maps its generic `virtio` drive choice to virtio-blk-pci on ARM64.
+    # AOSP FVP expects virtio-blk-device (MMIO), so keep disk backends unattached
+    # in the normal drive list and attach the devices explicitly here.
+    qemu_arguments = [
+        "-global virtio-mmio.force-legacy=false",
+        f"-device virtio-blk-device,drive={SYSTEM_DRIVE_ID}",
+        f"-device virtio-blk-device,drive={USERDATA_DRIVE_ID}",
+        "-netdev user,id=androidnet,hostfwd=tcp::5555-:5555",
+        "-device virtio-net-device,netdev=androidnet,mac=52:54:00:41:52:4d",
+        "-device virtio-rng-device",
+        f'-append "{kernel_command_line}"',
+        "-no-reboot",
+    ]
 
     return {
         "ConfigurationVersion": 2,
@@ -74,13 +99,12 @@ def build_config(
             "Target": "virt",
             "BootDevice": "disk",
             "BootUefi": False,
-            "RngEnabled": True,
+            # Disabled here because UTM otherwise adds virtio-rng-pci. The
+            # AOSP-compatible MMIO RNG is attached in AddArgs.
+            "RngEnabled": False,
             "JITCacheSize": jit_cache_mib,
             "ForceMulticore": False,
-            "AddArgs": [
-                f'-append "{kernel_command_line}"',
-                "-no-reboot",
-            ],
+            "AddArgs": qemu_arguments,
             "SystemUUID": str(uuid.UUID("95db9a58-caa9-4b1e-96e0-0a52ea7bad84")),
             "MachineProperties": "mte=on",
             "UseHypervisor": False,
@@ -103,10 +127,12 @@ def build_config(
             "DisplayCard": "virtio-gpu-pci",
         },
         "Input": {"InputLegacy": False, "InputInvertScroll": False},
+        # UTM's generated ARM NIC is PCI. Disable it and attach the official
+        # AOSP-compatible virtio-net-device (MMIO) in AddArgs.
         "Networking": {
-            "NetworkMode": "emulated",
+            "NetworkMode": "none",
             "IsolateGuest": False,
-            "NetworkCard": "virtio-net-pci-non-transitional",
+            "NetworkCard": "virtio-net-pci",
             "NetworkCardMAC": "52:54:00:41:52:4d",
             "PortForward": [],
         },
@@ -123,8 +149,8 @@ def build_config(
         "Drives": [
             drive("kernel", "kernel", "kernel"),
             drive("initrd", "combined-ramdisk.img", "initrd"),
-            drive("system", system_name, "disk", "virtio"),
-            drive("userdata", userdata_name, "disk", "virtio"),
+            drive("system", system_name, "disk", "none"),
+            drive("userdata", userdata_name, "disk", "none"),
         ],
         # Serial logging can be re-enabled for diagnosis, but is disabled in the fast profile.
         "Debug": {"DebugLog": False, "IgnoreAllConfiguration": False},
@@ -133,7 +159,8 @@ def build_config(
             "Notes": (
                 "Official AOSP FVP ARM64 product output adapted to QEMU virt. "
                 f"Variant: {variant}. Execution mode: {execution_mode}. "
-                "Direct kernel boot; no x86 guest translation."
+                "Direct kernel boot with AOSP fvpbase and VirtIO MMIO storage/network; "
+                "no x86 guest translation."
             ),
         },
     }
@@ -171,9 +198,11 @@ def main() -> int:
     assert decoded["System"]["CPU"] == "max"
     assert decoded["System"]["Target"] == "virt"
     assert decoded["System"]["MachineProperties"] == "mte=on"
+    assert decoded["System"]["RngEnabled"] is False
     assert decoded["System"]["Memory"] <= 2048
     assert decoded["System"]["CPUCount"] in (1, 2)
     assert decoded["Display"]["DisplayCard"] == "virtio-gpu-pci"
+    assert decoded["Networking"]["NetworkMode"] == "none"
     assert decoded["Debug"]["DebugLog"] is False
     assert [entry["ImageType"] for entry in decoded["Drives"]] == [
         "kernel",
@@ -181,6 +210,14 @@ def main() -> int:
         "disk",
         "disk",
     ]
+    assert [entry["InterfaceType"] for entry in decoded["Drives"][2:]] == ["none", "none"]
+    add_args = decoded["System"]["AddArgs"]
+    assert any("androidboot.hardware=fvpbase" in argument for argument in add_args)
+    assert any("androidboot.boot_devices=a003e00.virtio_mmio" in argument for argument in add_args)
+    assert f"-device virtio-blk-device,drive={SYSTEM_DRIVE_ID}" in add_args
+    assert f"-device virtio-blk-device,drive={USERDATA_DRIVE_ID}" in add_args
+    assert any(argument.startswith("-device virtio-net-device") for argument in add_args)
+    assert "-device virtio-rng-device" in add_args
     for required in ("kernel", "combined-ramdisk.img", args.system_image_name, args.userdata_image_name):
         assert (images / required).is_file()
 
