@@ -142,6 +142,98 @@ unset -f fail_image_population
 """
 replacements.append((old_image, new_image, "ext4 image population"))
 
+old_binder_service = """printf '[6/10] Installing BinderFS, Android and fullscreen UI services\\n'
+cat > "$ROOTFS/usr/local/sbin/start-redroid" <<'START'
+#!/bin/sh
+set -eu
+mkdir -p /var/lib/redroid/data /run/redroid /dev/binderfs
+if ! mountpoint -q /dev/binderfs; then
+  mount -t binder binder /dev/binderfs
+fi
+grep -qw binder /proc/filesystems
+for node in binder hwbinder vndbinder; do
+"""
+new_binder_service = """printf '[6/10] Installing BinderFS, Android and fullscreen UI services\\n'
+cat > "$WORK/binderfs-device.c" <<'BINDERFS_ALLOCATOR'
+#include <errno.h>
+#include <fcntl.h>
+#include <linux/android/binder.h>
+#include <linux/android/binderfs.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int main(int argc, char **argv) {
+    int fd;
+    int result = 0;
+
+    if (argc < 2) {
+        fprintf(stderr, "usage: %s <binder-name>...\\n", argv[0]);
+        return 64;
+    }
+
+    fd = open("/dev/binderfs/binder-control", O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
+        perror("open binder-control");
+        return 1;
+    }
+
+    for (int i = 1; i < argc; i++) {
+        struct binderfs_device device = {0};
+        char path[256];
+        size_t length = strlen(argv[i]);
+
+        if (length == 0 || length >= BINDERFS_MAX_NAME) {
+            fprintf(stderr, "invalid binder device name: %s\\n", argv[i]);
+            result = 1;
+            continue;
+        }
+
+        snprintf(path, sizeof(path), "/dev/binderfs/%s", argv[i]);
+        if (access(path, F_OK) == 0) {
+            if (chmod(path, 0666) < 0) {
+                perror("chmod existing binder device");
+                result = 1;
+            }
+            continue;
+        }
+
+        memcpy(device.name, argv[i], length + 1);
+        if (ioctl(fd, BINDER_CTL_ADD, &device) < 0) {
+            if (errno != EEXIST) {
+                fprintf(stderr, "BINDER_CTL_ADD %s: %s\\n", argv[i], strerror(errno));
+                result = 1;
+                continue;
+            }
+        }
+        if (chmod(path, 0666) < 0) {
+            fprintf(stderr, "chmod %s: %s\\n", path, strerror(errno));
+            result = 1;
+        }
+    }
+
+    close(fd);
+    return result;
+}
+BINDERFS_ALLOCATOR
+aarch64-linux-gnu-gcc -O2 -Wall -Wextra "$WORK/binderfs-device.c" -o "$WORK/binderfs-device"
+install -m 0755 "$WORK/binderfs-device" "$ROOTFS/usr/local/sbin/binderfs-device"
+
+cat > "$ROOTFS/usr/local/sbin/start-redroid" <<'START'
+#!/bin/sh
+set -eu
+mkdir -p /var/lib/redroid/data /run/redroid /dev/binderfs
+if ! mountpoint -q /dev/binderfs; then
+  mount -t binder binder /dev/binderfs
+fi
+grep -qw binder /proc/filesystems
+/usr/local/sbin/binderfs-device binder hwbinder vndbinder
+for node in binder hwbinder vndbinder; do
+"""
+replacements.append((old_binder_service, new_binder_service, "BinderFS device allocator"))
+
 old_ui_env = """export XDG_RUNTIME_DIR=/run/weston
 export WAYLAND_DISPLAY=wayland-0
 export SDL_VIDEODRIVER=wayland
@@ -180,6 +272,7 @@ old_verify = """test -x \"$ROOTFS/usr/bin/scrcpy\"
 jq -e '.linux.maskedPaths | index(\"/proc/bootconfig\") != null' \"$BUNDLE/config.json\" >/dev/null
 """
 new_verify = """test -x \"$ROOTFS/usr/bin/scrcpy\"
+test -x \"$ROOTFS/usr/local/sbin/binderfs-device\"
 test -s \"$ROOTFS/opt/scrcpy/scrcpy-server\"
 printf '%s  %s\\n' \"$SCRCPY_SERVER_SHA256\" \"$ROOTFS/opt/scrcpy/scrcpy-server\" | sha256sum --check
 jq -e '.linux.maskedPaths | index(\"/proc/bootconfig\") != null' \"$BUNDLE/config.json\" >/dev/null
@@ -190,6 +283,7 @@ old_manifest = """Root filesystem: sparse raw ext4
 Root filesystem size: ${ROOTFS_MIB} MiB
 """
 new_manifest = """Root filesystem: sparse raw ext4
+BinderFS device allocation: binder-control BINDER_CTL_ADD helper
 Root filesystem metadata: ownership, hardlinks, ACLs and xattrs preserved
 Root filesystem size: ${ROOTFS_MIB} MiB
 """
