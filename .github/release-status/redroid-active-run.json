@@ -1,0 +1,35 @@
+{
+  "observed_at": "2026-07-22T17:37:05Z",
+  "run": {
+    "id": 29942315139,
+    "name": "Build and boot-test no-JIT ARM64 Redroid IPA",
+    "head_sha": "56965bbc3f5ba047a1502cbea84e47d528a7d8c9",
+    "event": "push",
+    "status": "in_progress",
+    "conclusion": null,
+    "created_at": "2026-07-22T17:26:08Z",
+    "updated_at": "2026-07-22T17:26:12Z",
+    "run_started_at": "2026-07-22T17:26:08Z",
+    "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29942315139",
+    "attempt": 1
+  },
+  "jobs": [
+    {
+      "id": 88998994419,
+      "name": "Build and boot Android 13 on native ARM64",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at": "2026-07-22T17:26:11Z",
+      "completed_at": null,
+      "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29942315139/job/88998994419",
+      "current_or_failed_step": {
+        "name": "Build deterministic ARM64 Linux and Redroid guest",
+        "status": "in_progress",
+        "conclusion": null,
+        "number": 5,
+        "started_at": "2026-07-22T17:26:46Z",
+        "completed_at": null
+      }
+    }
+  ]
+}
