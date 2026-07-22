@@ -129,7 +129,7 @@ jobs:
           AUTH=(-H "Authorization: Bearer $API_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
           BASE_UPLOAD_URL="${UPLOAD_URL%%\{*}"
           ASSET_NAME_ENCODED="$(jq -rn --arg value "$IPA_NAME" '$value|@uri')"
-          UPLOAD_CODE="$(curl -sS -D upload-headers.txt -o uploaded-asset.json -w '%{http_code}' -X POST "${AUTH[@]}" -H 'Content-Type: application/octet-stream' --data-binary @"$IPA" "$BASE_UPLOAD_URL?name=$ASSET_NAME_ENCODED")"
+          UPLOAD_CODE="$(curl -sS -D upload-headers.txt -o uploaded-asset.json -w '%{http_code}' -X POST "${AUTH[@]}" -H 'Content-Type: application/octet-stream' --upload-file "$IPA" "$BASE_UPLOAD_URL?name=$ASSET_NAME_ENCODED")"
           cat upload-headers.txt
           cat uploaded-asset.json
           test "$UPLOAD_CODE" = "201"
