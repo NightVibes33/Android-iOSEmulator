@@ -1,0 +1,55 @@
+{
+  "observed_at": "2026-07-22T18:34:57Z",
+  "run": {
+    "id": 29947169997,
+    "head_sha": "9c2960a9e8ffe3250aef47b1b1bbaefa07a448a4",
+    "status": "completed",
+    "conclusion": "failure",
+    "created_at": "2026-07-22T18:33:21Z",
+    "updated_at": "2026-07-22T18:33:43Z",
+    "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29947169997"
+  },
+  "jobs": [
+    {
+      "id": 89015393064,
+      "name": "apply",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-07-22T18:33:23Z",
+      "completed_at": "2026-07-22T18:33:42Z",
+      "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29947169997/job/89015393064",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 3,
+          "name": "Apply snapshot boot rewrite",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "number": 6,
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 7,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}
