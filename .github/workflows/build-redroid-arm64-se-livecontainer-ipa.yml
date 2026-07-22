@@ -120,7 +120,7 @@ jobs:
           XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
           test -n "$XCODE_PATH"
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
-          brew install zstd jq
+          brew install zstd jq gnu-tar bash
           xcodebuild -version
 
       - name: Extract and locate downloaded guest files
@@ -131,7 +131,7 @@ jobs:
           test -n "$ARCHIVE"
           GUEST_DIR="$PWD/.downloaded-redroid-guest/extracted"
           mkdir -p "$GUEST_DIR"
-          zstd -d --stdout "$ARCHIVE" | tar --sparse -xf - -C "$GUEST_DIR"
+          zstd -d --stdout "$ARCHIVE" | gtar --sparse -xf - -C "$GUEST_DIR"
           for required in kernel initrd.img redroid-arm64-rootfs.raw build-manifest.txt; do
             test -f "$GUEST_DIR/$required"
           done
@@ -141,7 +141,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          bash -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" 2>&1 | tee redroid-arm64-ipa-build.log
+          "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" 2>&1 | tee redroid-arm64-ipa-build.log
 
       - name: Verify final IPA architecture and import metadata
         shell: bash
