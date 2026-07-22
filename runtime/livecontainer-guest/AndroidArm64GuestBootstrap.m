@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 
-static NSString *const AndroidVMName = @"Android-ARM64.utm";
-static NSString *const AndroidRuntimeVersion = @"aosp-fvp-arm64-v1";
+static NSString *const AndroidVMName = @"Android-ARM64-SE.utm";
+static NSString *const AndroidRuntimeVersion = @"aosp-fvp-arm64-se-v2-interpreter-fastboot";
 
 __attribute__((constructor))
 static void AndroidArm64GuestBootstrap(void) {
@@ -14,7 +14,7 @@ static void AndroidArm64GuestBootstrap(void) {
         }
 
         NSURL *sourceVM = [NSBundle.mainBundle.bundleURL
-            URLByAppendingPathComponent:@"PreloadedData/Android-ARM64.utm"
+            URLByAppendingPathComponent:@"PreloadedData/Android-ARM64-SE.utm"
             isDirectory:YES];
         NSURL *documentsURL = [[NSURL fileURLWithPath:homePath isDirectory:YES]
             URLByAppendingPathComponent:@"Documents"
@@ -39,7 +39,7 @@ static void AndroidArm64GuestBootstrap(void) {
         if (![fileManager fileExistsAtPath:destinationVM.path]) {
             error = nil;
             if (![fileManager copyItemAtURL:sourceVM toURL:destinationVM error:&error]) {
-                NSLog(@"[AndroidArm64GuestBootstrap] Failed to install ARM64 VM: %@", error);
+                NSLog(@"[AndroidArm64GuestBootstrap] Failed to install ARM64 SE VM: %@", error);
                 return;
             }
         }
@@ -47,14 +47,17 @@ static void AndroidArm64GuestBootstrap(void) {
         NSDictionary *newMarker = @{
             @"runtimeVersion": AndroidRuntimeVersion,
             @"architecture": @"aarch64",
-            @"machine": @"virt",
+            @"machine": @"virt,mte=on",
             @"androidTarget": @"fvpbase",
+            @"executionMode": @"UTM SE interpreter",
+            @"jitRequired": @NO,
+            @"directKernelBoot": @YES,
             @"vm": AndroidVMName,
         };
         if (![newMarker writeToURL:markerURL atomically:YES]) {
             NSLog(@"[AndroidArm64GuestBootstrap] Failed to write runtime marker.");
             return;
         }
-        NSLog(@"[AndroidArm64GuestBootstrap] ARM64 Android VM ready at %@", destinationVM.path);
+        NSLog(@"[AndroidArm64GuestBootstrap] No-JIT ARM64 Android VM ready at %@", destinationVM.path);
     }
 }
