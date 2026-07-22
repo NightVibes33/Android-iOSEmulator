@@ -1,0 +1,116 @@
+{
+  "observed_at": "2026-07-22T18:01:33Z",
+  "run": {
+    "id": 29944574733,
+    "head_sha": "a89914cf8f492a8f4b746a1c9bc5f1cf0c263c64",
+    "status": "in_progress",
+    "conclusion": null,
+    "created_at": "2026-07-22T17:57:18Z",
+    "run_started_at": "2026-07-22T17:57:18Z",
+    "updated_at": "2026-07-22T17:57:38Z",
+    "attempt": 1,
+    "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29944574733"
+  },
+  "jobs": [
+    {
+      "id": 89006654617,
+      "name": "Build and boot Android 13 on native ARM64",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at": "2026-07-22T17:57:37Z",
+      "completed_at": null,
+      "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29944574733/job/89006654617",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-22T17:57:38Z",
+          "completed_at": "2026-07-22T17:57:40Z"
+        },
+        {
+          "number": 2,
+          "name": "Checkout repository with pinned builder history",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-22T17:57:40Z",
+          "completed_at": "2026-07-22T17:57:41Z"
+        },
+        {
+          "number": 3,
+          "name": "Reclaim runner storage",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-22T17:57:41Z",
+          "completed_at": "2026-07-22T17:57:48Z"
+        },
+        {
+          "number": 4,
+          "name": "Install ARM64 guest and boot-test dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-22T17:57:48Z",
+          "completed_at": "2026-07-22T17:58:06Z"
+        },
+        {
+          "number": 5,
+          "name": "Build deterministic ARM64 Linux and Redroid guest",
+          "status": "in_progress",
+          "conclusion": null,
+          "started_at": "2026-07-22T17:58:06Z",
+          "completed_at": null
+        },
+        {
+          "number": 6,
+          "name": "Verify static guest contract",
+          "status": "pending",
+          "conclusion": null,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "number": 7,
+          "name": "Boot Android and require sys.boot_completed",
+          "status": "pending",
+          "conclusion": null,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "number": 8,
+          "name": "Upload guest diagnostics",
+          "status": "pending",
+          "conclusion": null,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "number": 9,
+          "name": "Compress sparse guest for macOS packaging",
+          "status": "pending",
+          "conclusion": null,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "number": 10,
+          "name": "Upload verified ARM64 guest payload",
+          "status": "pending",
+          "conclusion": null,
+          "started_at": null,
+          "completed_at": null
+        },
+        {
+          "number": 20,
+          "name": "Post Checkout repository with pinned builder history",
+          "status": "pending",
+          "conclusion": null,
+          "started_at": null,
+          "completed_at": null
+        }
+      ]
+    }
+  ],
+  "artifacts": []
+}
