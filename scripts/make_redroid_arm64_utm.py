@@ -36,6 +36,7 @@ def build_config() -> dict[str, object]:
             "rw",
             "rootwait",
             "rootfstype=ext4",
+            "console=tty0",
             "console=ttyAMA0",
             "earlycon=pl011,0x09000000",
             "systemd.show_status=auto",
