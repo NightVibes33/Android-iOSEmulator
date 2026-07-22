@@ -182,7 +182,7 @@ int main(int argc, char **argv) {
 
     for (int i = 1; i < argc; i++) {
         struct binderfs_device device = {0};
-        char path[256];
+        char path[512];
         size_t length = strlen(argv[i]);
 
         if (length == 0 || length >= BINDERFS_MAX_NAME) {
