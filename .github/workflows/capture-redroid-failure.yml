@@ -1,0 +1,89 @@
+name: Capture latest Redroid failure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/capture-redroid-failure.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Download and summarize failed job log
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          STATUS=.github/release-status/redroid-arm64-pipeline.json
+          test -f "$STATUS"
+          RUN_ID="$(jq -r .run_id "$STATUS")"
+          JOBS="$(gh api "/repos/$REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100")"
+          JOB_ID="$(jq -r '.jobs[] | select(.conclusion == "failure") | .id' <<<"$JOBS" | head -1)"
+          JOB_NAME="$(jq -r --argjson id "$JOB_ID" '.jobs[] | select(.id == $id) | .name' <<<"$JOBS")"
+          test -n "$JOB_ID"
+
+          mkdir -p .build/redroid-failure .github/release-status
+          gh api -H 'Accept: application/vnd.github+json' \
+            "/repos/$REPOSITORY/actions/jobs/$JOB_ID/logs" \
+            > .build/redroid-failure/download
+
+          if unzip -t .build/redroid-failure/download >/dev/null 2>&1; then
+            unzip -p .build/redroid-failure/download > .build/redroid-failure/full.log
+          else
+            cp .build/redroid-failure/download .build/redroid-failure/full.log
+          fi
+
+          python3 - "$RUN_ID" "$JOB_ID" "$JOB_NAME" <<'PY'
+          from __future__ import annotations
+          import json
+          import re
+          import sys
+          from pathlib import Path
+
+          run_id, job_id, job_name = sys.argv[1:]
+          raw = Path('.build/redroid-failure/full.log').read_text(encoding='utf-8', errors='replace')
+          ansi = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+          lines = [ansi.sub('', line).rstrip() for line in raw.splitlines()]
+          patterns = re.compile(
+              r'(##\[error\]|\bE: |Unable to locate|has no installation candidate|'
+              r'not found|command not found|returned an error|exit code|failed|failure|error:)',
+              re.IGNORECASE,
+          )
+          matches = [line for line in lines if patterns.search(line)]
+          result = {
+              'run_id': run_id,
+              'job_id': job_id,
+              'job_name': job_name,
+              'error_lines': matches[-80:],
+              'tail': lines[-160:],
+          }
+          Path('.github/release-status/redroid-arm64-last-failure.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-arm64-last-failure.json
+          git commit -m "Record exact Redroid ARM64 failure"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
