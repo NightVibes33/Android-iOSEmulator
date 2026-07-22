@@ -1,0 +1,194 @@
+name: Build no-JIT ARM64 Redroid LiveContainer IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish the complete unsigned IPA prerelease
+        required: true
+        default: true
+        type: boolean
+  push:
+    branches: [main]
+    paths:
+      - "scripts/build_redroid_arm64_rootfs.sh"
+      - "scripts/make_redroid_arm64_utm.py"
+      - "scripts/build_livecontainer_redroid_arm64_se_ipa.sh"
+      - "runtime/livecontainer-guest/AndroidRedroidGuestBootstrap.m"
+      - ".github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: redroid-arm64-se-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-guest:
+    name: Build ARM64 Linux and Redroid guest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Reclaim runner storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean
+          df -h
+
+      - name: Install ARM64 guest build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap qemu-user-static binfmt-support crossbuild-essential-arm64 \
+            bc bison flex libssl-dev libelf-dev dwarves cpio rsync xz-utils \
+            e2fsprogs skopeo umoci jq git ca-certificates zstd
+          sudo update-binfmts --enable qemu-aarch64
+          update-binfmts --display qemu-aarch64
+
+      - name: Build no-JIT ARM64 Android guest
+        shell: bash
+        run: |
+          set -o pipefail
+          sudo --preserve-env=GITHUB_WORKSPACE bash -x ./scripts/build_redroid_arm64_rootfs.sh 2>&1 | tee redroid-arm64-guest-build.log
+          sudo chown -R "$(id -u):$(id -g)" build/redroid-arm64-guest .build/redroid-arm64-rootfs
+
+      - name: Verify guest contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/redroid-arm64-guest
+          for required in kernel initrd.img redroid-arm64-rootfs.raw build-manifest.txt SHA256SUMS; do
+            test -f "$OUT/$required"
+          done
+          grep -q '^Guest architecture: aarch64$' "$OUT/build-manifest.txt"
+          grep -q '^Execution mode: UTM SE threaded interpreter (no JIT)$' "$OUT/build-manifest.txt"
+          grep -q '^Binder IPC: built in$' "$OUT/build-manifest.txt"
+          grep -q '^BinderFS: enabled$' "$OUT/build-manifest.txt"
+          grep -q '^Android runtime: Redroid 13 64-bit only$' "$OUT/build-manifest.txt"
+          grep -q '^External AOSP product archive required: no$' "$OUT/build-manifest.txt"
+          file "$OUT/kernel" | grep -Eq 'ARM aarch64|Linux kernel ARM64|data'
+          sudo e2fsck -fn "$OUT/redroid-arm64-rootfs.raw"
+
+      - name: Compress sparse guest payload for transfer
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar --sparse -cf - -C build/redroid-arm64-guest \
+            kernel initrd.img redroid-arm64-rootfs.raw build-manifest.txt SHA256SUMS | \
+            zstd -19 -T0 -o redroid-arm64-guest.tar.zst
+          test -s redroid-arm64-guest.tar.zst
+          ls -lh redroid-arm64-guest.tar.zst
+
+      - name: Upload ARM64 guest payload
+        uses: actions/upload-artifact@v4
+        with:
+          name: redroid-arm64-guest
+          path: |
+            redroid-arm64-guest.tar.zst
+            redroid-arm64-guest-build.log
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+  package-ipa:
+    name: Package import-safe no-JIT IPA
+    needs: build-guest
+    runs-on: macos-26
+    timeout-minutes: 240
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download ARM64 guest payload
+        uses: actions/download-artifact@v4
+        with:
+          name: redroid-arm64-guest
+          path: .downloaded-redroid-guest
+
+      - name: Select Xcode 26
+        shell: bash
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
+          test -n "$XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          brew install zstd
+          xcodebuild -version
+
+      - name: Extract and locate downloaded guest files
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCHIVE="$(find .downloaded-redroid-guest -type f -name redroid-arm64-guest.tar.zst -print -quit)"
+          test -n "$ARCHIVE"
+          GUEST_DIR="$PWD/.downloaded-redroid-guest/extracted"
+          mkdir -p "$GUEST_DIR"
+          zstd -d --stdout "$ARCHIVE" | tar --sparse -xf - -C "$GUEST_DIR"
+          for required in kernel initrd.img redroid-arm64-rootfs.raw build-manifest.txt; do
+            test -f "$GUEST_DIR/$required"
+          done
+          echo "GUEST_DIR=$GUEST_DIR" >> "$GITHUB_ENV"
+
+      - name: Build complete LiveContainer IPA
+        shell: bash
+        run: |
+          set -o pipefail
+          bash -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" 2>&1 | tee redroid-arm64-ipa-build.log
+
+      - name: Verify final IPA architecture and import metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa"
+          test -f "$IPA"
+          unzip -t "$IPA" >/dev/null
+          grep -q '^Guest architecture: aarch64$' "$OUT/build-manifest.txt"
+          grep -q '^Android runtime: Redroid 13 64-bit only$' "$OUT/build-manifest.txt"
+          grep -q '^JIT required by LiveContainer: no$' "$OUT/build-manifest.txt"
+          grep -q '^x86_64 backend retained: no$' "$OUT/build-manifest.txt"
+          grep -q '^isJITNeeded=false$' "$OUT/livecontainer-import-metadata.txt"
+          grep -q 'qemu-aarch64-softmmu.framework/' "$OUT/ipa-contents.txt"
+          ! grep -q 'qemu-x86_64-softmmu.framework/' "$OUT/ipa-contents.txt"
+
+      - name: Upload complete unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned
+          path: |
+            build/livecontainer-redroid-arm64-se/*.ipa
+            build/livecontainer-redroid-arm64-se/*.sha256
+            build/livecontainer-redroid-arm64-se/build-manifest.txt
+            build/livecontainer-redroid-arm64-se/livecontainer-import-metadata.txt
+            build/livecontainer-redroid-arm64-se/archive-entry-order.txt
+            redroid-arm64-ipa-build.log
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish no-JIT ARM64 prerelease
+        if: github.event_name == 'push' || inputs.publish_release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v0.4.0-redroid13-arm64-se-nojit
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa"
+          SIZE="$(stat -f%z "$IPA")"
+          test "$SIZE" -lt 2147483648
+          gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+          gh release create "$TAG" "$IPA" \
+            --target "$GITHUB_SHA" \
+            --title "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \
+            --notes "One complete unsigned LiveContainer guest IPA. It contains no x86 Android guest and does not request JIT. Android 13 runs as the official ARM64-only Redroid container inside a minimal ARM64 Linux guest with a custom 4K-page BinderFS kernel. UTM SE uses interpreter execution, and Weston plus scrcpy presents Android automatically. This removes the unavailable AOSP FVP archive blocker. Physical iPhone 16 / iOS 27 beta 3 boot remains a device-validation gate rather than a completed claim." \
+            --prerelease
