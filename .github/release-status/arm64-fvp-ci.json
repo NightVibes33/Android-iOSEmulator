@@ -1,0 +1,23 @@
+{
+  "archive_sha256": null,
+  "device_boot_verified": false,
+  "hardware": "fvpbase",
+  "ipa_built": false,
+  "ipa_name": null,
+  "jit_required": false,
+  "job_status": "failure",
+  "network_transport": "virtio-mmio",
+  "resolver_error": null,
+  "resolver_verified": false,
+  "run_attempt": "1",
+  "run_id": "29935895542",
+  "selected_branch": null,
+  "selected_target": null,
+  "selected_url": null,
+  "source_commit": "6d4647f311f80434cbb4b8b8fa7122964e9925f8",
+  "source_mode": "android_ci",
+  "storage_transport": "virtio-mmio",
+  "variant": "mini",
+  "workflow": "build-arm64-fvp-livecontainer-ipa.yml",
+  "x86_64_backend": false
+}
