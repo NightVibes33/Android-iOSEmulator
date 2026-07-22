@@ -10,6 +10,7 @@ SCRCPY_VERSION="3.3.4"
 SCRCPY_SERVER_SHA256="8588238c9a5a00aa542906b6ec7e6d5541d9ffb9b5d0f6e1bc0e365e2303079e"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PATCHED_IMPL="$ROOT/scripts/.build_redroid_arm64_rootfs.impl.sh"
+BUILD_WORK="$ROOT/.build/redroid-arm64-rootfs"
 
 cleanup() {
   rm -f "$PATCHED_IMPL"
@@ -123,4 +124,18 @@ PY
 
 chmod 0755 "$PATCHED_IMPL"
 export SCRCPY_SERVER_SHA256
-exec bash "$PATCHED_IMPL" "$@"
+
+set +e
+bash "$PATCHED_IMPL" "$@"
+BUILD_STATUS=$?
+set -e
+
+if [[ "$BUILD_STATUS" -eq 0 ]]; then
+  # The finalized kernel/initramfs/root disk live under build/. The expanded
+  # Debian tree, Linux object tree and unpack staging are no longer needed and
+  # otherwise consume several additional gigabytes during the QEMU boot proof.
+  rm -rf "$BUILD_WORK"
+  mkdir -p "$BUILD_WORK"
+fi
+
+exit "$BUILD_STATUS"
