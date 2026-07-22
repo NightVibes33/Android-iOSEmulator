@@ -1,0 +1,55 @@
+{
+  "observed_at": "2026-07-22T18:15:35Z",
+  "run": {
+    "id": 29945727886,
+    "head_sha": "b6deb65ed997ecee41688b023387ddfe83996859",
+    "status": "completed",
+    "conclusion": "failure",
+    "created_at": "2026-07-22T18:13:20Z",
+    "updated_at": "2026-07-22T18:13:26Z",
+    "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29945727886"
+  },
+  "jobs": [
+    {
+      "id": 89010492990,
+      "name": "patch",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-07-22T18:13:23Z",
+      "completed_at": "2026-07-22T18:13:26Z",
+      "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29945727886/job/89010492990",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 3,
+          "name": "Increase validated binderfs path buffer",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "number": 6,
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 7,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}
