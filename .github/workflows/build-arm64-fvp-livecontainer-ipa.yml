@@ -207,3 +207,64 @@ jobs:
             --title "Android iOSEmulator — AOSP FVP ARM64 SE no-JIT ${VARIANT}" \
             --notes "Unsigned no-JIT ARM64 build for iOS 27 beta testing. Uses a SHA-256-recorded AOSP FVP product output, androidboot.hardware=fvpbase, direct kernel boot and the exact VirtIO MMIO block/network/RNG transport expected by AOSP. UTM's generic ARM PCI block and network devices are disabled. The final IPA is rejected unless isJITNeeded=false, qemu-aarch64 is present and x86_64 is absent. Physical iPhone boot remains a device validation gate." \
             --prerelease
+
+      - name: Record ARM64 FVP pipeline status
+        if: always()
+        continue-on-error: true
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -u
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || true
+          mkdir -p .github/release-status
+          python3 - <<'PY'
+          import glob
+          import json
+          import os
+          from pathlib import Path
+
+          resolver_path = Path('.build/fvp-resolver.json')
+          resolver = {}
+          if resolver_path.is_file():
+              try:
+                  resolver = json.loads(resolver_path.read_text(encoding='utf-8'))
+              except Exception as exc:
+                  resolver = {'verified': False, 'parse_error': str(exc)}
+
+          ipas = glob.glob('build/livecontainer-arm64-fvp-se/*.ipa')
+          status = {
+              'workflow': 'build-arm64-fvp-livecontainer-ipa.yml',
+              'run_id': os.environ.get('GITHUB_RUN_ID'),
+              'run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
+              'source_commit': os.environ.get('GITHUB_SHA'),
+              'job_status': os.environ.get('JOB_STATUS'),
+              'variant': os.environ.get('VARIANT'),
+              'source_mode': os.environ.get('SOURCE_MODE'),
+              'resolver_verified': resolver.get('verified', False),
+              'selected_branch': resolver.get('selected_branch'),
+              'selected_target': resolver.get('selected_target'),
+              'selected_url': resolver.get('selected_url'),
+              'archive_sha256': resolver.get('archive_sha256'),
+              'ipa_built': bool(ipas),
+              'ipa_name': Path(ipas[0]).name if ipas else None,
+              'hardware': 'fvpbase',
+              'storage_transport': 'virtio-mmio',
+              'network_transport': 'virtio-mmio',
+              'jit_required': False,
+              'x86_64_backend': False,
+              'device_boot_verified': False,
+              'resolver_error': resolver.get('error'),
+          }
+          Path('.github/release-status/arm64-fvp-ci.json').write_text(
+              json.dumps(status, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+          PY
+
+          git add .github/release-status/arm64-fvp-ci.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Record ARM64 FVP pipeline status"
+            git push origin HEAD:main
+          fi
