@@ -1,4 +1,4 @@
-name: Build AOSP FVP ARM64 LiveContainer IPA
+name: Build no-JIT AOSP FVP ARM64 LiveContainer IPA
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ on:
           - mini
           - full
       publish_release:
-        description: Publish the unsigned IPA to an ARM64 prerelease
+        description: Publish the unsigned no-JIT IPA to an ARM64 SE prerelease
         required: true
         default: false
         type: boolean
@@ -29,7 +29,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: aosp-fvp-arm64-${{ github.ref }}
+  group: aosp-fvp-arm64-se-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -70,41 +70,63 @@ jobs:
           done
           echo "PRODUCT_OUT=$PRODUCT_OUT" >> "$GITHUB_ENV"
 
-      - name: Build ARM64 LiveContainer IPA
+      - name: Build no-JIT ARM64 LiveContainer IPA
         shell: bash
         run: |
           set -o pipefail
-          bash -x ./scripts/build_livecontainer_arm64_fvp_ipa.sh "$PRODUCT_OUT" '${{ inputs.variant }}' 2>&1 | tee arm64-fvp-build.log
+          bash -x ./scripts/build_livecontainer_arm64_fvp_ipa.sh "$PRODUCT_OUT" '${{ inputs.variant }}' 2>&1 | tee arm64-fvp-se-build.log
 
-      - name: Verify final architecture contract
+      - name: Verify final no-JIT architecture and storage contract
         shell: bash
         run: |
           set -euo pipefail
-          OUT=build/livecontainer-arm64-fvp
-          IPA="$OUT/Android-iOSEmulator-AOSP-FVP-ARM64-${{ inputs.variant }}-unsigned.ipa"
+          OUT=build/livecontainer-arm64-fvp-se
+          IPA="$OUT/Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${{ inputs.variant }}-unsigned.ipa"
           test -f "$IPA"
           unzip -t "$IPA" >/dev/null
           grep -q '^Runtime architecture: aarch64$' "$OUT/build-manifest.txt"
+          grep -q '^Execution mode: UTM SE interpreter$' "$OUT/build-manifest.txt"
           grep -q '^QEMU machine: virt,mte=on$' "$OUT/build-manifest.txt"
+          grep -q '^System storage: sparse raw system-qemu image$' "$OUT/build-manifest.txt"
+          grep -q '^Userdata storage: sparse raw userdata image$' "$OUT/build-manifest.txt"
+          grep -q '^Direct kernel boot: yes$' "$OUT/build-manifest.txt"
+          grep -q '^JIT required: no$' "$OUT/build-manifest.txt"
           grep -q '^UTM backend retained: qemu-aarch64-softmmu$' "$OUT/build-manifest.txt"
           grep -q '^x86_64 backend retained: no$' "$OUT/build-manifest.txt"
           unzip -Z1 "$IPA" | grep -q 'qemu-aarch64-softmmu.framework/'
           ! unzip -Z1 "$IPA" | grep -q 'qemu-x86_64-softmmu.framework/'
+          unzip -Z1 "$IPA" | grep -q 'system-qemu.raw.img'
+          unzip -Z1 "$IPA" | grep -q 'userdata.raw.img'
 
-      - name: Upload ARM64 IPA artifact
+          VERIFY_DIR="$(mktemp -d)"
+          trap 'rm -rf "$VERIFY_DIR"' EXIT
+          unzip -q "$IPA" \
+            'Payload/Android iOSEmulator ARM64 SE.app/LCAppInfo.plist' \
+            'Payload/Android iOSEmulator ARM64 SE.app/PreloadedData/Android-ARM64-SE.utm/config.plist' \
+            -d "$VERIFY_DIR"
+          LC_INFO="$VERIFY_DIR/Payload/Android iOSEmulator ARM64 SE.app/LCAppInfo.plist"
+          CONFIG="$VERIFY_DIR/Payload/Android iOSEmulator ARM64 SE.app/PreloadedData/Android-ARM64-SE.utm/config.plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :isJITNeeded' "$LC_INFO")" = false
+          test "$(/usr/libexec/PlistBuddy -c 'Print :System:Architecture' "$CONFIG")" = aarch64
+          test "$(/usr/libexec/PlistBuddy -c 'Print :System:CPU' "$CONFIG")" = max
+          test "$(/usr/libexec/PlistBuddy -c 'Print :System:Target' "$CONFIG")" = virt
+          test "$(/usr/libexec/PlistBuddy -c 'Print :System:MachineProperties' "$CONFIG")" = 'mte=on'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :Debug:DebugLog' "$CONFIG")" = false
+
+      - name: Upload no-JIT ARM64 IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Android-iOSEmulator-AOSP-FVP-ARM64-${{ inputs.variant }}-unsigned
+          name: Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${{ inputs.variant }}-unsigned
           path: |
-            build/livecontainer-arm64-fvp/*.ipa
-            build/livecontainer-arm64-fvp/*.sha256
-            build/livecontainer-arm64-fvp/build-manifest.txt
-            arm64-fvp-build.log
+            build/livecontainer-arm64-fvp-se/*.ipa
+            build/livecontainer-arm64-fvp-se/*.sha256
+            build/livecontainer-arm64-fvp-se/build-manifest.txt
+            arm64-fvp-se-build.log
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
 
-      - name: Publish ARM64 prerelease
+      - name: Publish no-JIT ARM64 SE prerelease
         if: inputs.publish_release
         shell: bash
         env:
@@ -112,11 +134,11 @@ jobs:
           VARIANT: ${{ inputs.variant }}
         run: |
           set -euo pipefail
-          TAG="v0.3.0-aosp-fvp-arm64-${VARIANT}"
-          IPA="build/livecontainer-arm64-fvp/Android-iOSEmulator-AOSP-FVP-ARM64-${VARIANT}-unsigned.ipa"
+          TAG="v0.3.0-aosp-fvp-arm64-se-nojit-${VARIANT}"
+          IPA="build/livecontainer-arm64-fvp-se/Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${VARIANT}-unsigned.ipa"
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" "$IPA" \
             --target "$GITHUB_SHA" \
-            --title "Android iOSEmulator — AOSP FVP ARM64 ${VARIANT}" \
-            --notes "Unsigned development build using the official AOSP FVP ARM64 QEMU contract: aarch64, virt,mte=on, CPU=max, VirtIO block/network/GPU. This replaces the unsupported BlissOS x86_64 experiment. Physical-device Android UI boot is still a validation gate, not a completed claim." \
+            --title "Android iOSEmulator — AOSP FVP ARM64 SE no-JIT ${VARIANT}" \
+            --notes "Unsigned no-JIT fallback for devices where JIT cannot be enabled, including the current iOS 27 beta testing path. Uses official AOSP FVP ARM64 images, direct kernel boot, aarch64 QEMU virt,mte=on, sparse raw system/userdata disks, reduced logging, no x86 backend and isJITNeeded=false. UTM SE uses a slower interpreter, so physical-device boot speed and Android UI usability remain validation gates rather than completed claims." \
             --prerelease
