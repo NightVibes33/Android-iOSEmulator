@@ -1,0 +1,121 @@
+name: Apply Redroid snapshot boot rewrite
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/apply-redroid-snapshot-linewise.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Rewrite boot test without duplicating the root disk
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          output = []
+          counts = {
+              'test_disk': 0,
+              'rm': 0,
+              'copy': 0,
+              'drive': 0,
+              'launch': 0,
+          }
+
+          for line in lines:
+              stripped = line.strip()
+              indent = line[: len(line) - len(line.lstrip())]
+
+              if stripped == 'TEST_DISK=.build/redroid-arm64-boot-test.raw':
+                  output.append(indent + 'ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"')
+                  counts['test_disk'] += 1
+                  continue
+
+              if stripped == 'rm -f "$TEST_DISK" "$QEMU_LOG" "$BOOT_PROPS"':
+                  output.append(indent + 'rm -f "$QEMU_LOG" "$BOOT_PROPS"')
+                  output.extend([
+                      indent + '{',
+                      indent + '  echo "Redroid CI QEMU pre-launch diagnostics"',
+                      indent + '  echo "root_disk=$ROOT_DISK"',
+                      indent + '  stat "$ROOT_DISK"',
+                      indent + '  df -h',
+                      indent + '} > "$QEMU_LOG"',
+                  ])
+                  counts['rm'] += 1
+                  continue
+
+              if stripped == 'cp --reflink=auto --sparse=always "$OUT/redroid-arm64-rootfs.raw" "$TEST_DISK"':
+                  counts['copy'] += 1
+                  continue
+
+              if 'file=$TEST_DISK' in line:
+                  output.append(line.replace('file=$TEST_DISK', 'file=$ROOT_DISK'))
+                  counts['drive'] += 1
+                  continue
+
+              if stripped == '-no-reboot >"$QEMU_LOG" 2>&1 &':
+                  output.append(indent + '-snapshot ' + chr(92))
+                  output.append(indent + '-no-reboot >>"$QEMU_LOG" 2>&1 &')
+                  counts['launch'] += 1
+                  continue
+
+              output.append(line)
+
+          expected = {key: 1 for key in counts}
+          if counts != expected:
+              raise SystemExit(f'Unexpected rewrite counts: {counts}; expected {expected}')
+
+          text = '\n'.join(output) + '\n'
+          forbidden = ('TEST_DISK=', 'file=$TEST_DISK', 'cp --reflink=auto --sparse=always')
+          for marker in forbidden:
+              if marker in text:
+                  raise SystemExit(f'Stale boot-copy marker remains: {marker}')
+
+          required = (
+              'ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"',
+              'Redroid CI QEMU pre-launch diagnostics',
+              '-snapshot ' + chr(92),
+              '-no-reboot >>"$QEMU_LOG" 2>&1 &',
+          )
+          for marker in required:
+              if marker not in text:
+                  raise SystemExit(f'Missing rewritten boot marker: {marker}')
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          rm -f .github/workflows/apply-redroid-snapshot-direct.yml
+          git rm .github/workflows/apply-redroid-snapshot-linewise.yml
+          git diff --check
+          grep -q 'ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+          grep -q 'Redroid CI QEMU pre-launch diagnostics' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+          ! grep -q TEST_DISK .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+
+      - name: Commit the real workflow change
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Boot Redroid CI without duplicating the root disk"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
