@@ -39,16 +39,20 @@ jobs:
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           CREATED_AT: ${{ github.event.workflow_run.created_at }}
           UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
-          RELEASE_TAG: v0.4.1-redroid13-arm64-se-nojit-ci-boot
         run: |
           set -euo pipefail
           mkdir -p .github/release-status
 
+          git fetch --no-tags origin "$HEAD_SHA" || true
+          WORKFLOW_TEXT="$(git show "$HEAD_SHA:.github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml")"
+          RELEASE_TAG="$(awk '$1 == "RELEASE_TAG:" {print $2; exit}' <<<"$WORKFLOW_TEXT")"
+          test -n "$RELEASE_TAG"
+
           ARTIFACTS_JSON="$(gh api --paginate "/repos/$REPOSITORY/actions/runs/$RUN_ID/artifacts" --slurp)"
           ARTIFACT_NAMES="$(jq -c '[.[].artifacts[]?.name] | unique' <<<"$ARTIFACTS_JSON")"
           GUEST_PRESENT="$(jq -e 'index("redroid-arm64-guest") != null' <<<"$ARTIFACT_NAMES" >/dev/null && echo true || echo false)"
-          BOOT_DIAGNOSTICS_PRESENT="$(jq -e 'index("redroid-arm64-ci-boot-diagnostics") != null' <<<"$ARTIFACT_NAMES" >/dev/null && echo true || echo false)"
-          IPA_PRESENT="$(jq -e 'index("Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-CIBooted-unsigned") != null' <<<"$ARTIFACT_NAMES" >/dev/null && echo true || echo false)"
+          BOOT_DIAGNOSTICS_PRESENT="$(jq -e 'index("redroid-arm64-guest-diagnostics") != null or index("redroid-arm64-ci-boot-diagnostics") != null' <<<"$ARTIFACT_NAMES" >/dev/null && echo true || echo false)"
+          IPA_PRESENT="$(jq -e 'index("Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned") != null or index("Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-CIBooted-unsigned") != null' <<<"$ARTIFACT_NAMES" >/dev/null && echo true || echo false)"
 
           RELEASE_PRESENT=false
           RELEASE_URL=null
