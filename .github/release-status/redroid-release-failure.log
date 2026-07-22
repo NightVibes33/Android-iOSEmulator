@@ -1,0 +1,222 @@
+# Package/release job failure tail
+
+2026-07-22T19:51:57.3178160Z ##[group]Run actions/upload-artifact@v4
+2026-07-22T19:51:57.3178980Z with:
+2026-07-22T19:51:57.3179690Z   name: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned
+2026-07-22T19:51:57.3182420Z   path: build/livecontainer-redroid-arm64-se/*.ipa
+build/livecontainer-redroid-arm64-se/*.sha256
+build/livecontainer-redroid-arm64-se/build-manifest.txt
+build/livecontainer-redroid-arm64-se/livecontainer-import-metadata.txt
+build/livecontainer-redroid-arm64-se/archive-entry-order.txt
+redroid-arm64-ipa-build.log
+
+2026-07-22T19:51:57.3184810Z   if-no-files-found: error
+2026-07-22T19:51:57.3185590Z   compression-level: 0
+2026-07-22T19:51:57.3186370Z   retention-days: 30
+2026-07-22T19:51:57.3203790Z   overwrite: false
+2026-07-22T19:51:57.3204060Z   include-hidden-files: false
+2026-07-22T19:51:57.3204430Z env:
+2026-07-22T19:51:57.3204680Z   RELEASE_TAG: v0.4.0-redroid13-arm64-se-nojit
+2026-07-22T19:51:57.3253420Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-22T19:51:57.3254090Z   GUEST_DIR: /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.downloaded-redroid-guest/extracted
+2026-07-22T19:51:57.3254660Z ##[endgroup]
+2026-07-22T19:51:58.0218930Z (node:17909) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-07-22T19:51:58.0219600Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-07-22T19:51:58.0353750Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-07-22T19:51:58.0354830Z The least common ancestor is /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator. This will be the root directory of the artifact
+2026-07-22T19:51:58.0355480Z With the provided path, there will be 6 files uploaded
+2026-07-22T19:51:58.0362170Z Artifact name is valid!
+2026-07-22T19:51:58.0364860Z Root directory input is valid!
+2026-07-22T19:51:58.4353600Z Beginning upload of artifact content to blob storage
+2026-07-22T19:51:58.5142830Z (node:17909) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-07-22T19:51:59.5112160Z Uploaded bytes 8388608
+2026-07-22T19:51:59.5394260Z Uploaded bytes 16777216
+2026-07-22T19:51:59.7626100Z Uploaded bytes 25165824
+2026-07-22T19:51:59.8385280Z Uploaded bytes 33554432
+2026-07-22T19:51:59.9670660Z Uploaded bytes 41943040
+2026-07-22T19:52:00.4788540Z Uploaded bytes 50331648
+2026-07-22T19:52:00.6427830Z Uploaded bytes 58720256
+2026-07-22T19:52:00.8574390Z Uploaded bytes 67108864
+2026-07-22T19:52:00.9604910Z Uploaded bytes 75497472
+2026-07-22T19:52:00.9883400Z Uploaded bytes 83886080
+2026-07-22T19:52:01.1939610Z Uploaded bytes 92274688
+2026-07-22T19:52:01.3211110Z Uploaded bytes 100663296
+2026-07-22T19:52:01.3424360Z Uploaded bytes 109051904
+2026-07-22T19:52:01.4930180Z Uploaded bytes 117440512
+2026-07-22T19:52:01.5122330Z Uploaded bytes 125829120
+2026-07-22T19:52:01.6511880Z Uploaded bytes 134217728
+2026-07-22T19:52:01.8274150Z Uploaded bytes 142606336
+2026-07-22T19:52:01.9472870Z Uploaded bytes 150994944
+2026-07-22T19:52:01.9827900Z Uploaded bytes 159383552
+2026-07-22T19:52:02.0398330Z Uploaded bytes 167772160
+2026-07-22T19:52:02.1967130Z Uploaded bytes 176160768
+2026-07-22T19:52:02.3763260Z Uploaded bytes 184549376
+2026-07-22T19:52:02.4064990Z Uploaded bytes 192937984
+2026-07-22T19:52:02.5174280Z Uploaded bytes 201326592
+2026-07-22T19:52:02.5997380Z Uploaded bytes 209715200
+2026-07-22T19:52:02.7663180Z Uploaded bytes 218103808
+2026-07-22T19:52:02.7863340Z Uploaded bytes 226492416
+2026-07-22T19:52:02.8616290Z Uploaded bytes 234881024
+2026-07-22T19:52:03.3471580Z Uploaded bytes 243269632
+2026-07-22T19:52:03.3781370Z Uploaded bytes 251658240
+2026-07-22T19:52:03.4643260Z Uploaded bytes 260046848
+2026-07-22T19:52:03.4735590Z Uploaded bytes 268435456
+2026-07-22T19:52:03.8037980Z Uploaded bytes 276824064
+2026-07-22T19:52:03.9397580Z Uploaded bytes 285212672
+2026-07-22T19:52:03.9749800Z Uploaded bytes 293601280
+2026-07-22T19:52:03.9878880Z Uploaded bytes 301989888
+2026-07-22T19:52:04.3172790Z Uploaded bytes 310378496
+2026-07-22T19:52:04.5413450Z Uploaded bytes 318767104
+2026-07-22T19:52:04.6473080Z Uploaded bytes 327155712
+2026-07-22T19:52:04.6585940Z Uploaded bytes 335544320
+2026-07-22T19:52:04.6954100Z Uploaded bytes 343932928
+2026-07-22T19:52:05.0189200Z Uploaded bytes 352321536
+2026-07-22T19:52:05.1162200Z Uploaded bytes 360710144
+2026-07-22T19:52:05.1391330Z Uploaded bytes 369098752
+2026-07-22T19:52:05.1533470Z Uploaded bytes 377487360
+2026-07-22T19:52:05.3491810Z Uploaded bytes 385875968
+2026-07-22T19:52:05.5746270Z Uploaded bytes 394264576
+2026-07-22T19:52:05.6273450Z Uploaded bytes 402653184
+2026-07-22T19:52:05.6649910Z Uploaded bytes 411041792
+2026-07-22T19:52:05.6829230Z Uploaded bytes 419430400
+2026-07-22T19:52:06.0648020Z Uploaded bytes 427819008
+2026-07-22T19:52:06.0917190Z Uploaded bytes 436207616
+2026-07-22T19:52:06.1037780Z Uploaded bytes 444596224
+2026-07-22T19:52:06.2553640Z Uploaded bytes 452984832
+2026-07-22T19:52:06.3888030Z Uploaded bytes 461373440
+2026-07-22T19:52:06.5158590Z Uploaded bytes 469762048
+2026-07-22T19:52:06.7249780Z Uploaded bytes 478150656
+2026-07-22T19:52:06.7676060Z Uploaded bytes 486539264
+2026-07-22T19:52:06.8303200Z Uploaded bytes 494927872
+2026-07-22T19:52:06.9394910Z Uploaded bytes 503316480
+2026-07-22T19:52:07.0946620Z Uploaded bytes 511705088
+2026-07-22T19:52:07.3634840Z Uploaded bytes 520093696
+2026-07-22T19:52:07.4155480Z Uploaded bytes 528482304
+2026-07-22T19:52:07.4803130Z Uploaded bytes 536870912
+2026-07-22T19:52:07.5685170Z Uploaded bytes 545259520
+2026-07-22T19:52:07.8698190Z Uploaded bytes 553648128
+2026-07-22T19:52:07.9311970Z Uploaded bytes 562036736
+2026-07-22T19:52:07.9384600Z Uploaded bytes 570425344
+2026-07-22T19:52:07.9579410Z Uploaded bytes 578813952
+2026-07-22T19:52:08.3384260Z Uploaded bytes 587202560
+2026-07-22T19:52:08.3448260Z Uploaded bytes 595591168
+2026-07-22T19:52:08.4543380Z Uploaded bytes 603979776
+2026-07-22T19:52:08.5065900Z Uploaded bytes 612368384
+2026-07-22T19:52:08.7849550Z Uploaded bytes 620756992
+2026-07-22T19:52:08.8152290Z Uploaded bytes 629145600
+2026-07-22T19:52:09.0660640Z Uploaded bytes 637534208
+2026-07-22T19:52:09.1123690Z Uploaded bytes 645922816
+2026-07-22T19:52:09.1619900Z Uploaded bytes 654311424
+2026-07-22T19:52:09.2370980Z Uploaded bytes 662700032
+2026-07-22T19:52:09.6090970Z Uploaded bytes 671088640
+2026-07-22T19:52:09.6178390Z Uploaded bytes 679477248
+2026-07-22T19:52:09.6636040Z Uploaded bytes 687865856
+2026-07-22T19:52:09.6917340Z Uploaded bytes 696254464
+2026-07-22T19:52:09.9908110Z Uploaded bytes 704643072
+2026-07-22T19:52:10.0768070Z Uploaded bytes 713031680
+2026-07-22T19:52:10.1343210Z Uploaded bytes 721420288
+2026-07-22T19:52:10.2320190Z Uploaded bytes 729808896
+2026-07-22T19:52:10.4651020Z Uploaded bytes 738197504
+2026-07-22T19:52:10.5547430Z Uploaded bytes 746586112
+2026-07-22T19:52:10.6670320Z Uploaded bytes 754974720
+2026-07-22T19:52:10.7855760Z Uploaded bytes 763363328
+2026-07-22T19:52:10.8647330Z Uploaded bytes 771751936
+2026-07-22T19:52:11.0138640Z Uploaded bytes 780140544
+2026-07-22T19:52:11.1982350Z Uploaded bytes 788529152
+2026-07-22T19:52:11.2746780Z Uploaded bytes 796917760
+2026-07-22T19:52:11.3308120Z Uploaded bytes 805306368
+2026-07-22T19:52:11.4343260Z Uploaded bytes 813694976
+2026-07-22T19:52:11.6449880Z Uploaded bytes 822083584
+2026-07-22T19:52:11.7480510Z Uploaded bytes 830472192
+2026-07-22T19:52:11.8749660Z Uploaded bytes 838860800
+2026-07-22T19:52:11.8969830Z Uploaded bytes 847249408
+2026-07-22T19:52:12.0287930Z Uploaded bytes 855638016
+2026-07-22T19:52:12.2653100Z Uploaded bytes 864026624
+2026-07-22T19:52:12.3820140Z Uploaded bytes 872415232
+2026-07-22T19:52:12.4074630Z Uploaded bytes 880803840
+2026-07-22T19:52:12.4224370Z Uploaded bytes 889192448
+2026-07-22T19:52:12.8086010Z Uploaded bytes 897581056
+2026-07-22T19:52:12.8349900Z Uploaded bytes 905969664
+2026-07-22T19:52:12.8482240Z Uploaded bytes 914358272
+2026-07-22T19:52:12.9383580Z Uploaded bytes 922746880
+2026-07-22T19:52:13.2000710Z Uploaded bytes 931135488
+2026-07-22T19:52:13.2966270Z Uploaded bytes 939524096
+2026-07-22T19:52:13.5173840Z Uploaded bytes 947912704
+2026-07-22T19:52:13.5749740Z Uploaded bytes 956301312
+2026-07-22T19:52:13.6459870Z Uploaded bytes 964689920
+2026-07-22T19:52:13.8058200Z Uploaded bytes 973078528
+2026-07-22T19:52:13.9997540Z Uploaded bytes 981467136
+2026-07-22T19:52:14.0115280Z Uploaded bytes 989855744
+2026-07-22T19:52:14.0294230Z Uploaded bytes 998244352
+2026-07-22T19:52:14.4075720Z Uploaded bytes 1006632960
+2026-07-22T19:52:14.4227500Z Uploaded bytes 1015021568
+2026-07-22T19:52:14.4294670Z Uploaded bytes 1023410176
+2026-07-22T19:52:14.4914950Z Uploaded bytes 1031798784
+2026-07-22T19:52:14.8016260Z Uploaded bytes 1040187392
+2026-07-22T19:52:14.9534570Z Uploaded bytes 1048576000
+2026-07-22T19:52:14.9845950Z Uploaded bytes 1056964608
+2026-07-22T19:52:15.0658610Z Uploaded bytes 1065353216
+2026-07-22T19:52:15.2053460Z Uploaded bytes 1073741824
+2026-07-22T19:52:15.6169890Z Uploaded bytes 1082130432
+2026-07-22T19:52:15.6693490Z Uploaded bytes 1090519040
+2026-07-22T19:52:15.7744790Z Uploaded bytes 1098907648
+2026-07-22T19:52:16.1402100Z Uploaded bytes 1107296256
+2026-07-22T19:52:16.2690050Z Uploaded bytes 1115684864
+2026-07-22T19:52:16.3173030Z Uploaded bytes 1124073472
+2026-07-22T19:52:16.3869260Z Uploaded bytes 1132462080
+2026-07-22T19:52:16.6454660Z Uploaded bytes 1140850688
+2026-07-22T19:52:16.8278380Z Uploaded bytes 1149239296
+2026-07-22T19:52:16.8777200Z Uploaded bytes 1157627904
+2026-07-22T19:52:17.1516140Z Uploaded bytes 1166016512
+2026-07-22T19:52:17.7732450Z Uploaded bytes 1174405120
+2026-07-22T19:52:18.2284220Z Uploaded bytes 1177178858
+2026-07-22T19:52:18.3164190Z Finished uploading artifact content to blob storage!
+2026-07-22T19:52:18.3169910Z SHA256 digest of uploaded artifact zip is 8e06663ef9005e17b9378d412c73444a922ab879b546d12510737c7c91237bde
+2026-07-22T19:52:18.3174190Z Finalizing artifact upload
+2026-07-22T19:52:18.7094120Z Artifact Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.zip successfully finalized. Artifact ID 8542781474
+2026-07-22T19:52:18.7096300Z Artifact Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned has been successfully uploaded! Final size is 1177178858 bytes. Artifact ID is 8542781474
+2026-07-22T19:52:18.7120890Z Artifact download URL: https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29949669780/artifacts/8542781474
+2026-07-22T19:52:18.7551580Z ##[group]Run set -euo pipefail
+2026-07-22T19:52:18.7552630Z [36;1mset -euo pipefail[0m
+2026-07-22T19:52:18.7553450Z [36;1mOUT=build/livecontainer-redroid-arm64-se[0m
+2026-07-22T19:52:18.7554200Z [36;1mIPA="$OUT/$IPA_NAME"[0m
+2026-07-22T19:52:18.7554880Z [36;1mSIZE="$(stat -f%z "$IPA")"[0m
+2026-07-22T19:52:18.7555910Z [36;1mgh release delete "$RELEASE_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true[0m
+2026-07-22T19:52:18.7557010Z [36;1mgh release create "$RELEASE_TAG" "$IPA" \[0m
+2026-07-22T19:52:18.7557820Z [36;1m  --target "$GITHUB_SHA" \[0m
+2026-07-22T19:52:18.7558700Z [36;1m  --title "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \[0m
+2026-07-22T19:52:18.7561920Z [36;1m  --notes "One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate." \[0m
+2026-07-22T19:52:18.7564990Z [36;1m  --prerelease[0m
+2026-07-22T19:52:18.7566340Z [36;1mRELEASE_JSON="$(gh release view "$RELEASE_TAG" --json url,assets,isPrerelease)"[0m
+2026-07-22T19:52:18.7567400Z [36;1mtest "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1[0m
+2026-07-22T19:52:18.7568340Z [36;1mtest "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$IPA_NAME"[0m
+2026-07-22T19:52:18.7569290Z [36;1mtest "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"[0m
+2026-07-22T19:52:18.7570400Z [36;1mtest "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true[0m
+2026-07-22T19:52:18.7571400Z [36;1mecho "$RELEASE_JSON" > "$OUT/release.json"[0m
+2026-07-22T19:52:18.7891340Z shell: /opt/homebrew/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-22T19:52:18.7891710Z env:
+2026-07-22T19:52:18.7891890Z   RELEASE_TAG: v0.4.0-redroid13-arm64-se-nojit
+2026-07-22T19:52:18.7892220Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-22T19:52:18.7892740Z   GUEST_DIR: /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.downloaded-redroid-guest/extracted
+2026-07-22T19:52:18.7895770Z   GH_TOKEN: ***
+2026-07-22T19:52:18.7895930Z ##[endgroup]
+2026-07-22T19:52:20.2815280Z HTTP 403: Resource not accessible by integration (https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases)
+2026-07-22T19:52:20.2840310Z ##[error]Process completed with exit code 1.
+2026-07-22T19:52:20.3075590Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-22T19:52:20.3076650Z Post job cleanup.
+2026-07-22T19:52:20.4223830Z [command]/opt/homebrew/bin/git version
+2026-07-22T19:52:20.4303190Z git version 2.55.0
+2026-07-22T19:52:20.4321290Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/cd1cb3ad-2ed5-4836-b03c-fe3feb44cfd7/.gitconfig'
+2026-07-22T19:52:20.4335230Z Temporarily overriding HOME='/Users/runner/work/_temp/cd1cb3ad-2ed5-4836-b03c-fe3feb44cfd7' before making global git config changes
+2026-07-22T19:52:20.4337190Z Adding repository directory to the temporary git global config as a safe directory
+2026-07-22T19:52:20.4338970Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
+2026-07-22T19:52:20.4464490Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-07-22T19:52:20.4546040Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-07-22T19:52:20.5777290Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-07-22T19:52:20.5848460Z http.https://github.com/.extraheader
+2026-07-22T19:52:20.5855310Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-07-22T19:52:20.5945570Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-07-22T19:52:20.6970030Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-07-22T19:52:20.7042290Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-07-22T19:52:20.8163200Z Cleaning up orphan processes
+2026-07-22T19:52:22.8169000Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/download-artifact@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
