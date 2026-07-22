@@ -1,0 +1,112 @@
+repository=NightVibes33/Android-iOSEmulator
+run_id=29953038557
+tag=v0.4.0-redroid13-arm64-se-nojit
+
+== remote tag ==
+
+== release by tag ==
+HTTP/2.0 404 Not Found
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning
+Content-Security-Policy: default-src 'none'
+Content-Type: application/json; charset=utf-8
+Date: Wed, 22 Jul 2026 19:56:13 GMT
+Referrer-Policy: origin-when-cross-origin, strict-origin-when-cross-origin
+Server: github.com
+Strict-Transport-Security: max-age=31536000; includeSubdomains; preload
+Vary: Accept-Encoding, Accept, X-Requested-With
+X-Accepted-Github-Permissions: contents=read
+X-Content-Type-Options: nosniff
+X-Frame-Options: deny
+X-Github-Api-Version-Selected: 2022-11-28
+X-Github-Media-Type: github.v3; format=json
+X-Github-Request-Id: AC41:3D0DAB:14DD452:495CB04:6A61205C
+X-Ratelimit-Limit: 5000
+X-Ratelimit-Remaining: 4991
+X-Ratelimit-Reset: 1784753540
+X-Ratelimit-Resource: core
+X-Ratelimit-Used: 9
+X-Xss-Protection: 0
+
+{"message":"Not Found","documentation_url":"https://docs.github.com/rest/releases/releases#get-a-release-by-tag-name","status":"404"}gh: Not Found (HTTP 404)
+
+== releases list ==
+HTTP/2.0 200 OK
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning
+Cache-Control: private, max-age=60, s-maxage=60
+Content-Security-Policy: default-src 'none'
+Content-Type: application/json; charset=utf-8
+Date: Wed, 22 Jul 2026 19:56:13 GMT
+Etag: W/"131c2cee7c3c3d96950365ad2ebf9abb338b611b7b3c77a2fae4efa25f19e309"
+Referrer-Policy: origin-when-cross-origin, strict-origin-when-cross-origin
+Server: github.com
+Strict-Transport-Security: max-age=31536000; includeSubdomains; preload
+Vary: Accept, Authorization, Cookie, X-GitHub-OTP,Accept-Encoding, Accept, X-Requested-With
+X-Accepted-Github-Permissions: contents=read
+X-Content-Type-Options: nosniff
+X-Frame-Options: deny
+X-Github-Api-Version-Selected: 2022-11-28
+X-Github-Media-Type: github.v3; format=json
+X-Github-Request-Id: AC42:420B7:158DB29:4C16FEE:6A61205D
+X-Ratelimit-Limit: 5000
+X-Ratelimit-Remaining: 4990
+X-Ratelimit-Reset: 1784753540
+X-Ratelimit-Resource: core
+X-Ratelimit-Used: 10
+X-Xss-Protection: 0
+
+[{"url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases/357104282","assets_url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases/357104282/assets","upload_url":"https://uploads.github.com/repos/NightVibes33/Android-iOSEmulator/releases/357104282/assets{?name,label}","html_url":"https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.1.1-livecontainer-guest","id":357104282,"author":{"login":"github-actions[bot]","id":41898282,"node_id":"MDM6Qm90NDE4OTgyODI=","avatar_url":"https://avatars.githubusercontent.com/in/15368?v=4","gravatar_id":"","url":"https://api.github.com/users/github-actions%5Bbot%5D","html_url":"https://github.com/apps/github-actions","followers_url":"https://api.github.com/users/github-actions%5Bbot%5D/followers","following_url":"https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}","gists_url":"https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}","starred_url":"https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/github-actions%5Bbot%5D/subscriptions","organizations_url":"https://api.github.com/users/github-actions%5Bbot%5D/orgs","repos_url":"https://api.github.com/users/github-actions%5Bbot%5D/repos","events_url":"https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}","received_events_url":"https://api.github.com/users/github-actions%5Bbot%5D/received_events","type":"Bot","user_view_type":"public","site_admin":false},"node_id":"RE_kwDOTei-dM4VSPqa","tag_name":"v0.1.1-livecontainer-guest","target_commitish":"df4a3e52ed2bca84c68d8a65530a71e0d1984e9c","name":"Android iOSEmulator LiveContainer Guest v0.1.1","draft":false,"immutable":false,"prerelease":true,"created_at":"2026-07-21T03:48:01Z","updated_at":"2026-07-21T03:52:38Z","published_at":"2026-07-21T03:52:38Z","assets":[{"url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases/assets/484216479","id":484216479,"node_id":"RA_kwDOTei-dM4c3I6f","name":"Android-iOSEmulator-LiveContainer-Guest-unsigned.ipa","label":"","uploader":{"login":"github-actions[bot]","id":41898282,"node_id":"MDM6Qm90NDE4OTgyODI=","avatar_url":"https://avatars.githubusercontent.com/in/15368?v=4","gravatar_id":"","url":"https://api.github.com/users/github-actions%5Bbot%5D","html_url":"https://github.com/apps/github-actions","followers_url":"https://api.github.com/users/github-actions%5Bbot%5D/followers","following_url":"https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}","gists_url":"https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}","starred_url":"https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/github-actions%5Bbot%5D/subscriptions","organizations_url":"https://api.github.com/users/github-actions%5Bbot%5D/orgs","repos_url":"https://api.github.com/users/github-actions%5Bbot%5D/repos","events_url":"https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}","received_events_url":"https://api.github.com/users/github-actions%5Bbot%5D/received_events","type":"Bot","user_view_type":"public","site_admin":false},"content_type":"application/octet-stream","state":"uploaded","size":1168125938,"digest":"sha256:337cfffe923ea24c401578683aa56f14f5162437c4594596e2a384f121f6343b","download_count":2,"created_at":"2026-07-21T03:51:53Z","updated_at":"2026-07-21T03:52:37Z","browser_download_url":"https://github.com/NightVibes33/Android-iOSEmulator/releases/download/v0.1.1-livecontainer-guest/Android-iOSEmulator-LiveContainer-Guest-unsigned.ipa"}],"tarball_url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/tarball/v0.1.1-livecontainer-guest","zipball_url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/zipball/v0.1.1-livecontainer-guest","body":"Guest-only build for importing into the official LiveContainer. The top-level app is UTM SE with the Android VM bundled directly; there is no nested LiveContainer host. Requires LiveContainer JITLess configuration on iOS 26 or newer. Physical Android graphical boot remains under device validation."},{"url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases/357087508","assets_url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases/357087508/assets","upload_url":"https://uploads.github.com/repos/NightVibes33/Android-iOSEmulator/releases/357087508/assets{?name,label}","html_url":"https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.1.0-android-x86","id":357087508,"author":{"login":"github-actions[bot]","id":41898282,"node_id":"MDM6Qm90NDE4OTgyODI=","avatar_url":"https://avatars.githubusercontent.com/in/15368?v=4","gravatar_id":"","url":"https://api.github.com/users/github-actions%5Bbot%5D","html_url":"https://github.com/apps/github-actions","followers_url":"https://api.github.com/users/github-actions%5Bbot%5D/followers","following_url":"https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}","gists_url":"https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}","starred_url":"https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/github-actions%5Bbot%5D/subscriptions","organizations_url":"https://api.github.com/users/github-actions%5Bbot%5D/orgs","repos_url":"https://api.github.com/users/github-actions%5Bbot%5D/repos","events_url":"https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}","received_events_url":"https://api.github.com/users/github-actions%5Bbot%5D/received_events","type":"Bot","user_view_type":"public","site_admin":false},"node_id":"RE_kwDOTei-dM4VSLkU","tag_name":"v0.1.0-android-x86","target_commitish":"fa17438d28790f395e1b50c11238bafab6f88f65","name":"Android iOSEmulator Full Android Build","draft":false,"immutable":false,"prerelease":true,"created_at":"2026-07-21T02:47:47Z","updated_at":"2026-07-21T02:49:10Z","published_at":"2026-07-21T02:49:10Z","assets":[{"url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases/assets/484167174","id":484167174,"node_id":"RA_kwDOTei-dM4c284G","name":"Android-iOSEmulator-Full-Android-x86-unsigned.ipa","label":"","uploader":{"login":"github-actions[bot]","id":41898282,"node_id":"MDM6Qm90NDE4OTgyODI=","avatar_url":"https://avatars.githubusercontent.com/in/15368?v=4","gravatar_id":"","url":"https://api.github.com/users/github-actions%5Bbot%5D","html_url":"https://github.com/apps/github-actions","followers_url":"https://api.github.com/users/github-actions%5Bbot%5D/followers","following_url":"https://api.github.com/users/github-actions%5Bbot%5D/following{/other_user}","gists_url":"https://api.github.com/users/github-actions%5Bbot%5D/gists{/gist_id}","starred_url":"https://api.github.com/users/github-actions%5Bbot%5D/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/github-actions%5Bbot%5D/subscriptions","organizations_url":"https://api.github.com/users/github-actions%5Bbot%5D/orgs","repos_url":"https://api.github.com/users/github-actions%5Bbot%5D/repos","events_url":"https://api.github.com/users/github-actions%5Bbot%5D/events{/privacy}","received_events_url":"https://api.github.com/users/github-actions%5Bbot%5D/received_events","type":"Bot","user_view_type":"public","site_admin":false},"content_type":"application/octet-stream","state":"uploaded","size":1172684114,"digest":"sha256:f9eb30efab567bcffca29d99a928ce3164a5d85580080df250701aeafaf58ac7","download_count":1,"created_at":"2026-07-21T02:48:31Z","updated_at":"2026-07-21T02:49:09Z","browser_download_url":"https://github.com/NightVibes33/Android-iOSEmulator/releases/download/v0.1.0-android-x86/Android-iOSEmulator-Full-Android-x86-unsigned.ipa"}],"tarball_url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/tarball/v0.1.0-android-x86","zipball_url":"https://api.github.com/repos/NightVibes33/Android-iOSEmulator/zipball/v0.1.0-android-x86","body":"Unsigned full Android iOSEmulator build. Includes the LiveContainer APK-first interface, UTM SE no-JIT runtime, and preconfigured Android-x86 guest. Physical-device Android boot remains under validation."}]
+== repository rulesets ==
+HTTP/2.0 200 OK
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning
+Cache-Control: private, max-age=60, s-maxage=60
+Content-Length: 2
+Content-Security-Policy: default-src 'none'
+Content-Type: application/json; charset=utf-8
+Date: Wed, 22 Jul 2026 19:56:13 GMT
+Etag: "31d83bf006c1093aa05f1c9d8a16c000a8649763a90c28a461b1d889789f8c93"
+Referrer-Policy: origin-when-cross-origin, strict-origin-when-cross-origin
+Server: github.com
+Strict-Transport-Security: max-age=31536000; includeSubdomains; preload
+Vary: Accept, Authorization, Cookie, X-GitHub-OTP,Accept-Encoding, Accept, X-Requested-With
+X-Accepted-Github-Permissions: metadata=read
+X-Content-Type-Options: nosniff
+X-Frame-Options: deny
+X-Github-Api-Version-Selected: 2022-11-28
+X-Github-Media-Type: github.v3; format=json
+X-Github-Request-Id: AC45:1EA3B8:157EEDA:4BB96B8:6A61205D
+X-Ratelimit-Limit: 5000
+X-Ratelimit-Remaining: 4989
+X-Ratelimit-Reset: 1784753540
+X-Ratelimit-Resource: core
+X-Ratelimit-Used: 11
+X-Xss-Protection: 0
+
+[]
+== workflow permission setting ==
+HTTP/2.0 403 Forbidden
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning
+Content-Security-Policy: default-src 'none'
+Content-Type: application/json; charset=utf-8
+Date: Wed, 22 Jul 2026 19:56:13 GMT
+Referrer-Policy: origin-when-cross-origin, strict-origin-when-cross-origin
+Server: github.com
+Strict-Transport-Security: max-age=31536000; includeSubdomains; preload
+Vary: Accept-Encoding, Accept, X-Requested-With
+X-Accepted-Github-Permissions: administration=read
+X-Content-Type-Options: nosniff
+X-Frame-Options: deny
+X-Github-Api-Version-Selected: 2022-11-28
+X-Github-Media-Type: github.v3; format=json
+X-Github-Request-Id: AC47:1D3091:15525A6:4B4AD9D:6A61205D
+X-Ratelimit-Limit: 5000
+X-Ratelimit-Remaining: 4988
+X-Ratelimit-Reset: 1784753540
+X-Ratelimit-Resource: core
+X-Ratelimit-Used: 12
+X-Xss-Protection: 0
+
+{"message":"Resource not accessible by integration","documentation_url":"https://docs.github.com/rest/actions/permissions#get-default-workflow-permissions-for-a-repository","status":"403"}gh: Resource not accessible by integration (HTTP 403)
