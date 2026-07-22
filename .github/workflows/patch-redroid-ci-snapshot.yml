@@ -1,4 +1,5 @@
 name: Apply Redroid CI snapshot boot fix
+# Retry after confirming the 8 GiB test-disk copy failed before QEMU logging.
 
 on:
   push:
@@ -50,18 +51,18 @@ jobs:
                   'pre-launch disk setup',
               ),
               (
-                  '''              -drive "if=none,file=$TEST_DISK,format=raw,id=rootfs,cache=unsafe" \\
+                  '''              -drive "if=none,file=$TEST_DISK,format=raw,id=rootfs,cache=unsafe" \
 ''',
-                  '''              -drive "if=none,file=$ROOT_DISK,format=raw,id=rootfs,cache=unsafe" \\
+                  '''              -drive "if=none,file=$ROOT_DISK,format=raw,id=rootfs,cache=unsafe" \
 ''',
                   'QEMU root drive',
               ),
               (
-                  '''              -serial stdio \\
+                  '''              -serial stdio \
               -no-reboot >"$QEMU_LOG" 2>&1 &
 ''',
-                  '''              -serial stdio \\
-              -snapshot \\
+                  '''              -serial stdio \
+              -snapshot \
               -no-reboot >>"$QEMU_LOG" 2>&1 &
 ''',
                   'QEMU snapshot launch',
@@ -97,4 +98,9 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml .github/workflows/patch-redroid-ci-snapshot.yml
           git commit -m "Boot Redroid CI with a QEMU snapshot overlay"
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
