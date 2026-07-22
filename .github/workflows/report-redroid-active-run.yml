@@ -1,4 +1,5 @@
 name: Report active Redroid run
+# Refresh after guest verifier changes.
 
 on:
   push:
