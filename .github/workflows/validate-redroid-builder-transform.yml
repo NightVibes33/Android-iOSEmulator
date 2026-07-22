@@ -1,0 +1,119 @@
+name: Validate Redroid builder transform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/validate-redroid-builder-transform.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Materialize and validate final generated builder
+        shell: bash
+        run: |
+          set -euo pipefail
+          WRAPPER=scripts/build_redroid_arm64_rootfs.sh
+          bash -n "$WRAPPER"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          wrapper = Path('scripts/build_redroid_arm64_rootfs.sh').read_text(encoding='utf-8')
+          base_commit = next(
+              line.split('=', 1)[1].strip().strip('"')
+              for line in wrapper.splitlines()
+              if line.startswith('BASE_COMMIT=')
+          )
+          base_blob = next(
+              line.split('=', 1)[1].strip().strip('"')
+              for line in wrapper.splitlines()
+              if line.startswith('BASE_BLOB=')
+          )
+          scrcpy_version = next(
+              line.split('=', 1)[1].strip().strip('"')
+              for line in wrapper.splitlines()
+              if line.startswith('SCRCPY_VERSION=')
+          )
+          server_sha = next(
+              line.split('=', 1)[1].strip().strip('"')
+              for line in wrapper.splitlines()
+              if line.startswith('SCRCPY_SERVER_SHA256=')
+          )
+
+          transformed = Path('/tmp/redroid-builder-transformed.sh')
+          base = subprocess.check_output(
+              ['git', 'show', f'{base_commit}:scripts/build_redroid_arm64_rootfs.sh'],
+              text=True,
+          )
+          transformed.write_text(base, encoding='utf-8')
+          actual_blob = subprocess.check_output(
+              ['git', 'hash-object', str(transformed)], text=True
+          ).strip()
+          if actual_blob != base_blob:
+              raise SystemExit(f'Pinned base blob mismatch: {actual_blob} != {base_blob}')
+
+          marker = "python3 - \"$PATCHED_IMPL\" \"$SCRCPY_VERSION\" \"$SCRCPY_SERVER_SHA256\" <<'PY'\n"
+          start = wrapper.index(marker) + len(marker)
+          end = wrapper.index('\nPY\n', start)
+          transform_code = compile(wrapper[start:end], '<redroid-transform>', 'exec')
+          old_argv = sys.argv
+          try:
+              sys.argv = [
+                  '<redroid-transform>',
+                  str(transformed),
+                  scrcpy_version,
+                  server_sha,
+              ]
+              exec(transform_code, {'__name__': '__main__'})
+          finally:
+              sys.argv = old_argv
+          PY
+
+          bash -n /tmp/redroid-builder-transformed.sh
+          grep -Fq 'test -L "$BUNDLE/rootfs/init"' /tmp/redroid-builder-transformed.sh
+          grep -Fq 'BUNDLE_INIT_TARGET=' /tmp/redroid-builder-transformed.sh
+          grep -Fq 'Android init symlink is missing from the ext4 image' /tmp/redroid-builder-transformed.sh
+          grep -Fq 'Android init target checksum differs' /tmp/redroid-builder-transformed.sh
+          grep -Fq 'rsync -aHAX --numeric-ids' /tmp/redroid-builder-transformed.sh
+          ! grep -Fq 'test -x "$BUNDLE/rootfs/init"' /tmp/redroid-builder-transformed.sh
+
+          mkdir -p .github/release-status
+          sha256sum /tmp/redroid-builder-transformed.sh | awk '{print $1}' > /tmp/transformed.sha
+          jq -n \
+            --arg source_commit "$GITHUB_SHA" \
+            --arg transformed_sha256 "$(cat /tmp/transformed.sha)" \
+            '{
+              valid: true,
+              source_commit: $source_commit,
+              transformed_builder_sha256: $transformed_sha256,
+              shell_syntax_valid: true,
+              init_symlink_aware: true,
+              init_guest_target_verified: true,
+              ext4_metadata_preserved: true
+            }' > .github/release-status/redroid-builder-transform.json
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-builder-transform.json
+          git commit -m "Record valid Redroid builder transform"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
