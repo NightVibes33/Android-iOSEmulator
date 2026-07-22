@@ -1,5 +1,5 @@
 name: Report active Redroid run
-# Refresh after guest verifier changes.
+# Refresh after snapshot boot and BinderFS allocator fixes.
 
 on:
   push:
