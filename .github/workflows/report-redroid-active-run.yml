@@ -1,5 +1,5 @@
 name: Report active Redroid run
-# Refresh exact status after workflow commit bf83ea2f.
+# Refresh exact status after VirtIO ROM fix commit 988f8005.
 
 on:
   push:
