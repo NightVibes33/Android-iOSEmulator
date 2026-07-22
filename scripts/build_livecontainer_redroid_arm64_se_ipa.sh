@@ -91,7 +91,9 @@ otool -L "$GUEST_APP/$EXECUTABLE" > "$OUT/utm-executable-dependencies.txt"
 
 printf '[5/8] Embedding the ARM64 Android runtime and bootstrap\n'
 mkdir -p "$GUEST_APP/PreloadedData" "$GUEST_APP/BootstrapTweaks"
-cp -R "$WORK/$VM_NAME" "$GUEST_APP/PreloadedData/$VM_NAME"
+if ! cp -cR "$WORK/$VM_NAME" "$GUEST_APP/PreloadedData/$VM_NAME" 2>/dev/null; then
+  cp -R "$WORK/$VM_NAME" "$GUEST_APP/PreloadedData/$VM_NAME"
+fi
 xcrun --sdk iphoneos clang \
   -arch arm64 -miphoneos-version-min=15.0 -fobjc-arc -fmodules -dynamiclib \
   -framework Foundation -install_name '@rpath/AndroidRedroidGuestBootstrap.dylib' \
@@ -169,12 +171,11 @@ printf '[8/8] Re-reading final IPA metadata exactly as LiveContainer does\n'
 unzip -t "$OUT/$OUTPUT_IPA" >/dev/null
 zipinfo -1 "$OUT/$OUTPUT_IPA" > "$OUT/archive-entry-order.txt"
 unzip -l "$OUT/$OUTPUT_IPA" > "$OUT/ipa-contents.txt"
-mapfile -t LEADING_ENTRIES < <(head -n 5 "$OUT/archive-entry-order.txt")
-[[ "${LEADING_ENTRIES[0]}" == 'Payload/' ]]
-[[ "${LEADING_ENTRIES[1]}" == "Payload/$APP_NAME/" ]]
-[[ "${LEADING_ENTRIES[2]}" == "Payload/$APP_NAME/Info.plist" ]]
-[[ "${LEADING_ENTRIES[3]}" == "Payload/$APP_NAME/$EXECUTABLE" ]]
-[[ "${LEADING_ENTRIES[4]}" == "Payload/$APP_NAME/LCAppInfo.plist" ]]
+[[ "$(sed -n '1p' "$OUT/archive-entry-order.txt")" == 'Payload/' ]]
+[[ "$(sed -n '2p' "$OUT/archive-entry-order.txt")" == "Payload/$APP_NAME/" ]]
+[[ "$(sed -n '3p' "$OUT/archive-entry-order.txt")" == "Payload/$APP_NAME/Info.plist" ]]
+[[ "$(sed -n '4p' "$OUT/archive-entry-order.txt")" == "Payload/$APP_NAME/$EXECUTABLE" ]]
+[[ "$(sed -n '5p' "$OUT/archive-entry-order.txt")" == "Payload/$APP_NAME/LCAppInfo.plist" ]]
 tail -n 1 "$OUT/archive-entry-order.txt" | grep -q "Payload/$APP_NAME/PreloadedData/$VM_NAME/Images/$DISK_NAME"
 ! grep -q 'qemu-x86_64-softmmu.framework/' "$OUT/ipa-contents.txt"
 ! grep -Eq '(_CodeSignature|embedded.mobileprovision)' "$OUT/ipa-contents.txt"
