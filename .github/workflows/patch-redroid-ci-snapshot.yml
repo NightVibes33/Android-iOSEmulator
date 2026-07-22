@@ -1,0 +1,100 @@
+name: Apply Redroid CI snapshot boot fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/patch-redroid-ci-snapshot.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Replace root-disk copy with QEMU snapshot overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          target = Path('.github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml')
+          text = target.read_text()
+
+          replacements = [
+              (
+                  '''          TEST_DISK=.build/redroid-arm64-boot-test.raw
+          QEMU_LOG=qemu-arm64-android-boot.log
+          BOOT_PROPS=android-boot-properties.txt
+          rm -f "$TEST_DISK" "$QEMU_LOG" "$BOOT_PROPS"
+          cp --reflink=auto --sparse=always "$OUT/redroid-arm64-rootfs.raw" "$TEST_DISK"
+''',
+                  '''          ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"
+          QEMU_LOG=qemu-arm64-android-boot.log
+          BOOT_PROPS=android-boot-properties.txt
+          rm -f "$QEMU_LOG" "$BOOT_PROPS"
+          {
+            echo "Redroid CI QEMU pre-launch diagnostics"
+            echo "root_disk=$ROOT_DISK"
+            stat "$ROOT_DISK"
+            df -h
+          } > "$QEMU_LOG"
+''',
+                  'pre-launch disk setup',
+              ),
+              (
+                  '''              -drive "if=none,file=$TEST_DISK,format=raw,id=rootfs,cache=unsafe" \\
+''',
+                  '''              -drive "if=none,file=$ROOT_DISK,format=raw,id=rootfs,cache=unsafe" \\
+''',
+                  'QEMU root drive',
+              ),
+              (
+                  '''              -serial stdio \\
+              -no-reboot >"$QEMU_LOG" 2>&1 &
+''',
+                  '''              -serial stdio \\
+              -snapshot \\
+              -no-reboot >>"$QEMU_LOG" 2>&1 &
+''',
+                  'QEMU snapshot launch',
+              ),
+          ]
+
+          for old, new, label in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one {label} block, found {count}')
+              text = text.replace(old, new)
+
+          if 'TEST_DISK=' in text or 'file=$TEST_DISK' in text:
+              raise SystemExit('Stale TEST_DISK reference remains')
+          for required in ('ROOT_DISK=', '-snapshot \\', '>>"$QEMU_LOG" 2>&1 &'):
+              if required not in text:
+                  raise SystemExit(f'Missing required snapshot boot marker: {required}')
+
+          target.write_text(text)
+          PY
+
+          rm .github/workflows/patch-redroid-ci-snapshot.yml
+          git diff --check
+          grep -q 'ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+          grep -q -- '-snapshot \\' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+          ! grep -q 'TEST_DISK' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+
+      - name: Commit snapshot boot fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml .github/workflows/patch-redroid-ci-snapshot.yml
+          git commit -m "Boot Redroid CI with a QEMU snapshot overlay"
+          git push origin HEAD:main
