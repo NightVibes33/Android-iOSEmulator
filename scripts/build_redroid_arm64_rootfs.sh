@@ -90,15 +90,36 @@ mkfs.ext4 -F -L redroidroot -E lazy_itable_init=0,lazy_journal_init=0 \"$OUT/red
 ROOTFS_IMAGE_MOUNT=\"$WORK/rootfs-image\"
 mkdir -p \"$ROOTFS_IMAGE_MOUNT\"
 mount -o loop \"$OUT/redroid-arm64-rootfs.raw\" \"$ROOTFS_IMAGE_MOUNT\"
-if ! rsync -aHAX --numeric-ids \"$ROOTFS/\" \"$ROOTFS_IMAGE_MOUNT/\"; then
+fail_image_population() {
+  echo \"ext4 image population verification failed: $1\" >&2
+  find \"$ROOTFS_IMAGE_MOUNT/opt\" -maxdepth 5 -printf '%M %u:%g %s %p\\n' 2>/dev/null | tail -n 100 >&2 || true
+  sync
   umount \"$ROOTFS_IMAGE_MOUNT\" || true
   exit 1
+}
+if ! rsync -aHAX --numeric-ids \"$ROOTFS/\" \"$ROOTFS_IMAGE_MOUNT/\"; then
+  fail_image_population \"rsync -aHAX failed\"
 fi
-test -x \"$ROOTFS_IMAGE_MOUNT/opt/redroid/bundle/rootfs/init\"
-test -s \"$ROOTFS_IMAGE_MOUNT/opt/scrcpy/scrcpy-server\"
+SOURCE_INIT=\"$ROOTFS/opt/redroid/bundle/rootfs/init\"
+DEST_INIT=\"$ROOTFS_IMAGE_MOUNT/opt/redroid/bundle/rootfs/init\"
+SOURCE_SERVER=\"$ROOTFS/opt/scrcpy/scrcpy-server\"
+DEST_SERVER=\"$ROOTFS_IMAGE_MOUNT/opt/scrcpy/scrcpy-server\"
+[[ -e \"$DEST_INIT\" ]] || fail_image_population \"Android init is missing from the ext4 image\"
+[[ -s \"$DEST_SERVER\" ]] || fail_image_population \"scrcpy server is missing from the ext4 image\"
+SOURCE_INIT_META=\"$(stat -c '%a:%u:%g:%s' \"$SOURCE_INIT\")\"
+DEST_INIT_META=\"$(stat -c '%a:%u:%g:%s' \"$DEST_INIT\")\"
+[[ \"$SOURCE_INIT_META\" == \"$DEST_INIT_META\" ]] || fail_image_population \"Android init metadata differs: source=$SOURCE_INIT_META destination=$DEST_INIT_META\"
+SOURCE_INIT_SHA=\"$(sha256sum \"$SOURCE_INIT\" | awk '{print $1}')\"
+DEST_INIT_SHA=\"$(sha256sum \"$DEST_INIT\" | awk '{print $1}')\"
+[[ \"$SOURCE_INIT_SHA\" == \"$DEST_INIT_SHA\" ]] || fail_image_population \"Android init checksum differs\"
+SOURCE_SERVER_SHA=\"$(sha256sum \"$SOURCE_SERVER\" | awk '{print $1}')\"
+DEST_SERVER_SHA=\"$(sha256sum \"$DEST_SERVER\" | awk '{print $1}')\"
+[[ \"$SOURCE_SERVER_SHA\" == \"$DEST_SERVER_SHA\" ]] || fail_image_population \"scrcpy server checksum differs\"
+printf 'Verified ext4 Android init metadata %s and checksums.\\n' \"$DEST_INIT_META\"
 sync
 umount \"$ROOTFS_IMAGE_MOUNT\"
 rmdir \"$ROOTFS_IMAGE_MOUNT\"
+unset -f fail_image_population
 """
 replacements.append((old_image, new_image, "ext4 image population"))
 
