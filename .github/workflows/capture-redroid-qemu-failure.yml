@@ -1,0 +1,67 @@
+name: Capture Redroid QEMU failure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/capture-redroid-qemu-failure.yml"
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Capture failed QEMU log and current Binder-capable run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OLD_RUN_ID: "29944574733"
+          CURRENT_SHA: "4b65d6cad9c86166f71ca940b301d13c345c2e5c"
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+
+          gh run view "$OLD_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed > /tmp/old-redroid-failed.log
+          grep -Ein 'binder|binderfs|hwbinder|vndbinder|dma_heap|redroid|runc|missing|failed|error|panic|boot_completed|adb|systemd' \
+            /tmp/old-redroid-failed.log | tail -n 500 > .github/release-status/redroid-qemu-failure-extract.txt || true
+          tail -n 800 /tmp/old-redroid-failed.log > .github/release-status/redroid-qemu-failure-tail.txt
+
+          RUNS="$(gh api "/repos/$GITHUB_REPOSITORY/actions/workflows/build-redroid-arm64-se-livecontainer-ipa.yml/runs?branch=main&per_page=30")"
+          CURRENT_RUN="$(jq -c --arg sha "$CURRENT_SHA" '[.workflow_runs[] | select(.head_sha == $sha)] | sort_by(.created_at) | last' <<<"$RUNS")"
+          test "$CURRENT_RUN" != null
+          CURRENT_ID="$(jq -r .id <<<"$CURRENT_RUN")"
+          CURRENT_JOBS="$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$CURRENT_ID/jobs?per_page=100")"
+          CURRENT_ARTIFACTS="$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$CURRENT_ID/artifacts?per_page=100")"
+
+          jq -n \
+            --argjson run "$CURRENT_RUN" \
+            --argjson jobs "$CURRENT_JOBS" \
+            --argjson artifacts "$CURRENT_ARTIFACTS" \
+            '{
+              observed_at: (now | todateiso8601),
+              run: {id: $run.id, head_sha: $run.head_sha, status: $run.status, conclusion: $run.conclusion, created_at: $run.created_at, updated_at: $run.updated_at, run_started_at: $run.run_started_at, html_url: $run.html_url, attempt: $run.run_attempt},
+              jobs: [$jobs.jobs[] | {id, name, status, conclusion, started_at, completed_at, html_url, steps: [.steps[]? | {number, name, status, conclusion, started_at, completed_at}]}],
+              artifacts: [$artifacts.artifacts[]? | {id, name, size_in_bytes, expired, created_at}]
+            }' > .github/release-status/redroid-binder-current-run.json
+
+          git rm .github/workflows/capture-redroid-qemu-failure.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-qemu-failure-extract.txt \
+                  .github/release-status/redroid-qemu-failure-tail.txt \
+                  .github/release-status/redroid-binder-current-run.json
+          git commit -m "Record exact Redroid QEMU failure and Binder run"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
