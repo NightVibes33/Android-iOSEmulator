@@ -96,6 +96,7 @@ scripts/config \
   --enable CONFIG_NETFILTER \
   --enable CONFIG_NF_NAT \
   --enable CONFIG_NF_CONNTRACK \
+  --enable CONFIG_IPV6 \
   --enable CONFIG_VIRTIO \
   --enable CONFIG_VIRTIO_PCI \
   --enable CONFIG_VIRTIO_MMIO \
@@ -103,6 +104,10 @@ scripts/config \
   --enable CONFIG_VIRTIO_NET \
   --enable CONFIG_DRM \
   --enable CONFIG_DRM_VIRTIO_GPU \
+  --enable CONFIG_DRM_FBDEV_EMULATION \
+  --enable CONFIG_VT \
+  --enable CONFIG_VT_CONSOLE \
+  --enable CONFIG_FRAMEBUFFER_CONSOLE \
   --enable CONFIG_INPUT_EVDEV \
   --enable CONFIG_DEVTMPFS \
   --enable CONFIG_DEVTMPFS_MOUNT \
@@ -137,12 +142,13 @@ config = json.loads(path.read_text())
 process = config.setdefault("process", {})
 args = list(process.get("args") or ["/init"])
 for value in (
+    "androidboot.hardware=redroid",
     "androidboot.redroid_width=720",
     "androidboot.redroid_height=1280",
     "androidboot.redroid_dpi=320",
     "androidboot.redroid_fps=15",
     "androidboot.redroid_gpu_mode=guest",
-    "androidboot.use_memfd=1",
+    "androidboot.use_memfd=true",
     "ro.bootanim.disable=1",
 ):
     if value not in args:
@@ -186,8 +192,14 @@ printf '[6/9] Installing automatic Android and fullscreen UI services\n'
 cat > "$ROOTFS/usr/local/sbin/start-redroid" <<'START'
 #!/bin/sh
 set -eu
-mkdir -p /var/lib/redroid/data /run/redroid
+mkdir -p /var/lib/redroid/data /run/redroid /dev/binderfs
+if grep -qw binder /proc/filesystems && ! mountpoint -q /dev/binderfs; then
+  mount -t binder binder /dev/binderfs || true
+fi
 for node in binder hwbinder vndbinder; do
+  if [ ! -e "/dev/$node" ] && [ -e "/dev/binderfs/$node" ]; then
+    ln -s "binderfs/$node" "/dev/$node"
+  fi
   count=0
   while [ ! -e "/dev/$node" ] && [ "$count" -lt 30 ]; do
     count=$((count + 1))
