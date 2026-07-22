@@ -1,59 +1,80 @@
-publisher_run_id=29959072730
-Publish already validated IPA	Create clean prerelease through GitHub REST	﻿2026-07-22T21:26:10.9808870Z ##[group]Run set -euo pipefail
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9809258Z ^[[36;1mset -euo pipefail^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9809655Z ^[[36;1mAPI="https://api.github.com/repos/$GITHUB_REPOSITORY"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9810505Z ^[[36;1mAUTH=(-H "Authorization: ***" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9811141Z ^[[36;1mTAG_ENCODED="$(jq -rn --arg value "$RELEASE_TAG" '$value|@uri')"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9811520Z ^[[36;1m^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9812284Z ^[[36;1mEXISTING_CODE="$(curl -sS -o existing-release.json -w '%{http_code}' "${AUTH[@]}" "$API/releases/tags/$TAG_ENCODED")"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9812831Z ^[[36;1mif [[ "$EXISTING_CODE" == "200" ]]; then^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9813187Z ^[[36;1m  RELEASE_ID="$(jq -r .id existing-release.json)"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9813635Z ^[[36;1m  curl --fail-with-body -sS -X DELETE "${AUTH[@]}" "$API/releases/$RELEASE_ID"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9814059Z ^[[36;1melif [[ "$EXISTING_CODE" != "404" ]]; then^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9814415Z ^[[36;1m  cat existing-release.json >&2^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9814684Z ^[[36;1m  exit 1^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9814886Z ^[[36;1mfi^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9815075Z ^[[36;1m^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9815522Z ^[[36;1mDELETE_TAG_CODE="$(curl -sS -o delete-tag.json -w '%{http_code}' -X DELETE "${AUTH[@]}" "$API/git/refs/tags/$TAG_ENCODED")"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9816368Z ^[[36;1mif [[ "$DELETE_TAG_CODE" != "204" && "$DELETE_TAG_CODE" != "404" ]]; then^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9816740Z ^[[36;1m  cat delete-tag.json >&2^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9816993Z ^[[36;1m  exit 1^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9817190Z ^[[36;1mfi^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9817374Z ^[[36;1m^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9818500Z ^[[36;1mNOTES='One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate.'^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9819702Z ^[[36;1mjq -n \^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9819938Z ^[[36;1m  --arg tag_name "$RELEASE_TAG" \^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9820283Z ^[[36;1m  --arg target_commitish "$SOURCE_COMMIT" \^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9820692Z ^[[36;1m  --arg name "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9821055Z ^[[36;1m  --arg body "$NOTES" \^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9821826Z ^[[36;1m  '{tag_name:$tag_name,target_commitish:$target_commitish,name:$name,body:$body,draft:false,prerelease:true,generate_release_notes:false}' \^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9822458Z ^[[36;1m  > create-release-request.json^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9822733Z ^[[36;1m^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9823471Z ^[[36;1mCREATE_CODE="$(curl -sS -D create-release-headers.txt -o release.json -w '%{http_code}' -X POST "${AUTH[@]}" -H 'Content-Type: application/json' --data-binary @create-release-request.json "$API/releases")"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9824304Z ^[[36;1mcat create-release-headers.txt^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9824592Z ^[[36;1mcat release.json^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9824837Z ^[[36;1mtest "$CREATE_CODE" = "201"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9825125Z ^[[36;1mRELEASE_ID="$(jq -r .id release.json)"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9825461Z ^[[36;1mUPLOAD_URL="$(jq -r .upload_url release.json)"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9825775Z ^[[36;1mtest -n "$RELEASE_ID"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9826025Z ^[[36;1mtest -n "$UPLOAD_URL"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9826315Z ^[[36;1mecho "RELEASE_ID=$RELEASE_ID" >> "$GITHUB_ENV"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9826649Z ^[[36;1mecho "UPLOAD_URL=$UPLOAD_URL" >> "$GITHUB_ENV"^[[0m
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9891469Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9892080Z env:
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9892301Z   DEFAULT_SOURCE_RUN_ID: 29949669780
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9892622Z   SOURCE_COMMIT: 988f8005012506867fe7485151816541a3ddd7b8
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9892967Z   RELEASE_TAG: v0.4.0-redroid13-arm64-se-nojit
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9893384Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9894110Z   ARTIFACT_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9894525Z   SOURCE_RUN_ID: 29949669780
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9895055Z   IPA: downloaded-ipa/build/livecontainer-redroid-arm64-se/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9895595Z   IPA_SIZE: 1177102793
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9898102Z   API_TOKEN: ***
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:10.9898325Z ##[endgroup]
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:11.4923539Z {
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:11.4923891Z   "message": "Reference does not exist",
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:11.4924473Z   "documentation_url": "https://docs.github.com/rest/git/refs#delete-a-reference",
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:11.4924953Z   "status": "422"
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:11.4925164Z }
-Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:26:11.4938299Z ##[error]Process completed with exit code 1.
+publisher_run_id=29959324868
+Publish already validated IPA	Create clean prerelease through GitHub REST	﻿2026-07-22T21:30:41.5781655Z ##[group]Run set -euo pipefail
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5782047Z ^[[36;1mset -euo pipefail^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5782413Z ^[[36;1mAPI="https://api.github.com/repos/$GITHUB_REPOSITORY"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5783202Z ^[[36;1mAUTH=(-H "Authorization: ***" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5783839Z ^[[36;1mTAG_ENCODED="$(jq -rn --arg value "$RELEASE_TAG" '$value|@uri')"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5784200Z ^[[36;1m^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5784654Z ^[[36;1mEXISTING_CODE="$(curl -sS -o existing-release.json -w '%{http_code}' "${AUTH[@]}" "$API/releases/tags/$TAG_ENCODED")"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5785225Z ^[[36;1mif [[ "$EXISTING_CODE" == "200" ]]; then^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5785570Z ^[[36;1m  RELEASE_ID="$(jq -r .id existing-release.json)"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5786021Z ^[[36;1m  curl --fail-with-body -sS -X DELETE "${AUTH[@]}" "$API/releases/$RELEASE_ID"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5786454Z ^[[36;1melif [[ "$EXISTING_CODE" != "404" ]]; then^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5786798Z ^[[36;1m  cat existing-release.json >&2^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5787063Z ^[[36;1m  exit 1^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5787254Z ^[[36;1mfi^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5787437Z ^[[36;1m^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5787894Z ^[[36;1mDELETE_TAG_CODE="$(curl -sS -o delete-tag.json -w '%{http_code}' -X DELETE "${AUTH[@]}" "$API/git/refs/tags/$TAG_ENCODED")"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5788668Z ^[[36;1mif [[ "$DELETE_TAG_CODE" == "422" ]] && jq -e '.message == "Reference does not exist"' delete-tag.json >/dev/null; then^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5789804Z ^[[36;1m  echo "Release tag is already absent; continuing."^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5790243Z ^[[36;1melif [[ "$DELETE_TAG_CODE" != "204" && "$DELETE_TAG_CODE" != "404" ]]; then^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5790630Z ^[[36;1m  cat delete-tag.json >&2^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5790886Z ^[[36;1m  exit 1^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5791078Z ^[[36;1mfi^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5791257Z ^[[36;1m^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5792448Z ^[[36;1mNOTES='One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate.'^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5794689Z ^[[36;1mjq -n --arg tag_name "$RELEASE_TAG" --arg target_commitish "$SOURCE_COMMIT" --arg name "Android iOSEmulator — Redroid 13 ARM64 no-JIT" --arg body "$NOTES" '{tag_name:$tag_name,target_commitish:$target_commitish,name:$name,body:$body,draft:false,prerelease:true,generate_release_notes:false}' > create-release-request.json^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5795942Z ^[[36;1m^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5796700Z ^[[36;1mCREATE_CODE="$(curl -sS -D create-release-headers.txt -o release.json -w '%{http_code}' -X POST "${AUTH[@]}" -H 'Content-Type: application/json' --data-binary @create-release-request.json "$API/releases")"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5797555Z ^[[36;1mcat create-release-headers.txt^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5797842Z ^[[36;1mcat release.json^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5798079Z ^[[36;1mtest "$CREATE_CODE" = "201"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5798371Z ^[[36;1mRELEASE_ID="$(jq -r .id release.json)"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5798720Z ^[[36;1mUPLOAD_URL="$(jq -r .upload_url release.json)"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5799316Z ^[[36;1mtest -n "$RELEASE_ID"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5799567Z ^[[36;1mtest -n "$UPLOAD_URL"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5799858Z ^[[36;1mecho "RELEASE_ID=$RELEASE_ID" >> "$GITHUB_ENV"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5800205Z ^[[36;1mecho "UPLOAD_URL=$UPLOAD_URL" >> "$GITHUB_ENV"^[[0m
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5857913Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5858267Z env:
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5858462Z   DEFAULT_SOURCE_RUN_ID: 29949669780
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5859010Z   SOURCE_COMMIT: 988f8005012506867fe7485151816541a3ddd7b8
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5859601Z   RELEASE_TAG: v0.4.0-redroid13-arm64-se-nojit
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5860045Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5860788Z   ARTIFACT_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5861178Z   SOURCE_RUN_ID: 29949669780
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5861716Z   IPA: downloaded-ipa/build/livecontainer-redroid-arm64-se/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5862295Z   IPA_SIZE: 1177102793
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5864886Z   API_TOKEN: ***
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:41.5865100Z ##[endgroup]
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.1590631Z Release tag is already absent; continuing.
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5375980Z HTTP/2 403 
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5376476Z date: Wed, 22 Jul 2026 21:30:42 GMT
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5377136Z content-type: application/json; charset=utf-8
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5377842Z content-length: 167
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5378474Z x-github-media-type: github.v3; format=json
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5379892Z x-accepted-github-permissions: contents=write; contents=write,workflows=write
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5381067Z x-github-api-version-selected: 2022-11-28
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5384958Z access-control-expose-headers: ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5388607Z access-control-allow-origin: *
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5389846Z strict-transport-security: max-age=31536000; includeSubdomains; preload
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5390825Z x-frame-options: deny
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5391852Z x-content-type-options: nosniff
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5392354Z x-xss-protection: 0
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5393076Z referrer-policy: origin-when-cross-origin, strict-origin-when-cross-origin
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5394027Z content-security-policy: default-src 'none'
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5394815Z vary: Accept-Encoding, Accept, X-Requested-With
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5395554Z server: github.com
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5396057Z x-ratelimit-limit: 5000
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5396624Z x-ratelimit-remaining: 4974
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5397223Z x-ratelimit-reset: 1784757281
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5397796Z x-ratelimit-used: 26
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5398192Z x-ratelimit-resource: core
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5398695Z x-github-request-id: F01A:26E7A5:4A6C18:4B7AEC:6A613682
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5401989Z 
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5409264Z {
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5409868Z   "message": "Resource not accessible by integration",
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5410822Z   "documentation_url": "https://docs.github.com/rest/releases/releases#create-a-release",
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5411475Z   "status": "403"
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5411750Z }
+Publish already validated IPA	Create clean prerelease through GitHub REST	2026-07-22T21:30:42.5423807Z ##[error]Process completed with exit code 1.
