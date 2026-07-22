@@ -3,13 +3,21 @@ name: Build no-JIT AOSP FVP ARM64 LiveContainer IPA
 on:
   workflow_dispatch:
     inputs:
-      product_out_url:
-        description: Direct URL to a zip/tar archive containing kernel, combined-ramdisk.img, system-qemu.img and userdata.img
+      source_mode:
+        description: Obtain FVP images automatically from Android CI or use a custom verified archive
         required: true
+        default: android_ci
+        type: choice
+        options:
+          - android_ci
+          - custom_archive
+      product_out_url:
+        description: Custom archive URL; required only when source_mode is custom_archive
+        required: false
         type: string
       product_out_sha256:
-        description: SHA-256 of the product-out archive
-        required: true
+        description: Custom archive SHA-256; required only when source_mode is custom_archive
+        required: false
         type: string
       variant:
         description: AOSP FVP product variant
@@ -20,10 +28,18 @@ on:
           - mini
           - full
       publish_release:
-        description: Publish the unsigned no-JIT IPA to an ARM64 SE prerelease
+        description: Publish the verified unsigned IPA to Releases
         required: true
-        default: false
+        default: true
         type: boolean
+  push:
+    branches: [main]
+    paths:
+      - "scripts/fetch_aosp_fvp_from_android_ci.py"
+      - "scripts/make_aosp_fvp_arm64_utm.py"
+      - "scripts/build_livecontainer_arm64_fvp_ipa.sh"
+      - "runtime/livecontainer-guest/AndroidArm64GuestBootstrap.m"
+      - ".github/workflows/build-arm64-fvp-livecontainer-ipa.yml"
 
 permissions:
   contents: write
@@ -35,7 +51,11 @@ concurrency:
 jobs:
   package:
     runs-on: macos-26
-    timeout-minutes: 180
+    timeout-minutes: 240
+    env:
+      SOURCE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.source_mode || 'android_ci' }}
+      VARIANT: ${{ github.event_name == 'workflow_dispatch' && inputs.variant || 'mini' }}
+      PUBLISH_RELEASE: ${{ github.event_name == 'push' || inputs.publish_release }}
     steps:
       - uses: actions/checkout@v4
 
@@ -46,49 +66,69 @@ jobs:
           XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
           test -n "$XCODE_PATH"
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
-          brew install qemu
+          brew install qemu jq
+          python3 --version
+          qemu-img --version
 
-      - name: Download verified AOSP FVP product output
+      - name: Resolve verified AOSP FVP product output
+        id: resolve
         shell: bash
         env:
-          URL: ${{ inputs.product_out_url }}
-          SHA256: ${{ inputs.product_out_sha256 }}
+          CUSTOM_URL: ${{ inputs.product_out_url }}
+          CUSTOM_SHA256: ${{ inputs.product_out_sha256 }}
         run: |
           set -euo pipefail
-          mkdir -p .build/fvp-download .build/fvp-product
-          curl --fail --location --retry 4 --retry-delay 2 "$URL" -o .build/fvp-download/product-out.archive
-          printf '%s  %s\n' "$SHA256" .build/fvp-download/product-out.archive | shasum -a 256 -c -
-          if unzip -t .build/fvp-download/product-out.archive >/dev/null 2>&1; then
-            unzip -q .build/fvp-download/product-out.archive -d .build/fvp-product
+          rm -rf .build/fvp-product .build/fvp-download
+          mkdir -p .build/fvp-product .build/fvp-download
+
+          if [[ "$SOURCE_MODE" == "custom_archive" ]]; then
+            test -n "$CUSTOM_URL"
+            test -n "$CUSTOM_SHA256"
+            curl --fail --location --retry 4 --retry-delay 2 "$CUSTOM_URL" -o .build/fvp-download/product-out.archive
+            printf '%s  %s\n' "$CUSTOM_SHA256" .build/fvp-download/product-out.archive | shasum -a 256 -c -
+            python3 ./scripts/fetch_aosp_fvp_from_android_ci.py \
+              --variant "$VARIANT" \
+              --archive-url "file://$PWD/.build/fvp-download/product-out.archive" \
+              --output .build/fvp-product \
+              --diagnostics .build/fvp-resolver.json \
+              --max-artifacts 1
           else
-            tar -xf .build/fvp-download/product-out.archive -C .build/fvp-product
+            python3 ./scripts/fetch_aosp_fvp_from_android_ci.py \
+              --variant "$VARIANT" \
+              --output .build/fvp-product \
+              --diagnostics .build/fvp-resolver.json
           fi
-          PRODUCT_OUT="$(find .build/fvp-product -type f -name system-qemu.img -exec dirname {} \; | head -1)"
-          test -n "$PRODUCT_OUT"
+
+          jq -e '.verified == true' .build/fvp-resolver.json >/dev/null
           for required in kernel combined-ramdisk.img system-qemu.img userdata.img; do
-            test -f "$PRODUCT_OUT/$required"
+            test -s ".build/fvp-product/$required"
           done
-          echo "PRODUCT_OUT=$PRODUCT_OUT" >> "$GITHUB_ENV"
+          echo "PRODUCT_OUT=$PWD/.build/fvp-product" >> "$GITHUB_ENV"
 
       - name: Build no-JIT ARM64 LiveContainer IPA
         shell: bash
         run: |
           set -o pipefail
-          bash -x ./scripts/build_livecontainer_arm64_fvp_ipa.sh "$PRODUCT_OUT" '${{ inputs.variant }}' 2>&1 | tee arm64-fvp-se-build.log
+          bash -x ./scripts/build_livecontainer_arm64_fvp_ipa.sh "$PRODUCT_OUT" "$VARIANT" 2>&1 | tee arm64-fvp-se-build.log
 
-      - name: Verify final no-JIT architecture and storage contract
+      - name: Verify final FVP MMIO, no-JIT and ARM64 contract
         shell: bash
         run: |
           set -euo pipefail
           OUT=build/livecontainer-arm64-fvp-se
-          IPA="$OUT/Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${{ inputs.variant }}-unsigned.ipa"
+          IPA="$OUT/Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${VARIANT}-unsigned.ipa"
           test -f "$IPA"
           unzip -t "$IPA" >/dev/null
           grep -q '^Runtime architecture: aarch64$' "$OUT/build-manifest.txt"
+          grep -q '^Android target: AOSP fvpbase' "$OUT/build-manifest.txt"
           grep -q '^Execution mode: UTM SE interpreter$' "$OUT/build-manifest.txt"
           grep -q '^QEMU machine: virt,mte=on$' "$OUT/build-manifest.txt"
-          grep -q '^System storage: sparse raw system-qemu image$' "$OUT/build-manifest.txt"
-          grep -q '^Userdata storage: sparse raw userdata image$' "$OUT/build-manifest.txt"
+          grep -q '^AOSP hardware: fvpbase$' "$OUT/build-manifest.txt"
+          grep -q '^Storage transport: virtio-mmio$' "$OUT/build-manifest.txt"
+          grep -q '^Network transport: virtio-mmio$' "$OUT/build-manifest.txt"
+          grep -q '^RNG transport: virtio-mmio$' "$OUT/build-manifest.txt"
+          grep -q '^UTM generic ARM PCI storage: disabled$' "$OUT/build-manifest.txt"
+          grep -q '^UTM generic ARM PCI network: disabled$' "$OUT/build-manifest.txt"
           grep -q '^Direct kernel boot: yes$' "$OUT/build-manifest.txt"
           grep -q '^JIT required: no$' "$OUT/build-manifest.txt"
           grep -q '^UTM backend retained: qemu-aarch64-softmmu$' "$OUT/build-manifest.txt"
@@ -111,34 +151,59 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :System:CPU' "$CONFIG")" = max
           test "$(/usr/libexec/PlistBuddy -c 'Print :System:Target' "$CONFIG")" = virt
           test "$(/usr/libexec/PlistBuddy -c 'Print :System:MachineProperties' "$CONFIG")" = 'mte=on'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :System:RngEnabled' "$CONFIG")" = false
+          test "$(/usr/libexec/PlistBuddy -c 'Print :Networking:NetworkMode' "$CONFIG")" = none
+          test "$(/usr/libexec/PlistBuddy -c 'Print :Drives:2:InterfaceType' "$CONFIG")" = none
+          test "$(/usr/libexec/PlistBuddy -c 'Print :Drives:3:InterfaceType' "$CONFIG")" = none
           test "$(/usr/libexec/PlistBuddy -c 'Print :Debug:DebugLog' "$CONFIG")" = false
+          ADD_ARGS="$(/usr/libexec/PlistBuddy -c 'Print :System:AddArgs' "$CONFIG")"
+          grep -Fq 'androidboot.hardware=fvpbase' <<<"$ADD_ARGS"
+          grep -Fq 'androidboot.boot_devices=a003e00.virtio_mmio' <<<"$ADD_ARGS"
+          grep -Fq -- '-device virtio-blk-device,drive=drivesystem' <<<"$ADD_ARGS"
+          grep -Fq -- '-device virtio-blk-device,drive=driveuserdata' <<<"$ADD_ARGS"
+          grep -Fq -- '-device virtio-net-device,netdev=androidnet' <<<"$ADD_ARGS"
+          grep -Fq -- '-device virtio-rng-device' <<<"$ADD_ARGS"
+
+      - name: Upload resolver and build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-AOSP-FVP-ARM64-SE-diagnostics
+          path: |
+            .build/fvp-resolver.json
+            arm64-fvp-se-build.log
+            build/livecontainer-arm64-fvp-se/build-manifest.txt
+            build/livecontainer-arm64-fvp-se/ipa-contents.txt
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Upload no-JIT ARM64 IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${{ inputs.variant }}-unsigned
+          name: Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${{ env.VARIANT }}-unsigned
           path: |
             build/livecontainer-arm64-fvp-se/*.ipa
             build/livecontainer-arm64-fvp-se/*.sha256
             build/livecontainer-arm64-fvp-se/build-manifest.txt
-            arm64-fvp-se-build.log
+            .build/fvp-resolver.json
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
 
-      - name: Publish no-JIT ARM64 SE prerelease
-        if: inputs.publish_release
+      - name: Publish verified no-JIT ARM64 SE prerelease
+        if: env.PUBLISH_RELEASE == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VARIANT: ${{ inputs.variant }}
         run: |
           set -euo pipefail
-          TAG="v0.3.0-aosp-fvp-arm64-se-nojit-${VARIANT}"
+          TAG="v0.3.1-aosp-fvp-arm64-se-nojit-${VARIANT}"
           IPA="build/livecontainer-arm64-fvp-se/Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-${VARIANT}-unsigned.ipa"
+          test -f "$IPA"
+          jq -e '.verified == true' .build/fvp-resolver.json >/dev/null
           gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
           gh release create "$TAG" "$IPA" \
             --target "$GITHUB_SHA" \
             --title "Android iOSEmulator — AOSP FVP ARM64 SE no-JIT ${VARIANT}" \
-            --notes "Unsigned no-JIT fallback for devices where JIT cannot be enabled, including the current iOS 27 beta testing path. Uses official AOSP FVP ARM64 images, direct kernel boot, aarch64 QEMU virt,mte=on, sparse raw system/userdata disks, reduced logging, no x86 backend and isJITNeeded=false. UTM SE uses a slower interpreter, so physical-device boot speed and Android UI usability remain validation gates rather than completed claims." \
+            --notes "Unsigned no-JIT ARM64 build for iOS 27 beta testing. Uses a SHA-256-recorded AOSP FVP product output, androidboot.hardware=fvpbase, direct kernel boot and the exact VirtIO MMIO block/network/RNG transport expected by AOSP. UTM's generic ARM PCI block and network devices are disabled. The final IPA is rejected unless isJITNeeded=false, qemu-aarch64 is present and x86_64 is absent. Physical iPhone boot remains a device validation gate." \
             --prerelease
