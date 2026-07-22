@@ -165,3 +165,5 @@ jobs:
           git commit -m "Record verified no-JIT ARM64 Android release"
           git pull --rebase origin main
           git push origin HEAD:main
+
+# Manual release trigger: 2026-07-22
