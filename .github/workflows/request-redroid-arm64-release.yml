@@ -9,13 +9,30 @@ on:
       - ".github/release-request/redroid-arm64-se.txt"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   request:
     name: Authorize release handoff
     runs-on: ubuntu-24.04
     steps:
-      - name: Confirm release request
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Record completed request
+        shell: bash
         run: |
-          echo "Requesting publication of validated ARM64 IPA from workflow run 29949669780."
+          set -euo pipefail
+          mkdir -p .github/release-status
+          jq -n \
+            --arg source_run_id "29949669780" \
+            --arg request_run_id "$GITHUB_RUN_ID" \
+            --arg request_sha "$GITHUB_SHA" \
+            '{completed:true,source_run_id:$source_run_id,request_run_id:$request_run_id,request_sha:$request_sha}' \
+            > .github/release-status/redroid-release-request.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-release-request.json
+          git commit -m "Record native ARM64 release request" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
