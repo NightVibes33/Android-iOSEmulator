@@ -33,15 +33,18 @@ jobs:
           test "$RUN_JSON" != null
           RUN_ID="$(jq -r .id <<<"$RUN_JSON")"
           JOBS_JSON="$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100")"
+          ALL_RUNS_JSON="$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs?branch=main&per_page=20")"
 
           jq -n \
             --argjson run "$RUN_JSON" \
             --argjson jobs "$JOBS_JSON" \
+            --argjson recent "$ALL_RUNS_JSON" \
             '{
               observed_at: (now | todateiso8601),
               run: {
                 id: $run.id,
                 name: $run.name,
+                path: $run.path,
                 head_sha: $run.head_sha,
                 event: $run.event,
                 status: $run.status,
@@ -62,6 +65,22 @@ jobs:
                   completed_at,
                   html_url,
                   current_or_failed_step: ([.steps[]? | select(.status != "completed" or .conclusion == "failure")][0] // null)
+                }
+              ],
+              recent_runs: [
+                $recent.workflow_runs[] | {
+                  id,
+                  name,
+                  path,
+                  head_sha,
+                  event,
+                  status,
+                  conclusion,
+                  created_at,
+                  updated_at,
+                  run_started_at,
+                  html_url,
+                  attempt: .run_attempt
                 }
               ]
             }' > .github/release-status/redroid-active-run.json
