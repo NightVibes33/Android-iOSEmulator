@@ -1,5 +1,5 @@
 name: Report active Redroid run
-# Refresh exact status after VirtIO ROM fix commit 988f8005.
+# Track exact VirtIO ROM-fixed run 988f8005.
 
 on:
   push:
@@ -21,25 +21,31 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Record latest Redroid workflow run and jobs
+      - name: Record exact Redroid workflow run and jobs
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: 988f8005012506867fe7485151816541a3ddd7b8
         run: |
           set -euo pipefail
           mkdir -p .github/release-status
 
-          RUNS_JSON="$(gh api "/repos/$GITHUB_REPOSITORY/actions/workflows/build-redroid-arm64-se-livecontainer-ipa.yml/runs?branch=main&per_page=10")"
-          RUN_JSON="$(jq -c '.workflow_runs | sort_by(.created_at) | last' <<<"$RUNS_JSON")"
+          RUN_JSON=null
+          for attempt in $(seq 1 30); do
+            RUNS_JSON="$(gh api "/repos/$GITHUB_REPOSITORY/actions/workflows/build-redroid-arm64-se-livecontainer-ipa.yml/runs?branch=main&per_page=30")"
+            RUN_JSON="$(jq -c --arg sha "$TARGET_SHA" '[.workflow_runs[] | select(.head_sha == $sha)] | sort_by(.created_at) | last' <<<"$RUNS_JSON")"
+            if [[ "$RUN_JSON" != null ]]; then break; fi
+            sleep 2
+          done
           test "$RUN_JSON" != null
           RUN_ID="$(jq -r .id <<<"$RUN_JSON")"
           JOBS_JSON="$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100")"
-          ALL_RUNS_JSON="$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs?branch=main&per_page=20")"
+          ARTIFACTS_JSON="$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=100")"
 
           jq -n \
             --argjson run "$RUN_JSON" \
             --argjson jobs "$JOBS_JSON" \
-            --argjson recent "$ALL_RUNS_JSON" \
+            --argjson artifacts "$ARTIFACTS_JSON" \
             '{
               observed_at: (now | todateiso8601),
               run: {
@@ -57,7 +63,7 @@ jobs:
                 attempt: $run.run_attempt
               },
               jobs: [
-                $jobs.jobs[] | {
+                $jobs.jobs[]? | {
                   id,
                   name,
                   status,
@@ -65,25 +71,10 @@ jobs:
                   started_at,
                   completed_at,
                   html_url,
-                  current_or_failed_step: ([.steps[]? | select(.status != "completed" or .conclusion == "failure")][0] // null)
+                  steps: [.steps[]? | {number, name, status, conclusion, started_at, completed_at}]
                 }
               ],
-              recent_runs: [
-                $recent.workflow_runs[] | {
-                  id,
-                  name,
-                  path,
-                  head_sha,
-                  event,
-                  status,
-                  conclusion,
-                  created_at,
-                  updated_at,
-                  run_started_at,
-                  html_url,
-                  attempt: .run_attempt
-                }
-              ]
+              artifacts: [$artifacts.artifacts[]? | {id, name, size_in_bytes, expired, created_at}]
             }' > .github/release-status/redroid-active-run.json
 
           git config user.name github-actions[bot]
@@ -91,9 +82,7 @@ jobs:
           git add .github/release-status/redroid-active-run.json
           git commit -m "Record active Redroid ARM64 run" || exit 0
           for attempt in 1 2 3; do
-            if git push origin HEAD:main; then
-              exit 0
-            fi
+            if git push origin HEAD:main; then exit 0; fi
             git pull --rebase origin main
             sleep $((attempt * 2))
           done
