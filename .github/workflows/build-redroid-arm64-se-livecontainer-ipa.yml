@@ -96,11 +96,16 @@ jobs:
         run: |
           set -euo pipefail
           OUT=build/redroid-arm64-guest
-          TEST_DISK=.build/redroid-arm64-boot-test.raw
+          ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"
           QEMU_LOG=qemu-arm64-android-boot.log
           BOOT_PROPS=android-boot-properties.txt
-          rm -f "$TEST_DISK" "$QEMU_LOG" "$BOOT_PROPS"
-          cp --reflink=auto --sparse=always "$OUT/redroid-arm64-rootfs.raw" "$TEST_DISK"
+          rm -f "$QEMU_LOG" "$BOOT_PROPS"
+          {
+            echo "Redroid CI QEMU pre-launch diagnostics"
+            echo "root_disk=$ROOT_DISK"
+            stat "$ROOT_DISK"
+            df -h
+          } > "$QEMU_LOG"
 
           adb kill-server >/dev/null 2>&1 || true
           adb start-server
@@ -115,7 +120,7 @@ jobs:
               -kernel "$OUT/kernel" \
               -initrd "$OUT/initrd.img" \
               -append 'root=/dev/vda rw rootwait rootfstype=ext4 console=ttyAMA0 earlycon=pl011,0x09000000 systemd.show_status=auto systemd.log_target=console loglevel=4' \
-              -drive "if=none,file=$TEST_DISK,format=raw,id=rootfs,cache=unsafe" \
+              -drive "if=none,file=$ROOT_DISK,format=raw,id=rootfs,cache=unsafe" \
               -device virtio-blk-pci,drive=rootfs \
               -netdev user,id=net0,hostfwd=tcp:127.0.0.1:5555-:5555 \
               -device virtio-net-pci,netdev=net0 \
@@ -123,7 +128,8 @@ jobs:
               -display none \
               -monitor none \
               -serial stdio \
-              -no-reboot >"$QEMU_LOG" 2>&1 &
+              -snapshot \
+              -no-reboot >>"$QEMU_LOG" 2>&1 &
           QEMU_WRAPPER_PID=$!
           cleanup() {
             kill "$QEMU_WRAPPER_PID" >/dev/null 2>&1 || true
