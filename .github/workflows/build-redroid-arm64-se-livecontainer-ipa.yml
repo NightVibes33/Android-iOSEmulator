@@ -123,7 +123,7 @@ jobs:
               -drive "if=none,file=$ROOT_DISK,format=raw,id=rootfs,cache=unsafe" \
               -device virtio-blk-pci,drive=rootfs \
               -netdev user,id=net0,hostfwd=tcp:127.0.0.1:5555-:5555 \
-              -device virtio-net-pci,netdev=net0 \
+              -device virtio-net-pci,netdev=net0,romfile= \
               -device virtio-rng-pci \
               -display none \
               -monitor none \
