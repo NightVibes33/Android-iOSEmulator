@@ -78,50 +78,82 @@ jobs:
           grep -q '^isJITNeeded=false$' "$IMPORT_METADATA"
           echo "IPA_SIZE=$IPA_SIZE" >> "$GITHUB_ENV"
 
-      - name: Create clean prerelease with repository token
+      - name: Create clean prerelease through GitHub REST
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          API_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
-          git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
-          gh release create "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$SOURCE_COMMIT" \
-            --title "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \
-            --notes "One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate." \
-            --prerelease
+          API="https://api.github.com/repos/$GITHUB_REPOSITORY"
+          AUTH=(-H "Authorization: Bearer $API_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          TAG_ENCODED="$(jq -rn --arg value "$RELEASE_TAG" '$value|@uri')"
 
-      - name: Upload complete IPA with retries
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          UPLOADED=0
-          for ATTEMPT in 1 2 3; do
-            echo "Release asset upload attempt $ATTEMPT"
-            if gh release upload "$RELEASE_TAG" "$IPA" --repo "$GITHUB_REPOSITORY" --clobber; then
-              UPLOADED=1
-              break
-            fi
-            sleep $((ATTEMPT * 20))
-          done
-          test "$UPLOADED" -eq 1
+          EXISTING_CODE="$(curl -sS -o existing-release.json -w '%{http_code}' "${AUTH[@]}" "$API/releases/tags/$TAG_ENCODED")"
+          if [[ "$EXISTING_CODE" == "200" ]]; then
+            RELEASE_ID="$(jq -r .id existing-release.json)"
+            curl --fail-with-body -sS -X DELETE "${AUTH[@]}" "$API/releases/$RELEASE_ID"
+          elif [[ "$EXISTING_CODE" != "404" ]]; then
+            cat existing-release.json >&2
+            exit 1
+          fi
 
-      - name: Verify published asset
+          DELETE_TAG_CODE="$(curl -sS -o delete-tag.json -w '%{http_code}' -X DELETE "${AUTH[@]}" "$API/git/refs/tags/$TAG_ENCODED")"
+          if [[ "$DELETE_TAG_CODE" != "204" && "$DELETE_TAG_CODE" != "404" ]]; then
+            cat delete-tag.json >&2
+            exit 1
+          fi
+
+          NOTES='One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate.'
+          jq -n \
+            --arg tag_name "$RELEASE_TAG" \
+            --arg target_commitish "$SOURCE_COMMIT" \
+            --arg name "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \
+            --arg body "$NOTES" \
+            '{tag_name:$tag_name,target_commitish:$target_commitish,name:$name,body:$body,draft:false,prerelease:true,generate_release_notes:false}' \
+            > create-release-request.json
+
+          CREATE_CODE="$(curl -sS -D create-release-headers.txt -o release.json -w '%{http_code}' -X POST "${AUTH[@]}" -H 'Content-Type: application/json' --data-binary @create-release-request.json "$API/releases")"
+          cat create-release-headers.txt
+          cat release.json
+          test "$CREATE_CODE" = "201"
+          RELEASE_ID="$(jq -r .id release.json)"
+          UPLOAD_URL="$(jq -r .upload_url release.json)"
+          test -n "$RELEASE_ID"
+          test -n "$UPLOAD_URL"
+          echo "RELEASE_ID=$RELEASE_ID" >> "$GITHUB_ENV"
+          echo "UPLOAD_URL=$UPLOAD_URL" >> "$GITHUB_ENV"
+
+      - name: Upload complete IPA through GitHub REST
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          API_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease,targetCommitish)"
-          test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
-          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$IPA_NAME"
-          test "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$IPA_SIZE"
-          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
-          echo "$RELEASE_JSON" > release.json
+          AUTH=(-H "Authorization: Bearer $API_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          BASE_UPLOAD_URL="${UPLOAD_URL%%\{*}"
+          ASSET_NAME_ENCODED="$(jq -rn --arg value "$IPA_NAME" '$value|@uri')"
+          UPLOAD_CODE="$(curl -sS -D upload-headers.txt -o uploaded-asset.json -w '%{http_code}' -X POST "${AUTH[@]}" -H 'Content-Type: application/octet-stream' --data-binary @"$IPA" "$BASE_UPLOAD_URL?name=$ASSET_NAME_ENCODED")"
+          cat upload-headers.txt
+          cat uploaded-asset.json
+          test "$UPLOAD_CODE" = "201"
+          test "$(jq -r .name uploaded-asset.json)" = "$IPA_NAME"
+          test "$(jq -r .state uploaded-asset.json)" = "uploaded"
+          test "$(jq -r .size uploaded-asset.json)" -eq "$IPA_SIZE"
+
+      - name: Verify published asset through GitHub REST
+        shell: bash
+        env:
+          API_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          API="https://api.github.com/repos/$GITHUB_REPOSITORY"
+          AUTH=(-H "Authorization: Bearer $API_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          curl --fail-with-body -sS "${AUTH[@]}" "$API/releases/$RELEASE_ID" > verified-release.json
+          test "$(jq '.assets | length' verified-release.json)" -eq 1
+          test "$(jq -r '.assets[0].name' verified-release.json)" = "$IPA_NAME"
+          test "$(jq '.assets[0].size' verified-release.json)" -eq "$IPA_SIZE"
+          test "$(jq -r '.prerelease' verified-release.json)" = true
+          jq '{url:.html_url,assets,isPrerelease:.prerelease,targetCommitish:.target_commitish}' verified-release.json > release.json
 
       - name: Record verified release marker
         shell: bash
