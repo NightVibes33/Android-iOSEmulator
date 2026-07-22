@@ -1,142 +1,191 @@
-# Current committed FVP plan
+# Current committed no-JIT ARM64 plan
 
 ## Product contract
 
-Android iOSEmulator is a sideload-first native iOS application. Its First Best Version runs a compatible ARM64 Android guest locally, installs user-provided APK/APKS/XAPK packages, preserves app data, and provides native iOS touch, audio, networking, files, keyboard, mouse, controller, rotation, diagnostics, and snapshot integration.
+Android iOSEmulator is a sideload-first iOS application. Its target is a compatible ARM64 Android environment that runs locally, preserves app data, installs user-provided APK/APKS/XAPK packages, and exposes touch, keyboard, networking, files, audio, diagnostics and lifecycle controls through an iOS-native frontend.
 
-The product does not depend on App Store distribution and does not use a cloud Android machine as its primary runtime.
+The project does not use a cloud Android machine as its primary runtime.
 
 ## Active no-JIT execution chain
 
 ```text
-Development- or ad-hoc-signed Android iOSEmulator ARM64 SE
+Unsigned Android iOSEmulator LiveContainer guest
         ↓
-LiveContainer imports the guest with isJITNeeded=false
+isJITNeeded=false
         ↓
 UTM SE qemu-aarch64-softmmu interpreter
         ↓
-QEMU virt,mte=on + CPU=max
+QEMU virt + direct kernel/initramfs boot
         ↓
-Direct ARM64 kernel + combined initramfs boot
+Minimal ARM64 Linux guest
         ↓
-Official AOSP FVP system-qemu + userdata images on raw VirtIO disks
+4K-page kernel with Binder IPC + BinderFS
+        ↓
+runc + Redroid 13 arm64-only
+        ↓
+Weston DRM compositor + fullscreen scrcpy
 ```
 
-This lane is designed for devices where JIT cannot currently be enabled. It uses no x86 guest, no GRUB, no ISO installer, no Hypervisor.framework, and no Cuttlefish/KVM dependency.
+This lane is intended for the iPhone 16 on iOS 27 beta 3 where a dependable JIT path is unavailable. It uses no x86 Android guest, no Hypervisor.framework, no KVM, no Cuttlefish host, no GRUB and no installer ISO.
 
-UTM SE remains much slower than normal JIT-enabled UTM. The no-JIT lane is therefore a compatibility and feasibility path, not a claim that full Android will already be fast.
+UTM SE performs interpreter execution. Matching the guest architecture removes x86 translation overhead, but it does not make the VM equivalent to native execution.
 
-## No-JIT hard gates
+## Why the lane changed
 
-### Gate SE-0 — Artifact contract
+The direct AOSP FVP design remains technically useful, but Google does not publish a reusable product-output archive containing all four required images. Building all of AOSP requires substantially more storage and compute than the standard repository runner.
+
+The active lane therefore builds a smaller Linux host and embeds the official Redroid 13 arm64-only Android container. This removes the external AOSP archive blocker while keeping Android and the VM architecture ARM64.
+
+## Build pipeline
+
+### Linux guest job
+
+- create a minimal Debian ARM64 root filesystem,
+- cross-compile Linux 6.12.95 for ARM64,
+- force 4K pages,
+- build Binder IPC and BinderFS into the kernel,
+- enable namespaces, cgroups, overlayfs, VirtIO block/network/GPU and DMA-BUF heaps,
+- download the Redroid 13 arm64-only OCI image,
+- record its resolved digest,
+- configure a privileged local runc container with persistent `/data`,
+- install Weston and scrcpy services,
+- create a sparse raw ext4 root disk,
+- generate kernel, initramfs, manifest and SHA-256 records.
+
+### Transfer job boundary
+
+The raw guest disk is sparse and has a large logical size. CI transfers it as a sparse-aware Zstandard archive rather than uploading the expanded raw image directly.
+
+### macOS packaging job
+
+- download official UTM SE,
+- retain only dyld-required and ARM64 QEMU frameworks,
+- create an `aarch64` QEMU `virt` bundle,
+- boot the ARM64 kernel and initramfs directly,
+- attach the raw root disk through VirtIO,
+- set LiveContainer `isJITNeeded=false`,
+- compile the runtime replacement bootstrap,
+- reproduce the proven import-safe IPA entry ordering,
+- extract and validate final metadata from the completed IPA,
+- publish one complete unsigned IPA only when all checks pass.
+
+## Hard gates
+
+### Gate SE-0 — Reproducible CI artifact
 
 Exit requirements:
 
-- official AOSP FVP product output is SHA-256 verified,
-- required images are `kernel`, `combined-ramdisk.img`, `system-qemu.img`, and `userdata.img`,
-- final guest architecture is `aarch64`,
-- final QEMU target is `virt,mte=on`,
-- `qemu-aarch64-softmmu` is present and `qemu-x86_64-softmmu` is absent,
+- Linux kernel and guest disk build without an external AOSP archive,
+- final architecture is `aarch64`,
+- kernel contains Binder IPC, BinderFS and 4K ARM64 pages,
+- Redroid reports Android 13 arm64-only in the build manifest,
+- resolved container digest is recorded,
+- final QEMU target is `virt`,
+- `qemu-aarch64-softmmu` is present,
+- `qemu-x86_64-softmmu` is absent,
 - LiveContainer metadata contains `isJITNeeded=false`,
-- system and userdata runtime disks are sparse raw images,
-- the VM boots directly from the kernel and initramfs.
+- final IPA metadata is readable after extraction,
+- final release is one IPA below 2 GiB.
 
-### Gate SE-1 — ARM64 shell
+### Gate SE-1 — Linux boot on iPhone
 
-- package `fvp_mini-userdebug`,
-- boot on the actual target iPhone,
-- verify kernel, init, ADB/serial shell and clean shutdown,
-- repeat cold boot at least three times,
-- record time to first Android shell and any iOS memory-pressure termination.
+- delete any stale LiveContainer runtime,
+- import and sign the new IPA,
+- boot on the physical iPhone 16,
+- verify the ARM64 kernel reaches systemd,
+- verify `/dev/vda`, VirtIO networking and VirtIO-GPU,
+- verify Binder devices exist,
+- repeat cold boot three times,
+- capture time to Linux userspace and any iOS memory-pressure termination.
 
-Exit requirement: repeatable local ARM64 Android shell without JIT.
+Exit requirement: repeatable ARM64 Linux boot without JIT.
 
-### Gate SE-2 — Android System UI
+### Gate SE-2 — Android services
 
-- package `fvp-userdebug`,
-- verify Zygote, System Server and SurfaceFlinger,
-- verify VirtIO GPU output and touch input,
-- preserve userdata across relaunch,
-- confirm the app survives long enough to reach a usable launcher.
+- launch the Redroid runc service,
+- verify `binder`, `hwbinder` and `vndbinder`,
+- establish local ADB,
+- verify `sys.boot_completed=1`,
+- preserve Android `/data` across relaunch,
+- collect logcat, dmesg and runc diagnostics on failure.
 
-Exit requirement: Android reaches System UI and preserves data on the physical iPhone.
+Exit requirement: repeatable Android 13 boot with persistent data.
 
-### Gate SE-3 — APK platform
+### Gate SE-3 — Android interface
 
-- implement native APK/APKS/XAPK inspection,
-- detect ABI, minimum SDK, splits, permissions, and signatures,
-- transfer packages through VirtIO serial,
-- install through Android PackageInstaller sessions,
-- launch, update, force-stop, and uninstall packages,
-- expose installed apps as native iOS library cards.
+- start Weston on VirtIO DRM,
+- attach scrcpy to local Redroid ADB,
+- display Android at 720 × 1280, 320 dpi and 15 FPS,
+- verify touch and keyboard input,
+- verify launcher stability under iOS memory pressure.
 
-Exit requirement: representative ARM64 apps install, launch, and retain data.
+Exit requirement: a usable Android launcher appears on the physical iPhone.
 
-### Gate SE-4 — Device integration
+### Gate SE-4 — APK platform
+
+- inspect APK/APKS/XAPK metadata,
+- detect ABI, SDK, splits, permissions and signatures,
+- install through Android PackageInstaller or ADB sessions,
+- launch, update, force-stop and uninstall packages,
+- expose installed applications as native iOS library cards.
+
+Exit requirement: representative ARM64 applications install, launch and retain data.
+
+### Gate SE-5 — Device integration
 
 - multitouch and pointer IDs,
-- hardware keyboard, mouse, and controllers,
+- hardware keyboard, mouse and controller support,
 - Android audio output and microphone bridge,
-- files, clipboard, orientation, and dynamic resolution,
-- QEMU user-mode networking,
-- iOS lifecycle and memory-pressure recovery.
+- files, clipboard and orientation,
+- dynamic resolution and frame pacing,
+- lifecycle recovery and diagnostic bundles.
 
-Exit requirement: normal Android apps are usable without developer controls.
+Exit requirement: ordinary compatible Android applications are usable without developer controls.
 
-### Gate SE-5 — First Best Version
+## Fast no-JIT profile
 
-- adaptive frame pacing and thermals,
-- multiple isolated Android instances,
-- clean snapshots and cloning,
-- startup recovery and diagnostic bundles,
-- compatibility reporting,
-- optional switch to JIT acceleration when a reliable iOS 27 method is available.
-
-## Fast-boot profile
-
-The host profile is intentionally conservative for UTM SE:
-
-- one vCPU and 1536 MiB for `fvp_mini`,
-- two vCPUs and 2048 MiB for full System UI,
-- raw system and userdata disks,
+- ARM64 guest and Android container only,
+- direct kernel boot,
+- two vCPUs,
+- 2048 MiB guest RAM,
+- sparse raw root disk,
+- Android boot animation disabled,
+- guest software renderer,
+- 15 FPS output target,
 - UTM debug logging disabled,
-- sound and USB redirection disabled until the base boot is proven,
-- no bootloader or installer stage.
+- sound and USB redirection disabled until base boot passes,
+- persistent Android data.
 
-The official AOSP FVP product configuration remains responsible for guest-side optimizations such as disabled boot animation and host-side dex optimization.
+These settings reduce avoidable work. They do not remove the fundamental cost of UTM SE interpreter execution.
 
-## Optional JIT acceleration lane
+## Future direct AOSP lane
 
-The JIT work remains available but no longer blocks no-JIT testing:
+The AOSP FVP scripts remain in the repository for future native Android guest development. That lane can return after either:
 
-```text
-Development-signed Android iOSEmulator
-        ↓
-LocalDevVPN loopback route
-        ↓
-StikDebug/debugserver attachment
-        ↓
-Executable-region preparation
-        ↓
-UTM-derived QEMU ARM64 TCG JIT runtime
-```
+- a verified reusable FVP product archive is available, or
+- a sufficiently large self-hosted build machine is connected.
 
-The optional lane must still prove generated ARM64 code execution on the actual device before it can replace UTM SE.
+A direct AOSP guest would remove the Linux-container and scrcpy layers, but it is not allowed to block the current no-JIT physical-device test.
+
+## Optional JIT acceleration
+
+LocalDevVPN and StikDebug work remains an optional acceleration lane. It may replace UTM SE only after executable ARM64 code generation is proven repeatedly on the exact iOS 27 device.
 
 ## Runtime boundaries
 
-- There is no Hypervisor.framework dependency on iPhone.
-- Cuttlefish host infrastructure is not embedded because it requires Linux/KVM.
-- The Android guest is ARM64-first.
-- x86-only APK translation is not an FVP requirement.
-- Google Play Store and proprietary Google Mobile Services are not bundled.
-- The project does not bypass integrity, DRM, banking, or anti-cheat checks.
+- no Hypervisor.framework on iPhone,
+- no Cuttlefish/KVM dependency,
+- no x86 Android guest,
+- no x86-only APK translation requirement,
+- no bundled Google Play Store or proprietary Google Mobile Services,
+- no integrity, DRM, banking or anti-cheat bypasses.
 
 ## Distribution
 
-Two artifacts are planned:
+The active artifact is:
 
-- `Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-mini-unsigned.ipa` — shell validation and diagnostics.
-- `Android-iOSEmulator-AOSP-FVP-ARM64-SE-NoJIT-full-unsigned.ipa` — full Android System UI validation.
+```text
+Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+```
 
-An optional JIT IPA may return later only after the iOS 27 executable-memory path is proven. GitHub publishes unsigned IPA artifacts; users sign them with a compatible certificate.
+GitHub publishes the unsigned IPA only after CI validation. Physical-device boot remains unproven until the Gate SE-1 through SE-3 tests pass on the iPhone 16.
