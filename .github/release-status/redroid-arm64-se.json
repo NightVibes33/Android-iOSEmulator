@@ -1,0 +1,16 @@
+{
+  "verified": true,
+  "android_version": 13,
+  "android_sys_boot_completed": true,
+  "runtime": "Redroid 13 arm64-only",
+  "guest_architecture": "aarch64",
+  "execution_mode": "UTM SE interpreter",
+  "jit_required": false,
+  "tag": "v0.4.0-redroid13-arm64-se-nojit",
+  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.4.0-redroid13-arm64-se-nojit",
+  "asset_name": "Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa",
+  "asset_size_bytes": 1177102793,
+  "workflow_run_id": "29949669780",
+  "source_commit": "988f8005012506867fe7485151816541a3ddd7b8",
+  "physical_iphone_boot_verified": false
+}
