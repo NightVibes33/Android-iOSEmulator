@@ -1,0 +1,76 @@
+{
+  "observed_at": "2026-07-22T18:41:43Z",
+  "run": {
+    "id": 29947747841,
+    "head_sha": "f038b0e2b4d83edd14f254103569365b43597683",
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2026-07-22T18:41:11Z",
+    "updated_at": "2026-07-22T18:41:23Z",
+    "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29947747841"
+  },
+  "jobs": [
+    {
+      "id": 89017407575,
+      "name": "export",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-07-22T18:41:13Z",
+      "completed_at": "2026-07-22T18:41:23Z",
+      "html_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29947747841/job/89017407575",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 3,
+          "name": "Rewrite boot test without duplicating the root disk",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 4,
+          "name": "Upload exact patched workflow",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 5,
+          "name": "Record export run ID",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 10,
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "number": 11,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 8540846924,
+      "name": "patched-redroid-build-workflow",
+      "size_in_bytes": 4570,
+      "expired": false,
+      "created_at": "2026-07-22T18:41:19Z"
+    }
+  ]
+}
