@@ -1,4 +1,4 @@
-name: Apply Redroid snapshot boot rewrite
+name: Export patched Redroid build workflow
 
 on:
   push:
@@ -7,10 +7,10 @@ on:
       - ".github/workflows/apply-redroid-snapshot-linewise.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply:
+  export:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,42 +80,31 @@ jobs:
               raise SystemExit(f'Unexpected rewrite counts: {counts}; expected {expected}')
 
           text = '\n'.join(output) + '\n'
-          forbidden = ('TEST_DISK=', 'file=$TEST_DISK', 'cp --reflink=auto --sparse=always')
-          for marker in forbidden:
+          for marker in ('TEST_DISK=', 'file=$TEST_DISK', 'cp --reflink=auto --sparse=always'):
               if marker in text:
                   raise SystemExit(f'Stale boot-copy marker remains: {marker}')
 
-          required = (
+          for marker in (
               'ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"',
               'Redroid CI QEMU pre-launch diagnostics',
               '-snapshot ' + chr(92),
               '-no-reboot >>"$QEMU_LOG" 2>&1 &',
-          )
-          for marker in required:
+          ):
               if marker not in text:
                   raise SystemExit(f'Missing rewritten boot marker: {marker}')
 
           path.write_text(text, encoding='utf-8')
           PY
 
-          rm -f .github/workflows/apply-redroid-snapshot-direct.yml
-          git rm .github/workflows/apply-redroid-snapshot-linewise.yml
           git diff --check
           grep -q 'ROOT_DISK="$OUT/redroid-arm64-rootfs.raw"' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
           grep -q 'Redroid CI QEMU pre-launch diagnostics' .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
           ! grep -q TEST_DISK .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
 
-      - name: Commit the real workflow change
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A
-          git commit -m "Boot Redroid CI without duplicating the root disk"
-          for attempt in 1 2 3; do
-            if git push origin HEAD:main; then exit 0; fi
-            git pull --rebase origin main
-            sleep $((attempt * 2))
-          done
-          exit 1
+      - name: Upload exact patched workflow
+        uses: actions/upload-artifact@v4
+        with:
+          name: patched-redroid-build-workflow
+          path: .github/workflows/build-redroid-arm64-se-livecontainer-ipa.yml
+          if-no-files-found: error
+          retention-days: 1
