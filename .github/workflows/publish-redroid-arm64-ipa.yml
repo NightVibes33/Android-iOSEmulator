@@ -49,10 +49,7 @@ jobs:
           set -euo pipefail
           SOURCE_RUN_ID="${INPUT_SOURCE_RUN_ID:-$DEFAULT_SOURCE_RUN_ID}"
           mkdir -p downloaded-ipa
-          gh run download "$SOURCE_RUN_ID" \
-            --repo "$GITHUB_REPOSITORY" \
-            --name "$ARTIFACT_NAME" \
-            --dir downloaded-ipa
+          gh run download "$SOURCE_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$ARTIFACT_NAME" --dir downloaded-ipa
           IPA="$(find downloaded-ipa -type f -name "$IPA_NAME" -print -quit)"
           test -n "$IPA"
           echo "SOURCE_RUN_ID=$SOURCE_RUN_ID" >> "$GITHUB_ENV"
@@ -98,19 +95,15 @@ jobs:
           fi
 
           DELETE_TAG_CODE="$(curl -sS -o delete-tag.json -w '%{http_code}' -X DELETE "${AUTH[@]}" "$API/git/refs/tags/$TAG_ENCODED")"
-          if [[ "$DELETE_TAG_CODE" != "204" && "$DELETE_TAG_CODE" != "404" ]]; then
+          if [[ "$DELETE_TAG_CODE" == "422" ]] && jq -e '.message == "Reference does not exist"' delete-tag.json >/dev/null; then
+            echo "Release tag is already absent; continuing."
+          elif [[ "$DELETE_TAG_CODE" != "204" && "$DELETE_TAG_CODE" != "404" ]]; then
             cat delete-tag.json >&2
             exit 1
           fi
 
           NOTES='One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate.'
-          jq -n \
-            --arg tag_name "$RELEASE_TAG" \
-            --arg target_commitish "$SOURCE_COMMIT" \
-            --arg name "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \
-            --arg body "$NOTES" \
-            '{tag_name:$tag_name,target_commitish:$target_commitish,name:$name,body:$body,draft:false,prerelease:true,generate_release_notes:false}' \
-            > create-release-request.json
+          jq -n --arg tag_name "$RELEASE_TAG" --arg target_commitish "$SOURCE_COMMIT" --arg name "Android iOSEmulator — Redroid 13 ARM64 no-JIT" --arg body "$NOTES" '{tag_name:$tag_name,target_commitish:$target_commitish,name:$name,body:$body,draft:false,prerelease:true,generate_release_notes:false}' > create-release-request.json
 
           CREATE_CODE="$(curl -sS -D create-release-headers.txt -o release.json -w '%{http_code}' -X POST "${AUTH[@]}" -H 'Content-Type: application/json' --data-binary @create-release-request.json "$API/releases")"
           cat create-release-headers.txt
@@ -161,15 +154,7 @@ jobs:
           set -euo pipefail
           RELEASE_URL="$(jq -r .url release.json)"
           mkdir -p .github/release-status
-          jq -n \
-            --arg tag "$RELEASE_TAG" \
-            --arg release_url "$RELEASE_URL" \
-            --arg asset_name "$IPA_NAME" \
-            --argjson asset_size_bytes "$IPA_SIZE" \
-            --arg workflow_run_id "$SOURCE_RUN_ID" \
-            --arg source_commit "$SOURCE_COMMIT" \
-            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' \
-            > .github/release-status/redroid-arm64-se.json
+          jq -n --arg tag "$RELEASE_TAG" --arg release_url "$RELEASE_URL" --arg asset_name "$IPA_NAME" --argjson asset_size_bytes "$IPA_SIZE" --arg workflow_run_id "$SOURCE_RUN_ID" --arg source_commit "$SOURCE_COMMIT" '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' > .github/release-status/redroid-arm64-se.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/release-status/redroid-arm64-se.json
