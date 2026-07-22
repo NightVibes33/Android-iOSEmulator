@@ -26,8 +26,8 @@ jobs:
           from pathlib import Path
           path = Path('scripts/build_redroid_arm64_rootfs.sh')
           text = path.read_text(encoding='utf-8')
-          old = '          char path[256];\n'
-          new = '          char path[512];\n'
+          old = 'char path[256];'
+          new = 'char path[512];'
           if text.count(old) != 1:
               raise SystemExit(f'Expected one BinderFS path buffer, found {text.count(old)}')
           path.write_text(text.replace(old, new), encoding='utf-8')
