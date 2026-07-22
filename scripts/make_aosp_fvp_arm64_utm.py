@@ -16,6 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--product-out", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--variant", choices=("mini", "full"), default="mini")
+    parser.add_argument("--execution-mode", choices=("interpreter", "jit"), default="interpreter")
     parser.add_argument("--system-image-name", default="system-qemu.img")
     parser.add_argument("--userdata-image-name", default="userdata.img")
     return parser.parse_args()
@@ -39,16 +40,26 @@ def drive(name: str, image_path: str, image_type: str, interface: str = "none") 
     }
 
 
-def build_config(system_name: str, userdata_name: str, variant: str) -> dict[str, object]:
-    memory_mib = 2048 if variant == "mini" else 4096
+def build_config(
+    system_name: str,
+    userdata_name: str,
+    variant: str,
+    execution_mode: str,
+) -> dict[str, object]:
+    # Keep the no-JIT guest small enough to avoid iOS memory-pressure termination.
+    memory_mib = 1536 if variant == "mini" else 2048
+    cpu_count = 1 if variant == "mini" else 2
+    jit_cache_mib = 64 if execution_mode == "interpreter" else 512
     kernel_command_line = " ".join(
         (
             "console=ttyAMA0",
-            "earlyprintk=ttyAMA0",
+            "earlycon=pl011,0x09000000",
             "androidboot.hardware=qemu",
             "androidboot.boot_devices=a003e00.virtio_mmio",
             "androidboot.serialno=ANDROIDIOSEMULATOR",
-            "loglevel=7",
+            "androidboot.force_normal_boot=1",
+            "loglevel=4",
+            "quiet",
         )
     )
 
@@ -59,12 +70,12 @@ def build_config(system_name: str, userdata_name: str, variant: str) -> dict[str
             "CPU": "max",
             "CPUFlags": [],
             "Memory": memory_mib,
-            "CPUCount": 2,
+            "CPUCount": cpu_count,
             "Target": "virt",
             "BootDevice": "disk",
             "BootUefi": False,
             "RngEnabled": True,
-            "JITCacheSize": 1024,
+            "JITCacheSize": jit_cache_mib,
             "ForceMulticore": False,
             "AddArgs": [
                 f'-append "{kernel_command_line}"',
@@ -87,7 +98,7 @@ def build_config(system_name: str, userdata_name: str, variant: str) -> dict[str
             "ConsoleBackgroundColor": "#000000",
             "ConsoleFont": "Menlo-Regular",
             "ConsoleFontSize": 12,
-            "ConsoleBlink": True,
+            "ConsoleBlink": False,
             "ConsoleResizeCommand": "",
             "DisplayCard": "virtio-gpu-pci",
         },
@@ -106,7 +117,7 @@ def build_config(system_name: str, userdata_name: str, variant: str) -> dict[str
             "DirectorySharing": False,
             "DirectoryReadOnly": True,
             "DirectoryName": "",
-            "Usb3Support": True,
+            "Usb3Support": False,
             "UsbRedirectMax": 0,
         },
         "Drives": [
@@ -115,12 +126,14 @@ def build_config(system_name: str, userdata_name: str, variant: str) -> dict[str
             drive("system", system_name, "disk", "virtio"),
             drive("userdata", userdata_name, "disk", "virtio"),
         ],
-        "Debug": {"DebugLog": True, "IgnoreAllConfiguration": False},
+        # Serial logging can be re-enabled for diagnosis, but is disabled in the fast profile.
+        "Debug": {"DebugLog": False, "IgnoreAllConfiguration": False},
         "Info": {
             "IconCustom": False,
             "Notes": (
                 "Official AOSP FVP ARM64 product output adapted to QEMU virt. "
-                f"Variant: {variant}. No x86 guest translation is used."
+                f"Variant: {variant}. Execution mode: {execution_mode}. "
+                "Direct kernel boot; no x86 guest translation."
             ),
         },
     }
@@ -142,7 +155,12 @@ def main() -> int:
     shutil.copy2(product_out / args.system_image_name, images / args.system_image_name)
     shutil.copy2(product_out / args.userdata_image_name, images / args.userdata_image_name)
 
-    config = build_config(args.system_image_name, args.userdata_image_name, args.variant)
+    config = build_config(
+        args.system_image_name,
+        args.userdata_image_name,
+        args.variant,
+        args.execution_mode,
+    )
     config_path = bundle / "config.plist"
     with config_path.open("wb") as stream:
         plistlib.dump(config, stream, fmt=plistlib.FMT_XML, sort_keys=False)
@@ -153,7 +171,10 @@ def main() -> int:
     assert decoded["System"]["CPU"] == "max"
     assert decoded["System"]["Target"] == "virt"
     assert decoded["System"]["MachineProperties"] == "mte=on"
+    assert decoded["System"]["Memory"] <= 2048
+    assert decoded["System"]["CPUCount"] in (1, 2)
     assert decoded["Display"]["DisplayCard"] == "virtio-gpu-pci"
+    assert decoded["Debug"]["DebugLog"] is False
     assert [entry["ImageType"] for entry in decoded["Drives"]] == [
         "kernel",
         "initrd",
