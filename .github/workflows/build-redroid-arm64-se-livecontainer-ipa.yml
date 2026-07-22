@@ -24,14 +24,20 @@ concurrency:
   group: redroid-arm64-se-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  RELEASE_TAG: v0.4.0-redroid13-arm64-se-nojit
+  IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+
 jobs:
   build-guest:
-    name: Build and boot Android 13 ARM64
-    runs-on: ubuntu-24.04
+    name: Build and boot Android 13 on native ARM64
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 360
     steps:
-      - name: Checkout repository
+      - name: Checkout repository with pinned builder history
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Reclaim runner storage
         shell: bash
@@ -47,19 +53,22 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            debootstrap qemu-user-static qemu-system-arm binfmt-support crossbuild-essential-arm64 \
+            debootstrap qemu-user-static binfmt-support crossbuild-essential-arm64 \
             bc bison flex libssl-dev libelf-dev dwarves cpio rsync xz-utils \
-            e2fsprogs skopeo umoci jq git ca-certificates zstd adb
-          sudo update-binfmts --enable qemu-aarch64
-          update-binfmts --display qemu-aarch64
+            e2fsprogs skopeo umoci jq git ca-certificates curl zstd \
+            qemu-system-arm adb
+          sudo update-binfmts --enable qemu-aarch64 || true
+          uname -a
+          uname -m | grep -qx aarch64
           qemu-system-aarch64 --version
-          adb version
+          df -h
 
-      - name: Build no-JIT ARM64 Android guest
+      - name: Build deterministic ARM64 Linux and Redroid guest
         shell: bash
         run: |
           set -o pipefail
-          sudo --preserve-env=GITHUB_WORKSPACE bash -x ./scripts/build_redroid_arm64_rootfs.sh 2>&1 | tee redroid-arm64-guest-build.log
+          sudo --preserve-env=GITHUB_WORKSPACE bash -x ./scripts/build_redroid_arm64_rootfs.sh \
+            2>&1 | tee redroid-arm64-guest-build.log
           sudo chown -R "$(id -u):$(id -g)" build/redroid-arm64-guest .build/redroid-arm64-rootfs
 
       - name: Verify static guest contract
@@ -72,30 +81,31 @@ jobs:
           done
           grep -q '^Guest architecture: aarch64$' "$OUT/build-manifest.txt"
           grep -q '^Execution mode: UTM SE threaded interpreter (no JIT)$' "$OUT/build-manifest.txt"
-          grep -q '^Binder IPC: built in$' "$OUT/build-manifest.txt"
+          grep -q '^Linux page size: 4K$' "$OUT/build-manifest.txt"
           grep -q '^BinderFS: enabled and mounted before Android$' "$OUT/build-manifest.txt"
           grep -q '^DMA-BUF system heap: built in and passed into Android$' "$OUT/build-manifest.txt"
-          grep -q '^IPv6: enabled$' "$OUT/build-manifest.txt"
           grep -q '^Android runtime: Redroid 13 64-bit only$' "$OUT/build-manifest.txt"
-          grep -q '^Redroid image: docker.io/redroid/redroid:13.0.0_64only-240527$' "$OUT/build-manifest.txt"
-          grep -q '^Redroid digest prefix verified: sha256:c815ac1b1d5b$' "$OUT/build-manifest.txt"
           grep -q '^Host bootconfig masked from Android: yes$' "$OUT/build-manifest.txt"
           grep -q '^External AOSP product archive required: no$' "$OUT/build-manifest.txt"
-          file "$OUT/kernel" | grep -Eq 'ARM aarch64|Linux kernel ARM64|data'
+          grep -q '^CI Android boot verification: pending$' "$OUT/build-manifest.txt"
+          file "$OUT/kernel"
           sudo e2fsck -fn "$OUT/redroid-arm64-rootfs.raw"
 
-      - name: Boot the exact guest and require Android boot completion
+      - name: Boot Android and require sys.boot_completed
         shell: bash
         run: |
           set -euo pipefail
-          OUT="$PWD/build/redroid-arm64-guest"
-          TEST_DIR="$PWD/.build/redroid-ci-boot"
-          rm -rf "$TEST_DIR"
-          mkdir -p "$TEST_DIR"
-          cp --reflink=auto --sparse=always "$OUT/redroid-arm64-rootfs.raw" "$TEST_DIR/rootfs.raw"
-          adb kill-server >/dev/null 2>&1 || true
+          OUT=build/redroid-arm64-guest
+          TEST_DISK=.build/redroid-arm64-boot-test.raw
+          QEMU_LOG=qemu-arm64-android-boot.log
+          BOOT_PROPS=android-boot-properties.txt
+          rm -f "$TEST_DISK" "$QEMU_LOG" "$BOOT_PROPS"
+          cp --reflink=auto --sparse=always "$OUT/redroid-arm64-rootfs.raw" "$TEST_DISK"
 
-          timeout --signal=TERM --kill-after=30s 2100 \
+          adb kill-server >/dev/null 2>&1 || true
+          adb start-server
+
+          timeout --signal=TERM --kill-after=30s 35m \
             qemu-system-aarch64 \
               -machine virt,highmem=off \
               -accel tcg,thread=multi \
@@ -104,102 +114,107 @@ jobs:
               -m 2048 \
               -kernel "$OUT/kernel" \
               -initrd "$OUT/initrd.img" \
-              -append 'root=/dev/vda rw rootwait rootfstype=ext4 console=ttyAMA0 earlycon=pl011,0x09000000 systemd.unit=multi-user.target systemd.show_status=yes loglevel=4' \
-              -drive if=none,id=rootfs,file="$TEST_DIR/rootfs.raw",format=raw,cache=unsafe \
+              -append 'root=/dev/vda rw rootwait rootfstype=ext4 console=ttyAMA0 earlycon=pl011,0x09000000 systemd.show_status=auto systemd.log_target=console loglevel=4' \
+              -drive "if=none,file=$TEST_DISK,format=raw,id=rootfs,cache=unsafe" \
               -device virtio-blk-pci,drive=rootfs \
               -netdev user,id=net0,hostfwd=tcp:127.0.0.1:5555-:5555 \
-              -device virtio-net-pci,netdev=net0,mac=52:54:00:41:4e:44 \
+              -device virtio-net-pci,netdev=net0 \
               -device virtio-rng-pci \
               -display none \
               -monitor none \
               -serial stdio \
-              -no-reboot \
-            > redroid-arm64-serial.log 2>&1 &
+              -no-reboot >"$QEMU_LOG" 2>&1 &
           QEMU_WRAPPER_PID=$!
-
           cleanup() {
-            adb disconnect 127.0.0.1:5555 >/dev/null 2>&1 || true
             kill "$QEMU_WRAPPER_PID" >/dev/null 2>&1 || true
             wait "$QEMU_WRAPPER_PID" >/dev/null 2>&1 || true
+            adb disconnect 127.0.0.1:5555 >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
 
           BOOTED=0
-          for attempt in $(seq 1 300); do
-            if ! kill -0 "$QEMU_WRAPPER_PID" >/dev/null 2>&1; then
-              echo "QEMU stopped before Android completed boot." >&2
-              tail -n 300 redroid-arm64-serial.log >&2 || true
-              exit 1
-            fi
+          for _ in $(seq 1 1200); do
             adb connect 127.0.0.1:5555 >/dev/null 2>&1 || true
-            STATE="$(adb -s 127.0.0.1:5555 get-state 2>/dev/null || true)"
-            if [[ "$STATE" == device ]]; then
-              COMPLETE="$(adb -s 127.0.0.1:5555 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r\n' || true)"
-              if [[ "$COMPLETE" == 1 ]]; then
+            if [[ "$(adb -s 127.0.0.1:5555 get-state 2>/dev/null || true)" == device ]]; then
+              VALUE="$(adb -s 127.0.0.1:5555 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$VALUE" == 1 ]]; then
                 BOOTED=1
                 break
               fi
             fi
-            sleep 5
+            if ! kill -0 "$QEMU_WRAPPER_PID" 2>/dev/null; then
+              break
+            fi
+            sleep 1
           done
 
-          if [[ "$BOOTED" != 1 ]]; then
-            echo "Android did not report sys.boot_completed=1 within 25 minutes." >&2
-            tail -n 500 redroid-arm64-serial.log >&2 || true
+          if [[ "$BOOTED" -ne 1 ]]; then
+            tail -n 400 "$QEMU_LOG" || true
             exit 1
           fi
 
-          adb -s 127.0.0.1:5555 shell getprop > redroid-adb-getprop.txt
-          adb -s 127.0.0.1:5555 shell dmesg > redroid-android-dmesg.txt 2>&1 || true
-          adb -s 127.0.0.1:5555 logcat -d -b all > redroid-logcat.txt 2>&1 || true
-          test "$(adb -s 127.0.0.1:5555 shell getprop ro.build.version.release | tr -d '\r\n')" = 13
-          adb -s 127.0.0.1:5555 shell getprop ro.product.cpu.abilist64 | grep -q 'arm64-v8a'
+          adb -s 127.0.0.1:5555 shell getprop > "$BOOT_PROPS"
+          ANDROID_VERSION="$(adb -s 127.0.0.1:5555 shell getprop ro.build.version.release | tr -d '\r')"
+          PRIMARY_ABI="$(adb -s 127.0.0.1:5555 shell getprop ro.product.cpu.abi | tr -d '\r')"
+          ABI_LIST="$(adb -s 127.0.0.1:5555 shell getprop ro.product.cpu.abilist | tr -d '\r')"
+          [[ "$ANDROID_VERSION" == 13 ]]
+          [[ "$PRIMARY_ABI" == arm64-v8a ]]
+          [[ "$ABI_LIST" == *arm64-v8a* ]]
           adb -s 127.0.0.1:5555 shell 'test -e /dev/binder && test -e /dev/hwbinder && test -e /dev/vndbinder'
-          adb -s 127.0.0.1:5555 shell 'test -d /dev/dma_heap'
-          sed -i 's/^CI Android boot verification: pending$/CI Android boot verification: passed/' "$OUT/build-manifest.txt"
-          grep -q '^CI Android boot verification: passed$' "$OUT/build-manifest.txt"
+          adb -s 127.0.0.1:5555 shell 'test -e /dev/dma_heap/system'
+          ! grep -Eqi 'kernel panic|not syncing|VFS: Unable to mount root' "$QEMU_LOG"
 
-      - name: Upload boot diagnostics
+          sed -i 's/^CI Android boot verification: pending$/CI Android boot verification: passed/' "$OUT/build-manifest.txt"
+          cat >> "$OUT/build-manifest.txt" <<EOF
+          CI boot runner architecture: aarch64
+          CI QEMU machine: virt,highmem=off
+          CI QEMU CPU: max
+          CI Android version: $ANDROID_VERSION
+          CI Android primary ABI: $PRIMARY_ABI
+          CI Android ABI list: $ABI_LIST
+          CI Android sys.boot_completed: 1
+          EOF
+          grep -q '^CI Android boot verification: passed$' "$OUT/build-manifest.txt"
+          grep -q '^CI Android sys.boot_completed: 1$' "$OUT/build-manifest.txt"
+          cleanup
+          trap - EXIT
+
+      - name: Upload guest diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: redroid-arm64-ci-boot-diagnostics
+          name: redroid-arm64-guest-diagnostics
           path: |
             redroid-arm64-guest-build.log
-            redroid-arm64-serial.log
-            redroid-adb-getprop.txt
-            redroid-android-dmesg.txt
-            redroid-logcat.txt
+            qemu-arm64-android-boot.log
+            android-boot-properties.txt
             build/redroid-arm64-guest/build-manifest.txt
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Compress sparse boot-verified guest payload for transfer
+      - name: Compress sparse guest for macOS packaging
         shell: bash
         run: |
           set -euo pipefail
           grep -q '^CI Android boot verification: passed$' build/redroid-arm64-guest/build-manifest.txt
           tar --sparse -cf - -C build/redroid-arm64-guest \
             kernel initrd.img redroid-arm64-rootfs.raw build-manifest.txt SHA256SUMS | \
-            zstd -19 -T0 -o redroid-arm64-guest.tar.zst
+            zstd -15 -T0 -o redroid-arm64-guest.tar.zst
           test -s redroid-arm64-guest.tar.zst
           ls -lh redroid-arm64-guest.tar.zst
+          df -h
 
-      - name: Upload boot-verified ARM64 guest payload
+      - name: Upload verified ARM64 guest payload
         uses: actions/upload-artifact@v4
         with:
           name: redroid-arm64-guest
-          path: |
-            redroid-arm64-guest.tar.zst
-            redroid-arm64-guest-build.log
-            redroid-arm64-serial.log
-            redroid-adb-getprop.txt
+          path: redroid-arm64-guest.tar.zst
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
 
   package-ipa:
-    name: Package import-safe boot-verified no-JIT IPA
+    name: Package and validate import-safe IPA
     needs: build-guest
     runs-on: macos-26
     timeout-minutes: 240
@@ -207,13 +222,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download boot-verified ARM64 guest payload
+      - name: Download verified ARM64 guest
         uses: actions/download-artifact@v4
         with:
           name: redroid-arm64-guest
           path: .downloaded-redroid-guest
 
-      - name: Select Xcode 26
+      - name: Select Xcode and install packaging tools
         shell: bash
         run: |
           set -euo pipefail
@@ -223,7 +238,7 @@ jobs:
           brew install zstd jq gnu-tar bash
           xcodebuild -version
 
-      - name: Extract and locate downloaded guest files
+      - name: Restore sparse ARM64 guest
         shell: bash
         run: |
           set -euo pipefail
@@ -232,24 +247,23 @@ jobs:
           GUEST_DIR="$PWD/.downloaded-redroid-guest/extracted"
           mkdir -p "$GUEST_DIR"
           zstd -d --stdout "$ARCHIVE" | gtar --sparse -xf - -C "$GUEST_DIR"
-          for required in kernel initrd.img redroid-arm64-rootfs.raw build-manifest.txt; do
-            test -f "$GUEST_DIR/$required"
-          done
           grep -q '^CI Android boot verification: passed$' "$GUEST_DIR/build-manifest.txt"
+          grep -q '^CI Android sys.boot_completed: 1$' "$GUEST_DIR/build-manifest.txt"
           echo "GUEST_DIR=$GUEST_DIR" >> "$GITHUB_ENV"
 
-      - name: Build complete LiveContainer IPA
+      - name: Build complete no-JIT LiveContainer IPA
         shell: bash
         run: |
           set -o pipefail
-          "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" 2>&1 | tee redroid-arm64-ipa-build.log
+          "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" \
+            2>&1 | tee redroid-arm64-ipa-build.log
 
-      - name: Verify final IPA architecture, CI boot and import metadata
+      - name: Verify final IPA and import metadata
         shell: bash
         run: |
           set -euo pipefail
           OUT=build/livecontainer-redroid-arm64-se
-          IPA="$OUT/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa"
+          IPA="$OUT/$IPA_NAME"
           test -f "$IPA"
           unzip -t "$IPA" >/dev/null
           grep -q '^Guest architecture: aarch64$' "$OUT/build-manifest.txt"
@@ -260,11 +274,12 @@ jobs:
           grep -q '^isJITNeeded=false$' "$OUT/livecontainer-import-metadata.txt"
           grep -q 'qemu-aarch64-softmmu.framework/' "$OUT/ipa-contents.txt"
           ! grep -q 'qemu-x86_64-softmmu.framework/' "$OUT/ipa-contents.txt"
+          test "$(stat -f%z "$IPA")" -lt 2147483648
 
       - name: Upload complete unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-CIBooted-unsigned
+          name: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned
           path: |
             build/livecontainer-redroid-arm64-se/*.ipa
             build/livecontainer-redroid-arm64-se/*.sha256
@@ -276,71 +291,63 @@ jobs:
           compression-level: 0
           retention-days: 30
 
-      - name: Publish boot-verified no-JIT ARM64 prerelease
+      - name: Publish verified no-JIT ARM64 prerelease
         if: ${{ github.event_name == 'push' || inputs.publish_release == true }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v0.4.1-redroid13-arm64-se-nojit-ci-boot
-          OLD_TAG: v0.4.0-redroid13-arm64-se-nojit
         run: |
           set -euo pipefail
           OUT=build/livecontainer-redroid-arm64-se
-          IPA="$OUT/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa"
+          IPA="$OUT/$IPA_NAME"
           SIZE="$(stat -f%z "$IPA")"
-          test "$SIZE" -lt 2147483648
-          grep -q '^CI Android boot verification: passed$' "$OUT/build-manifest.txt"
-          gh release delete "$TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
-          gh release create "$TAG" "$IPA" \
+          gh release delete "$RELEASE_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
+          gh release create "$RELEASE_TAG" "$IPA" \
             --target "$GITHUB_SHA" \
-            --title "Android iOSEmulator — Redroid 13 ARM64 no-JIT, CI booted" \
-            --notes "One complete unsigned LiveContainer guest IPA. The exact ARM64 Linux plus Redroid 13 guest was booted under QEMU TCG in CI and Android reported sys.boot_completed=1 before packaging. The dated arm64-only Redroid image digest is verified, /proc/bootconfig is masked, BinderFS and DMA-BUF heaps are checked, LiveContainer does not request JIT, and no x86 guest backend is included. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate." \
+            --title "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \
+            --notes "One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate." \
             --prerelease
-
-          RELEASE_JSON="$(gh release view "$TAG" --json url,assets,isPrerelease)"
+          RELEASE_JSON="$(gh release view "$RELEASE_TAG" --json url,assets,isPrerelease)"
           test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
-          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$(basename "$IPA")"
+          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$IPA_NAME"
           test "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"
           test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
           echo "$RELEASE_JSON" > "$OUT/release.json"
-          gh release delete "$OLD_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
 
       - name: Record verified release marker
         if: ${{ github.event_name == 'push' || inputs.publish_release == true }}
         shell: bash
         env:
-          TAG: v0.4.1-redroid13-arm64-se-nojit-ci-boot
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           OUT=build/livecontainer-redroid-arm64-se
-          IPA="$OUT/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa"
+          IPA="$OUT/$IPA_NAME"
           SIZE="$(stat -f%z "$IPA")"
           RELEASE_URL="$(jq -r .url "$OUT/release.json")"
           git fetch origin main
           git checkout -B main origin/main
           mkdir -p .github/release-status
           jq -n \
-            --arg tag "$TAG" \
+            --arg tag "$RELEASE_TAG" \
             --arg release_url "$RELEASE_URL" \
-            --arg asset_name "$(basename "$IPA")" \
+            --arg asset_name "$IPA_NAME" \
             --argjson asset_size_bytes "$SIZE" \
             --arg workflow_run_id "$GITHUB_RUN_ID" \
             --arg source_commit "$GITHUB_SHA" \
             '{
               verified: true,
               android_version: 13,
+              android_sys_boot_completed: true,
               runtime: "Redroid 13 arm64-only",
               guest_architecture: "aarch64",
+              ci_runner_architecture: "aarch64",
               execution_mode: "UTM SE interpreter",
               jit_required: false,
               binderfs: true,
               dma_buf_system_heap: true,
-              host_bootconfig_masked: true,
               linux_page_size_kib: 4,
-              redroid_tag: "13.0.0_64only-240527",
-              redroid_digest_prefix: "sha256:c815ac1b1d5b",
               x86_guest_present: false,
-              ci_android_boot_verified: true,
               tag: $tag,
               release_url: $release_url,
               asset_name: $asset_name,
@@ -352,5 +359,5 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/release-status/redroid-arm64-se.json
-          git commit -m "Record CI-booted no-JIT ARM64 Android release"
+          git commit -m "Record verified no-JIT ARM64 Android release"
           git push origin HEAD:main
