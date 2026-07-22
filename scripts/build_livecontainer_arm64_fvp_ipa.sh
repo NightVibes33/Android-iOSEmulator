@@ -41,14 +41,13 @@ STAGED_PRODUCT="$WORK/product-out"
 mkdir -p "$STAGED_PRODUCT"
 cp "$PRODUCT_OUT/kernel" "$STAGED_PRODUCT/kernel"
 cp "$PRODUCT_OUT/combined-ramdisk.img" "$STAGED_PRODUCT/combined-ramdisk.img"
-# Raw images avoid QCOW2 decompression and metadata writes during the already-slow
-# interpreter path. qemu-img preserves sparse zero regions so the IPA remains compressible.
+# Raw images avoid QCOW2 decompression and metadata writes during the interpreter path.
 qemu-img convert -p -f raw -O raw -S 4k \
   "$PRODUCT_OUT/system-qemu.img" "$STAGED_PRODUCT/system-qemu.raw.img"
 qemu-img convert -p -f raw -O raw -S 4k \
   "$PRODUCT_OUT/userdata.img" "$STAGED_PRODUCT/userdata.raw.img"
-qemu-img info "$STAGED_PRODUCT/system-qemu.raw.img"
-qemu-img info "$STAGED_PRODUCT/userdata.raw.img"
+qemu-img info "$STAGED_PRODUCT/system-qemu.raw.img" | grep -q 'file format: raw'
+qemu-img info "$STAGED_PRODUCT/userdata.raw.img" | grep -q 'file format: raw'
 python3 "$ROOT/scripts/make_aosp_fvp_arm64_utm.py" \
   --product-out "$STAGED_PRODUCT" \
   --output "$WORK/Android-ARM64-SE.utm" \
@@ -98,7 +97,7 @@ while IFS= read -r dependency; do
 done < <(otool -L "$GUEST_APP/$EXECUTABLE" | tail -n +2 | awk '{print $1}')
 (( MISSING_LINKED_FRAMEWORK == 0 ))
 
-printf '[5/8] Embedding the ARM64 Android runtime and replacement bootstrap\n'
+printf '[5/8] Embedding the corrected ARM64 FVP runtime and replacement bootstrap\n'
 mkdir -p "$GUEST_APP/PreloadedData" "$GUEST_APP/BootstrapTweaks"
 cp -R "$WORK/Android-ARM64-SE.utm" "$GUEST_APP/PreloadedData/Android-ARM64-SE.utm"
 xcrun --sdk iphoneos clang \
@@ -125,14 +124,27 @@ with Path(sys.argv[1]).open("wb") as stream:
 PY
 plutil -lint "$GUEST_APP/LCAppInfo.plist"
 
-printf '[6/8] Verifying no-JIT ARM64-only guest contract\n'
+printf '[6/8] Verifying exact AOSP FVP MMIO and no-JIT contract\n'
 CONFIG="$GUEST_APP/PreloadedData/Android-ARM64-SE.utm/config.plist"
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :System:Architecture' "$CONFIG")" == aarch64 ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :System:Target' "$CONFIG")" == virt ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :System:CPU' "$CONFIG")" == max ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :System:RngEnabled' "$CONFIG")" == false ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :Networking:NetworkMode' "$CONFIG")" == none ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :Drives:2:InterfaceType' "$CONFIG")" == none ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :Drives:3:InterfaceType' "$CONFIG")" == none ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :Debug:DebugLog' "$CONFIG")" == false ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :Display:DisplayCard' "$CONFIG")" == virtio-gpu-pci ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :isJITNeeded' "$GUEST_APP/LCAppInfo.plist")" == false ]]
+ADD_ARGS="$(/usr/libexec/PlistBuddy -c 'Print :System:AddArgs' "$CONFIG")"
+grep -Fq 'androidboot.hardware=fvpbase' <<<"$ADD_ARGS"
+grep -Fq 'androidboot.boot_devices=a003e00.virtio_mmio' <<<"$ADD_ARGS"
+grep -Fq -- '-device virtio-blk-device,drive=drivesystem' <<<"$ADD_ARGS"
+grep -Fq -- '-device virtio-blk-device,drive=driveuserdata' <<<"$ADD_ARGS"
+grep -Fq -- '-device virtio-net-device,netdev=androidnet' <<<"$ADD_ARGS"
+grep -Fq -- '-device virtio-rng-device' <<<"$ADD_ARGS"
+! grep -Fq 'virtio-blk-pci' <<<"$ADD_ARGS"
+! grep -Fq 'virtio-net-pci' <<<"$ADD_ARGS"
 [[ -d "$GUEST_APP/Frameworks/qemu-aarch64-softmmu.framework" ]]
 ! find "$GUEST_APP/Frameworks" -maxdepth 1 -type d -name 'qemu-x86_64-softmmu.framework' -print -quit | grep -q .
 
@@ -155,12 +167,18 @@ if (( IPA_SIZE >= GITHUB_RELEASE_LIMIT )); then
   exit 1
 fi
 shasum -a 256 "$OUT/$OUTPUT_IPA" > "$OUT/$OUTPUT_IPA.sha256"
-cat > "$OUT/build-manifest.txt" <<EOF
+cat > "$OUT/build-manifest.txt" <<MANIFEST
 Runtime architecture: aarch64
 Android target: AOSP fvpbase (${VARIANT})
 Execution mode: UTM SE interpreter
 QEMU machine: virt,mte=on
 QEMU CPU: max
+AOSP hardware: fvpbase
+Storage transport: virtio-mmio
+Network transport: virtio-mmio
+RNG transport: virtio-mmio
+UTM generic ARM PCI storage: disabled
+UTM generic ARM PCI network: disabled
 Graphics: virtio-gpu-pci
 System storage: sparse raw system-qemu image
 Userdata storage: sparse raw userdata image
@@ -173,5 +191,5 @@ x86_64 backend retained: no
 Signing: unsigned; any compatible signing service may be used
 IPA size: ${IPA_SIZE} bytes
 Physical iPhone graphical boot: not yet verified
-EOF
+MANIFEST
 printf 'Built no-JIT ARM64 AOSP FVP LiveContainer IPA: %s\n' "$OUT/$OUTPUT_IPA"
