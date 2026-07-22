@@ -1,0 +1,140 @@
+name: Record Redroid ARM64 pipeline status
+
+on:
+  workflow_run:
+    workflows:
+      - Build and boot-test no-JIT ARM64 Redroid IPA
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: record-redroid-arm64-status
+  cancel-in-progress: false
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Record completed workflow state
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          CREATED_AT: ${{ github.event.workflow_run.created_at }}
+          UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
+          RELEASE_TAG: v0.4.1-redroid13-arm64-se-nojit-ci-boot
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+
+          ARTIFACTS_JSON="$(gh api --paginate "/repos/$REPOSITORY/actions/runs/$RUN_ID/artifacts" --slurp)"
+          ARTIFACT_NAMES="$(jq -c '[.[].artifacts[]?.name] | unique' <<<"$ARTIFACTS_JSON")"
+          GUEST_PRESENT="$(jq -e 'index("redroid-arm64-guest") != null' <<<"$ARTIFACT_NAMES" >/dev/null && echo true || echo false)"
+          BOOT_DIAGNOSTICS_PRESENT="$(jq -e 'index("redroid-arm64-ci-boot-diagnostics") != null' <<<"$ARTIFACT_NAMES" >/dev/null && echo true || echo false)"
+          IPA_PRESENT="$(jq -e 'index("Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-CIBooted-unsigned") != null' <<<"$ARTIFACT_NAMES" >/dev/null && echo true || echo false)"
+
+          RELEASE_PRESENT=false
+          RELEASE_URL=null
+          RELEASE_TARGET=null
+          RELEASE_ASSETS='[]'
+          if RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$REPOSITORY" --json url,targetCommitish,assets 2>/dev/null)"; then
+            RELEASE_PRESENT=true
+            RELEASE_URL="$(jq -c '.url' <<<"$RELEASE_JSON")"
+            RELEASE_TARGET="$(jq -c '.targetCommitish' <<<"$RELEASE_JSON")"
+            RELEASE_ASSETS="$(jq -c '[.assets[].name]' <<<"$RELEASE_JSON")"
+          fi
+
+          RELEASE_MATCHES_HEAD=false
+          if [[ "$RELEASE_PRESENT" == true && "$(jq -r . <<<"$RELEASE_TARGET")" == "$HEAD_SHA" ]]; then
+            RELEASE_MATCHES_HEAD=true
+          fi
+
+          CI_ANDROID_BOOT_VERIFIED=false
+          if [[ "$RUN_CONCLUSION" == success && "$GUEST_PRESENT" == true && "$BOOT_DIAGNOSTICS_PRESENT" == true && "$IPA_PRESENT" == true ]]; then
+            CI_ANDROID_BOOT_VERIFIED=true
+          fi
+
+          jq -n \
+            --arg workflow "Build and boot-test no-JIT ARM64 Redroid IPA" \
+            --arg run_id "$RUN_ID" \
+            --arg run_attempt "$RUN_ATTEMPT" \
+            --arg conclusion "$RUN_CONCLUSION" \
+            --arg event "$RUN_EVENT" \
+            --arg run_url "$RUN_URL" \
+            --arg head_sha "$HEAD_SHA" \
+            --arg head_branch "$HEAD_BRANCH" \
+            --arg created_at "$CREATED_AT" \
+            --arg updated_at "$UPDATED_AT" \
+            --argjson artifact_names "$ARTIFACT_NAMES" \
+            --argjson guest_artifact_present "$GUEST_PRESENT" \
+            --argjson boot_diagnostics_present "$BOOT_DIAGNOSTICS_PRESENT" \
+            --argjson ipa_artifact_present "$IPA_PRESENT" \
+            --arg release_tag "$RELEASE_TAG" \
+            --argjson release_present "$RELEASE_PRESENT" \
+            --argjson release_url "$RELEASE_URL" \
+            --argjson release_target "$RELEASE_TARGET" \
+            --argjson release_assets "$RELEASE_ASSETS" \
+            --argjson release_matches_head "$RELEASE_MATCHES_HEAD" \
+            --argjson ci_android_boot_verified "$CI_ANDROID_BOOT_VERIFIED" \
+            '{
+              workflow: $workflow,
+              run_id: $run_id,
+              run_attempt: $run_attempt,
+              conclusion: $conclusion,
+              event: $event,
+              run_url: $run_url,
+              head_sha: $head_sha,
+              head_branch: $head_branch,
+              created_at: $created_at,
+              updated_at: $updated_at,
+              artifact_names: $artifact_names,
+              guest_artifact_present: $guest_artifact_present,
+              boot_diagnostics_present: $boot_diagnostics_present,
+              ipa_artifact_present: $ipa_artifact_present,
+              release_tag: $release_tag,
+              release_present: $release_present,
+              release_url: $release_url,
+              release_target: $release_target,
+              release_assets: $release_assets,
+              release_matches_head: $release_matches_head,
+              guest_architecture: "aarch64",
+              android_version: 13,
+              runtime: "Redroid 13 arm64-only",
+              jit_required: false,
+              x86_guest_present: false,
+              ci_android_boot_verified: $ci_android_boot_verified,
+              physical_iphone_boot_verified: false
+            }' > .github/release-status/redroid-arm64-pipeline.json
+
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-arm64-pipeline.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record completed Redroid ARM64 pipeline"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git pull --rebase origin main
+            sleep $((attempt * 2))
+          done
+          exit 1
