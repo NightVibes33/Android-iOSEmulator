@@ -1,14 +1,14 @@
 {
   "workflow": "Build and boot-test no-JIT ARM64 Redroid IPA",
-  "run_id": "29944574733",
+  "run_id": "29947960516",
   "run_attempt": "1",
   "conclusion": "failure",
   "event": "push",
-  "run_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29944574733",
-  "head_sha": "a89914cf8f492a8f4b746a1c9bc5f1cf0c263c64",
+  "run_url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29947960516",
+  "head_sha": "bf83ea2f86d1d4034dc9354dc0eba474c65604ae",
   "head_branch": "main",
-  "created_at": "2026-07-22T17:57:18Z",
-  "updated_at": "2026-07-22T18:18:07Z",
+  "created_at": "2026-07-22T18:44:06Z",
+  "updated_at": "2026-07-22T19:05:01Z",
   "artifact_names": [
     "redroid-arm64-guest-diagnostics"
   ],
