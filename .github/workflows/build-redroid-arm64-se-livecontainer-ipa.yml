@@ -25,7 +25,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RELEASE_TAG: v0.4.0-redroid13-arm64-se-nojit
+  RELEASE_TAG: v0.4.1-redroid13-arm64-se-signing-fix
   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
 
 jobs:
@@ -171,7 +171,7 @@ jobs:
           ! grep -Eqi 'kernel panic|not syncing|VFS: Unable to mount root' "$QEMU_LOG"
 
           sed -i 's/^CI Android boot verification: pending$/CI Android boot verification: passed/' "$OUT/build-manifest.txt"
-          cat >> "$OUT/build-manifest.txt" <<EOF
+          cat >> "$OUT/build-manifest.txt" <<EOF2
           CI boot runner architecture: aarch64
           CI QEMU machine: virt,highmem=off
           CI QEMU CPU: max
@@ -179,7 +179,7 @@ jobs:
           CI Android primary ABI: $PRIMARY_ABI
           CI Android ABI list: $ABI_LIST
           CI Android sys.boot_completed: 1
-          EOF
+          EOF2
           grep -q '^CI Android boot verification: passed$' "$OUT/build-manifest.txt"
           grep -q '^CI Android sys.boot_completed: 1$' "$OUT/build-manifest.txt"
           cleanup
@@ -220,13 +220,15 @@ jobs:
           retention-days: 30
 
   package-ipa:
-    name: Package and validate import-safe IPA
+    name: Package and validate LiveContainer-signable IPA
     needs: build-guest
     runs-on: macos-26
     timeout-minutes: 240
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download verified ARM64 guest
         uses: actions/download-artifact@v4
@@ -243,6 +245,7 @@ jobs:
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
           brew install zstd jq gnu-tar bash
           xcodebuild -version
+          codesign --version
 
       - name: Restore sparse ARM64 guest
         shell: bash
@@ -264,7 +267,7 @@ jobs:
           "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" \
             2>&1 | tee redroid-arm64-ipa-build.log
 
-      - name: Verify final IPA and import metadata
+      - name: Verify final IPA, metadata, and every Mach-O signature
         shell: bash
         run: |
           set -euo pipefail
@@ -277,12 +280,23 @@ jobs:
           grep -q '^CI Android boot verification: passed$' "$OUT/build-manifest.txt"
           grep -q '^JIT required by LiveContainer: no$' "$OUT/build-manifest.txt"
           grep -q '^x86_64 backend retained: no$' "$OUT/build-manifest.txt"
+          grep -q '^LiveContainer minimum version: 3.7.0$' "$OUT/build-manifest.txt"
+          grep -q '^Mach-O file permissions: normalized writable and executable$' "$OUT/build-manifest.txt"
+          grep -q '^Embedded Mach-O signatures: stripped and replaced with validated ad-hoc signatures$' "$OUT/build-manifest.txt"
+          grep -Eq '^LiveContainer signing smoke test: passed for [1-9][0-9]* Mach-O binaries$' "$OUT/build-manifest.txt"
           grep -q '^isJITNeeded=false$' "$OUT/livecontainer-import-metadata.txt"
+          grep -Eq '^signableMachOCount=[1-9][0-9]*$' "$OUT/livecontainer-import-metadata.txt"
+          test -s "$OUT/livecontainer-signable-machos.txt"
+          test -s "$OUT/livecontainer-signability-report.txt"
+          grep -Fxq 'UTM SE' "$OUT/livecontainer-signable-machos.txt"
+          grep -Fxq 'Frameworks/vulkan.1.framework/vulkan.1' "$OUT/livecontainer-signable-machos.txt"
+          grep -Fxq 'Frameworks/MoltenVK.framework/MoltenVK' "$OUT/livecontainer-signable-machos.txt"
+          grep -Fxq 'Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' "$OUT/livecontainer-signable-machos.txt"
           grep -q 'qemu-aarch64-softmmu.framework/' "$OUT/ipa-contents.txt"
           ! grep -q 'qemu-x86_64-softmmu.framework/' "$OUT/ipa-contents.txt"
           test "$(stat -f%z "$IPA")" -lt 2147483648
 
-      - name: Upload complete unsigned IPA
+      - name: Upload complete LiveContainer-signable IPA
         uses: actions/upload-artifact@v4
         with:
           name: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned
@@ -291,13 +305,15 @@ jobs:
             build/livecontainer-redroid-arm64-se/*.sha256
             build/livecontainer-redroid-arm64-se/build-manifest.txt
             build/livecontainer-redroid-arm64-se/livecontainer-import-metadata.txt
+            build/livecontainer-redroid-arm64-se/livecontainer-signable-machos.txt
+            build/livecontainer-redroid-arm64-se/livecontainer-signability-report.txt
             build/livecontainer-redroid-arm64-se/archive-entry-order.txt
             redroid-arm64-ipa-build.log
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
 
-      - name: Publish verified no-JIT ARM64 prerelease
+      - name: Publish verified signing-fix prerelease with built-in token
         if: ${{ github.event_name == 'push' || inputs.publish_release == true }}
         shell: bash
         env:
@@ -307,12 +323,20 @@ jobs:
           OUT=build/livecontainer-redroid-arm64-se
           IPA="$OUT/$IPA_NAME"
           SIZE="$(stat -f%z "$IPA")"
+
           gh release delete "$RELEASE_TAG" --yes --cleanup-tag >/dev/null 2>&1 || true
-          gh release create "$RELEASE_TAG" "$IPA" \
-            --target "$GITHUB_SHA" \
-            --title "Android iOSEmulator — Redroid 13 ARM64 no-JIT" \
-            --notes "One complete unsigned LiveContainer IPA. CI booted this exact ARM64 kernel, initramfs and root disk under QEMU and required Android 13 to report sys.boot_completed=1 before packaging. The runtime contains no x86 Android guest and requests no JIT. Physical iPhone 16 / iOS 27 beta 3 boot remains a separate device-validation gate." \
+          git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag "$RELEASE_TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+          gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --title "Android iOSEmulator — Redroid 13 ARM64 LiveContainer signing fix" \
+            --notes "One complete LiveContainer guest IPA. Every embedded Mach-O has writable executable permissions, stale upstream signatures are replaced with validated ad-hoc signatures, and CI re-verifies all binaries after final IPA extraction. Requires LiveContainer 3.7.0 or newer because upstream fixed near-full Mach-O header signing there. Android 13 ARM64 still must report sys.boot_completed=1 before packaging. Physical iPhone boot remains a separate device-validation gate." \
             --prerelease
+          gh release upload "$RELEASE_TAG" "$IPA" --clobber
+
           RELEASE_JSON="$(gh release view "$RELEASE_TAG" --json url,assets,isPrerelease)"
           test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
           test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$IPA_NAME"
@@ -320,7 +344,7 @@ jobs:
           test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
           echo "$RELEASE_JSON" > "$OUT/release.json"
 
-      - name: Record verified release marker
+      - name: Record verified signing-fix release marker
         if: ${{ github.event_name == 'push' || inputs.publish_release == true }}
         shell: bash
         env:
@@ -330,6 +354,7 @@ jobs:
           OUT=build/livecontainer-redroid-arm64-se
           IPA="$OUT/$IPA_NAME"
           SIZE="$(stat -f%z "$IPA")"
+          MACHO_COUNT="$(awk -F= '/^signableMachOCount=/{print $2}' "$OUT/livecontainer-import-metadata.txt")"
           RELEASE_URL="$(jq -r .url "$OUT/release.json")"
           git fetch origin main
           git checkout -B main origin/main
@@ -339,6 +364,7 @@ jobs:
             --arg release_url "$RELEASE_URL" \
             --arg asset_name "$IPA_NAME" \
             --argjson asset_size_bytes "$SIZE" \
+            --argjson signable_macho_count "$MACHO_COUNT" \
             --arg workflow_run_id "$GITHUB_RUN_ID" \
             --arg source_commit "$GITHUB_SHA" \
             '{
@@ -354,6 +380,11 @@ jobs:
               dma_buf_system_heap: true,
               linux_page_size_kib: 4,
               x86_guest_present: false,
+              livecontainer_minimum_version: "3.7.0",
+              macho_permissions_normalized: true,
+              stale_signatures_removed: true,
+              adhoc_signatures_verified: true,
+              signable_macho_count: $signable_macho_count,
               tag: $tag,
               release_url: $release_url,
               asset_name: $asset_name,
@@ -361,9 +392,9 @@ jobs:
               workflow_run_id: $workflow_run_id,
               source_commit: $source_commit,
               physical_iphone_boot_verified: false
-            }' > .github/release-status/redroid-arm64-se.json
+            }' > .github/release-status/redroid-arm64-se-signing-fix.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/release-status/redroid-arm64-se.json
-          git commit -m "Record verified no-JIT ARM64 Android release"
+          git add .github/release-status/redroid-arm64-se-signing-fix.json
+          git commit -m "Record verified ARM64 LiveContainer signing fix"
           git push origin HEAD:main
