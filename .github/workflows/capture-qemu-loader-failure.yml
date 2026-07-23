@@ -21,7 +21,7 @@ jobs:
       - name: Capture failed log tail
         env:
           GH_TOKEN: ${{ github.token }}
-          FAILED_RUN_ID: "29972183842"
+          FAILED_RUN_ID: "29972384284"
         run: |
           set -euo pipefail
           mkdir -p .github/release-status
