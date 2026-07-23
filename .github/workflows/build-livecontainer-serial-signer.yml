@@ -137,8 +137,8 @@ jobs:
 
           MAIN_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO")"
           test -f "$APP/$MAIN_EXECUTABLE"
-          strings "$APP/$MAIN_EXECUTABLE" | grep -Fq \
-            'com.nightvibes33.livecontainer.serial-macho-signing'
+          strings "$APP/$MAIN_EXECUTABLE" > livecontainer-main.strings
+          grep -Fq 'com.nightvibes33.livecontainer.serial-macho-signing' livecontainer-main.strings
 
           (
             cd package
@@ -151,8 +151,8 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialMachOSigning' "$EXTRACTED_INFO")" = true
           test "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialSignerBuild' "$EXTRACTED_INFO")" = NightVibes33-2afc9c3-v1
           EXTRACTED_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$EXTRACTED_INFO")"
-          strings "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE" | grep -Fq \
-            'com.nightvibes33.livecontainer.serial-macho-signing'
+          strings "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE" > livecontainer-extracted.strings
+          grep -Fq 'com.nightvibes33.livecontainer.serial-macho-signing' livecontainer-extracted.strings
 
           shasum -a 256 "$IPA_NAME" > "$IPA_NAME.sha256"
           stat -f%z "$IPA_NAME" > "$IPA_NAME.size"
