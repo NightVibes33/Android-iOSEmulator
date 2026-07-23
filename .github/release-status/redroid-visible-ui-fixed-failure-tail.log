@@ -1,0 +1,242 @@
+failed_run_id=30040777273
+failed_job_id=89319858899
+2026-07-23T20:07:41.5578153Z Unpacking libpcsclite1:arm64 (2.0.3-1build1) ...
+2026-07-23T20:07:41.5805423Z Selecting previously unselected package libcacard0:arm64.
+2026-07-23T20:07:41.5963876Z Preparing to unpack .../09-libcacard0_1%3a2.8.0-3build4_arm64.deb ...
+2026-07-23T20:07:41.5976923Z Unpacking libcacard0:arm64 (1:2.8.0-3build4) ...
+2026-07-23T20:07:41.6197196Z Selecting previously unselected package libdaxctl1:arm64.
+2026-07-23T20:07:41.6354445Z Preparing to unpack .../10-libdaxctl1_77-2ubuntu2_arm64.deb ...
+2026-07-23T20:07:41.6366544Z Unpacking libdaxctl1:arm64 (77-2ubuntu2) ...
+2026-07-23T20:07:41.6590470Z Selecting previously unselected package libimagequant0:arm64.
+2026-07-23T20:07:41.6743931Z Preparing to unpack .../11-libimagequant0_2.18.0-1build1_arm64.deb ...
+2026-07-23T20:07:41.6758899Z Unpacking libimagequant0:arm64 (2.18.0-1build1) ...
+2026-07-23T20:07:41.6979922Z Selecting previously unselected package libndctl6:arm64.
+2026-07-23T20:07:41.7133217Z Preparing to unpack .../12-libndctl6_77-2ubuntu2_arm64.deb ...
+2026-07-23T20:07:41.7145739Z Unpacking libndctl6:arm64 (77-2ubuntu2) ...
+2026-07-23T20:07:41.7370629Z Selecting previously unselected package libpmem1:arm64.
+2026-07-23T20:07:41.7553837Z Preparing to unpack .../13-libpmem1_1.13.1-1.1ubuntu2_arm64.deb ...
+2026-07-23T20:07:41.7565581Z Unpacking libpmem1:arm64 (1.13.1-1.1ubuntu2) ...
+2026-07-23T20:07:41.7786727Z Selecting previously unselected package libraqm0:arm64.
+2026-07-23T20:07:41.7968494Z Preparing to unpack .../14-libraqm0_0.10.1-1build1_arm64.deb ...
+2026-07-23T20:07:41.7984226Z Unpacking libraqm0:arm64 (0.10.1-1build1) ...
+2026-07-23T20:07:41.8203766Z Selecting previously unselected package librdmacm1t64:arm64.
+2026-07-23T20:07:41.8391967Z Preparing to unpack .../15-librdmacm1t64_50.0-2ubuntu0.2_arm64.deb ...
+2026-07-23T20:07:41.8404400Z Unpacking librdmacm1t64:arm64 (50.0-2ubuntu0.2) ...
+2026-07-23T20:07:41.8644026Z Selecting previously unselected package liburing2:arm64.
+2026-07-23T20:07:41.8825406Z Preparing to unpack .../16-liburing2_2.5-1build1_arm64.deb ...
+2026-07-23T20:07:41.8838613Z Unpacking liburing2:arm64 (2.5-1build1) ...
+2026-07-23T20:07:41.9066891Z Selecting previously unselected package libusbredirparser1t64:arm64.
+2026-07-23T20:07:41.9244186Z Preparing to unpack .../17-libusbredirparser1t64_0.13.0-2.1build1_arm64.deb ...
+2026-07-23T20:07:41.9257514Z Unpacking libusbredirparser1t64:arm64 (0.13.0-2.1build1) ...
+2026-07-23T20:07:41.9455499Z Selecting previously unselected package python3-pil:arm64.
+2026-07-23T20:07:41.9637869Z Preparing to unpack .../18-python3-pil_10.2.0-1ubuntu1.2_arm64.deb ...
+2026-07-23T20:07:41.9648990Z Unpacking python3-pil:arm64 (10.2.0-1ubuntu1.2) ...
+2026-07-23T20:07:42.0058638Z Selecting previously unselected package qemu-system-common.
+2026-07-23T20:07:42.0212823Z Preparing to unpack .../19-qemu-system-common_1%3a8.2.2+ds-0ubuntu1.17_arm64.deb ...
+2026-07-23T20:07:42.0224941Z Unpacking qemu-system-common (1:8.2.2+ds-0ubuntu1.17) ...
+2026-07-23T20:07:42.0960430Z Selecting previously unselected package qemu-system-data.
+2026-07-23T20:07:42.1118647Z Preparing to unpack .../20-qemu-system-data_1%3a8.2.2+ds-0ubuntu1.17_all.deb ...
+2026-07-23T20:07:42.1133077Z Unpacking qemu-system-data (1:8.2.2+ds-0ubuntu1.17) ...
+2026-07-23T20:07:42.1685415Z Selecting previously unselected package qemu-system-arm.
+2026-07-23T20:07:42.1847264Z Preparing to unpack .../21-qemu-system-arm_1%3a8.2.2+ds-0ubuntu1.17_arm64.deb ...
+2026-07-23T20:07:42.1914327Z Unpacking qemu-system-arm (1:8.2.2+ds-0ubuntu1.17) ...
+2026-07-23T20:07:42.4747937Z Selecting previously unselected package qemu-utils.
+2026-07-23T20:07:42.4932206Z Preparing to unpack .../22-qemu-utils_1%3a8.2.2+ds-0ubuntu1.17_arm64.deb ...
+2026-07-23T20:07:42.4946765Z Unpacking qemu-utils (1:8.2.2+ds-0ubuntu1.17) ...
+2026-07-23T20:07:42.5705592Z Setting up libprotobuf32t64:arm64 (3.21.12-8.2ubuntu0.3) ...
+2026-07-23T20:07:42.5734929Z Setting up android-liblog:arm64 (1:34.0.4-1build3) ...
+2026-07-23T20:07:42.5756612Z Setting up libraqm0:arm64 (0.10.1-1build1) ...
+2026-07-23T20:07:42.5779186Z Setting up libimagequant0:arm64 (2.18.0-1build1) ...
+2026-07-23T20:07:42.5804694Z Setting up android-libboringssl:arm64 (14.0.0+r11-4build1) ...
+2026-07-23T20:07:42.5827976Z Setting up libpcsclite1:arm64 (2.0.3-1build1) ...
+2026-07-23T20:07:42.5855808Z Setting up libdaxctl1:arm64 (77-2ubuntu2) ...
+2026-07-23T20:07:42.5882281Z Setting up qemu-system-data (1:8.2.2+ds-0ubuntu1.17) ...
+2026-07-23T20:07:42.5907602Z Setting up libusbredirparser1t64:arm64 (0.13.0-2.1build1) ...
+2026-07-23T20:07:42.5930157Z Setting up libndctl6:arm64 (77-2ubuntu2) ...
+2026-07-23T20:07:42.5956311Z Setting up librdmacm1t64:arm64 (50.0-2ubuntu0.2) ...
+2026-07-23T20:07:42.5987923Z Setting up libbrlapi0.8:arm64 (6.6-4ubuntu5) ...
+2026-07-23T20:07:42.6020168Z Setting up liburing2:arm64 (2.5-1build1) ...
+2026-07-23T20:07:42.6049942Z Setting up libpmem1:arm64 (1.13.1-1.1ubuntu2) ...
+2026-07-23T20:07:42.6080242Z Setting up android-libbase:arm64 (1:34.0.4-1build3) ...
+2026-07-23T20:07:42.6109671Z Setting up android-libziparchive:arm64 (1:34.0.4-1build3) ...
+2026-07-23T20:07:42.6138619Z Setting up android-libcutils:arm64 (1:34.0.4-1build3) ...
+2026-07-23T20:07:42.6168712Z Setting up libcacard0:arm64 (1:2.8.0-3build4) ...
+2026-07-23T20:07:42.6200547Z Setting up adb (1:34.0.4-1build3) ...
+2026-07-23T20:07:42.6232424Z Setting up python3-pil:arm64 (10.2.0-1ubuntu1.2) ...
+2026-07-23T20:07:42.8847323Z Setting up qemu-utils (1:8.2.2+ds-0ubuntu1.17) ...
+2026-07-23T20:07:42.8873235Z Setting up qemu-system-common (1:8.2.2+ds-0ubuntu1.17) ...
+2026-07-23T20:07:42.9834201Z Created symlink /etc/systemd/system/multi-user.target.wants/qemu-kvm.service → /usr/lib/systemd/system/qemu-kvm.service.
+2026-07-23T20:07:42.9834775Z 
+2026-07-23T20:07:43.2130831Z Setting up qemu-system-arm (1:8.2.2+ds-0ubuntu1.17) ...
+2026-07-23T20:07:43.2211135Z Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+2026-07-23T20:07:43.2771766Z Processing triggers for man-db (2.12.0-4build2) ...
+2026-07-23T20:07:43.2799932Z Not building database; man-db/auto-update is not 'true'.
+2026-07-23T20:07:43.2817662Z Processing triggers for hicolor-icon-theme (0.17-2) ...
+2026-07-23T20:07:45.7007541Z 
+2026-07-23T20:07:45.7008396Z Running kernel seems to be up-to-date.
+2026-07-23T20:07:45.7009072Z 
+2026-07-23T20:07:45.7009432Z No services need to be restarted.
+2026-07-23T20:07:45.7009608Z 
+2026-07-23T20:07:45.7009753Z No containers need to be restarted.
+2026-07-23T20:07:45.7009923Z 
+2026-07-23T20:07:45.7010053Z No user sessions are running outdated binaries.
+2026-07-23T20:07:45.7010373Z 
+2026-07-23T20:07:45.7010596Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+2026-07-23T20:07:46.9628438Z QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.17)
+2026-07-23T20:07:46.9629215Z Copyright (c) 2003-2023 Fabrice Bellard and the QEMU Project developers
+2026-07-23T20:07:46.9662693Z qemu-img version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.17)
+2026-07-23T20:07:46.9663341Z Copyright (c) 2003-2023 Fabrice Bellard and the QEMU Project developers
+2026-07-23T20:07:46.9709820Z Android Debug Bridge version 1.0.41
+2026-07-23T20:07:46.9710205Z Version 34.0.4-debian
+2026-07-23T20:07:46.9710554Z Installed as /usr/lib/android-sdk/platform-tools/adb
+2026-07-23T20:07:46.9710936Z Running on Linux 6.17.0-1020-azure (aarch64)
+2026-07-23T20:07:47.0610272Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:07:47.0610753Z 	Using EXT2FS Library version 1.47.0
+2026-07-23T20:07:47.0665328Z ##[group]Run set -euo pipefail
+2026-07-23T20:07:47.0665765Z [36;1mset -euo pipefail[0m
+2026-07-23T20:07:47.0666026Z [36;1mrm -rf source-artifact guest[0m
+2026-07-23T20:07:47.0666459Z [36;1mmkdir -p source-artifact guest[0m
+2026-07-23T20:07:47.0666765Z [36;1mgh run download "$SOURCE_RUN_ID" \[0m
+2026-07-23T20:07:47.0667099Z [36;1m  --repo "$GITHUB_REPOSITORY" \[0m
+2026-07-23T20:07:47.0667397Z [36;1m  --name "$SOURCE_ARTIFACT" \[0m
+2026-07-23T20:07:47.0667679Z [36;1m  --dir source-artifact[0m
+2026-07-23T20:07:47.0668220Z [36;1mARCHIVE="$(find source-artifact -type f -name redroid-arm64-guest.tar.zst -print -quit)"[0m
+2026-07-23T20:07:47.0668721Z [36;1mtest -n "$ARCHIVE"[0m
+2026-07-23T20:07:47.0669030Z [36;1mzstd -d --stdout "$ARCHIVE" | tar --sparse -xf - -C guest[0m
+2026-07-23T20:07:47.0669465Z [36;1mtest -f guest/redroid-arm64-rootfs.raw[0m
+2026-07-23T20:07:47.0669774Z [36;1mtest -f guest/kernel[0m
+2026-07-23T20:07:47.0670166Z [36;1mtest -f guest/initrd.img[0m
+2026-07-23T20:07:47.0670563Z [36;1mgrep -q '^CI Android boot verification: passed$' guest/build-manifest.txt[0m
+2026-07-23T20:07:47.0671218Z [36;1mgrep -q '^CI Android sys.boot_completed: 1$' guest/build-manifest.txt[0m
+2026-07-23T20:07:47.0721055Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-23T20:07:47.0721564Z env:
+2026-07-23T20:07:47.0722074Z   SOURCE_RUN_ID: 29949669780
+2026-07-23T20:07:47.0722393Z   SOURCE_ARTIFACT: redroid-arm64-guest
+2026-07-23T20:07:47.0722756Z   RELEASE_TAG: v0.4.4-redroid13-arm64-se-visible-ui-fix
+2026-07-23T20:07:47.0723314Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
+2026-07-23T20:07:47.0723867Z   BASE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+2026-07-23T20:07:47.0724510Z   OUTPUT_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-Visible-unsigned.ipa
+2026-07-23T20:07:47.0727765Z   GH_TOKEN: ***
+2026-07-23T20:07:47.0728148Z ##[endgroup]
+2026-07-23T20:08:43.7153302Z ##[group]Run set -euo pipefail
+2026-07-23T20:08:43.7153842Z [36;1mset -euo pipefail[0m
+2026-07-23T20:08:43.7154148Z [36;1mRAW="$PWD/guest/redroid-arm64-rootfs.raw"[0m
+2026-07-23T20:08:43.7154531Z [36;1mWESTON_PATH=/etc/systemd/system/weston-redroid.service[0m
+2026-07-23T20:08:43.7154951Z [36;1mUI_PATH=/usr/local/sbin/start-redroid-ui[0m
+2026-07-23T20:08:43.7155296Z [36;1m[0m
+2026-07-23T20:08:43.7155584Z [36;1msudo debugfs -w -R "rm $WESTON_PATH" "$RAW" >/dev/null 2>&1 || true[0m
+2026-07-23T20:08:43.7156170Z [36;1msudo debugfs -w -R "write runtime/guest-fixes/weston-redroid.service $WESTON_PATH" "$RAW"[0m
+2026-07-23T20:08:43.7156721Z [36;1msudo debugfs -w -R "set_inode_field $WESTON_PATH mode 0100644" "$RAW"[0m
+2026-07-23T20:08:43.7157105Z [36;1m[0m
+2026-07-23T20:08:43.7157406Z [36;1msudo debugfs -w -R "rm $UI_PATH" "$RAW" >/dev/null 2>&1 || true[0m
+2026-07-23T20:08:43.7158292Z [36;1msudo debugfs -w -R "write runtime/guest-fixes/start-redroid-ui $UI_PATH" "$RAW"[0m
+2026-07-23T20:08:43.7158803Z [36;1msudo debugfs -w -R "set_inode_field $UI_PATH mode 0100755" "$RAW"[0m
+2026-07-23T20:08:43.7159156Z [36;1m[0m
+2026-07-23T20:08:43.7159590Z [36;1msudo debugfs -R "cat $WESTON_PATH" "$RAW" > guest/weston-redroid.service.installed[0m
+2026-07-23T20:08:43.7160126Z [36;1msudo debugfs -R "cat $UI_PATH" "$RAW" > guest/start-redroid-ui.installed[0m
+2026-07-23T20:08:43.7160635Z [36;1msudo debugfs -R "stat $WESTON_PATH" "$RAW" > guest/weston-redroid.service.stat[0m
+2026-07-23T20:08:43.7161181Z [36;1msudo debugfs -R "stat $UI_PATH" "$RAW" > guest/start-redroid-ui.stat[0m
+2026-07-23T20:08:43.7161543Z [36;1m[0m
+2026-07-23T20:08:43.7161889Z [36;1mgrep -Fq 'ExecStart=/usr/bin/weston --backend=drm-backend.so --idle-time=0' \[0m
+2026-07-23T20:08:43.7162368Z [36;1m  guest/weston-redroid.service.installed[0m
+2026-07-23T20:08:43.7162789Z [36;1m! grep -Fq -- '--tty=1' guest/weston-redroid.service.installed[0m
+2026-07-23T20:08:43.7163514Z [36;1mgrep -Fq 'Wayland display is ready' guest/start-redroid-ui.installed[0m
+2026-07-23T20:08:43.7164086Z [36;1mgrep -Fq 'pm disable-user --user 0 com.android.provision' guest/start-redroid-ui.installed[0m
+2026-07-23T20:08:43.7164720Z [36;1mgrep -Fq 'android.intent.category.HOME' guest/start-redroid-ui.installed[0m
+2026-07-23T20:08:43.7165211Z [36;1mgrep -Eq 'Mode:.*0100644' guest/weston-redroid.service.stat[0m
+2026-07-23T20:08:43.7165624Z [36;1mgrep -Eq 'Mode:.*0100755' guest/start-redroid-ui.stat[0m
+2026-07-23T20:08:43.7165983Z [36;1msudo e2fsck -fn "$RAW"[0m
+2026-07-23T20:08:43.7166226Z [36;1m[0m
+2026-07-23T20:08:43.7166440Z [36;1mcat >> guest/build-manifest.txt <<'EOF'[0m
+2026-07-23T20:08:43.7166863Z [36;1mVisible UI fix: Weston 14 removed option --tty=1 eliminated[0m
+2026-07-23T20:08:43.7167262Z [36;1mVisible UI fix: waits for /run/weston/wayland-0[0m
+2026-07-23T20:08:43.7167665Z [36;1mVisible UI fix: Android provisioning marked complete[0m
+2026-07-23T20:08:43.7168096Z [36;1mVisible UI fix: com.android.provision disabled for user 0[0m
+2026-07-23T20:08:43.7168505Z [36;1mVisible UI fix: Launcher3 HOME explicitly launched[0m
+2026-07-23T20:08:43.7168978Z [36;1mVisible UI display device: virtio-gpu-pci[0m
+2026-07-23T20:08:43.7169334Z [36;1mVisible UI CI framebuffer verification: pending[0m
+2026-07-23T20:08:43.7169706Z [36;1mEOF[0m
+2026-07-23T20:08:43.7204038Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-23T20:08:43.7204488Z env:
+2026-07-23T20:08:43.7204697Z   SOURCE_RUN_ID: 29949669780
+2026-07-23T20:08:43.7204963Z   SOURCE_ARTIFACT: redroid-arm64-guest
+2026-07-23T20:08:43.7205343Z   RELEASE_TAG: v0.4.4-redroid13-arm64-se-visible-ui-fix
+2026-07-23T20:08:43.7205720Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
+2026-07-23T20:08:43.7206250Z   BASE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+2026-07-23T20:08:43.7206890Z   OUTPUT_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-Visible-unsigned.ipa
+2026-07-23T20:08:43.7207374Z ##[endgroup]
+2026-07-23T20:08:49.4935722Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:08:49.4962582Z Allocated inode: 132174
+2026-07-23T20:08:49.5016520Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:08:49.5161117Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:08:49.5184154Z Allocated inode: 138412
+2026-07-23T20:08:49.5237717Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:08:49.5300930Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:08:49.5368434Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:08:49.5434800Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:08:49.5497906Z debugfs 1.47.0 (5-Feb-2023)
+2026-07-23T20:08:49.5586138Z ##[error]Process completed with exit code 1.
+2026-07-23T20:08:49.5689730Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T20:08:49.5691628Z ##[group]Run actions/upload-artifact@v4
+2026-07-23T20:08:49.5692016Z with:
+2026-07-23T20:08:49.5692279Z   name: redroid-arm64-visible-ui-diagnostics
+2026-07-23T20:08:49.5694217Z   path: guest/build-manifest.txt
+guest/weston-redroid.service.installed
+guest/start-redroid-ui.installed
+guest/weston-redroid.service.stat
+guest/start-redroid-ui.stat
+guest/visible-ui-fixed-analysis.json
+guest/visible-ui-fixed-android-state.txt
+guest/android-launcher3.png
+guest/virtio-gpu-launcher3.ppm
+guest/visible-ui-fixed-serial.log
+guest/visible-ui-fixed-qemu.log
+guest/visible-ui-fixed-monitor.txt
+guest/visible-ui-qcow2-info.json
+
+2026-07-23T20:08:49.5696052Z   if-no-files-found: warn
+2026-07-23T20:08:49.5696289Z   retention-days: 30
+2026-07-23T20:08:49.5696573Z   compression-level: 6
+2026-07-23T20:08:49.5696825Z   overwrite: false
+2026-07-23T20:08:49.5697071Z   include-hidden-files: false
+2026-07-23T20:08:49.5697333Z env:
+2026-07-23T20:08:49.5697628Z   SOURCE_RUN_ID: 29949669780
+2026-07-23T20:08:49.5697916Z   SOURCE_ARTIFACT: redroid-arm64-guest
+2026-07-23T20:08:49.5698259Z   RELEASE_TAG: v0.4.4-redroid13-arm64-se-visible-ui-fix
+2026-07-23T20:08:49.5698623Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
+2026-07-23T20:08:49.5699164Z   BASE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+2026-07-23T20:08:49.5699809Z   OUTPUT_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-Visible-unsigned.ipa
+2026-07-23T20:08:49.5700303Z ##[endgroup]
+2026-07-23T20:08:49.7040263Z (node:3042) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-07-23T20:08:49.7041288Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-07-23T20:08:49.7122472Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-07-23T20:08:49.7132587Z The least common ancestor is /home/runner/work/Android-iOSEmulator/Android-iOSEmulator/guest. This will be the root directory of the artifact
+2026-07-23T20:08:49.7133745Z With the provided path, there will be 5 files uploaded
+2026-07-23T20:08:49.7134417Z Artifact name is valid!
+2026-07-23T20:08:49.7135025Z Root directory input is valid!
+2026-07-23T20:08:49.9325293Z Beginning upload of artifact content to blob storage
+2026-07-23T20:08:49.9530063Z (node:3042) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-07-23T20:08:50.0641571Z Uploaded bytes 3359
+2026-07-23T20:08:50.0984669Z Finished uploading artifact content to blob storage!
+2026-07-23T20:08:50.0985384Z SHA256 digest of uploaded artifact zip is 01b1807f8d38c9c667b76397c8a6d6162d7288a7b438f563bca3aa1e7de1f6a2
+2026-07-23T20:08:50.0986886Z Finalizing artifact upload
+2026-07-23T20:08:50.2708461Z Artifact redroid-arm64-visible-ui-diagnostics.zip successfully finalized. Artifact ID 8577147264
+2026-07-23T20:08:50.2709434Z Artifact redroid-arm64-visible-ui-diagnostics has been successfully uploaded! Final size is 3359 bytes. Artifact ID is 8577147264
+2026-07-23T20:08:50.2720136Z Artifact download URL: https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/30040777273/artifacts/8577147264
+2026-07-23T20:08:50.2901924Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T20:08:50.2903462Z Post job cleanup.
+2026-07-23T20:08:50.3591180Z [command]/usr/bin/git version
+2026-07-23T20:08:50.3625775Z git version 2.54.0
+2026-07-23T20:08:50.3660696Z Temporarily overriding HOME='/home/runner/work/_temp/b4bc5ebf-283f-4b16-813a-638d0b644112' before making global git config changes
+2026-07-23T20:08:50.3661753Z Adding repository directory to the temporary git global config as a safe directory
+2026-07-23T20:08:50.3667301Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Android-iOSEmulator/Android-iOSEmulator
+2026-07-23T20:08:50.3702143Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-07-23T20:08:50.3730955Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-07-23T20:08:50.3918218Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-07-23T20:08:50.3939889Z http.https://github.com/.extraheader
+2026-07-23T20:08:50.3946172Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-07-23T20:08:50.3980723Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-07-23T20:08:50.4165312Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-07-23T20:08:50.4193800Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-07-23T20:08:50.4507837Z Cleaning up orphan processes
+2026-07-23T20:08:50.4781830Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
