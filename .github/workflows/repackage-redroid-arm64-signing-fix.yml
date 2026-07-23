@@ -1,0 +1,205 @@
+name: Repackage verified ARM64 IPA with LiveContainer signing fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/repackage-redroid-arm64-signing-fix.yml"
+      - ".github/release-request/redroid-arm64-signing-fix.txt"
+      - "scripts/build_livecontainer_redroid_arm64_se_ipa.sh"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: redroid-arm64-signing-fix-release
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: "29949669780"
+  SOURCE_ARTIFACT: redroid-arm64-guest
+  RELEASE_TAG: v0.4.1-redroid13-arm64-se-signing-fix
+  IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+
+jobs:
+  repackage:
+    name: Repackage and publish LiveContainer-signable IPA
+    runs-on: macos-26
+    timeout-minutes: 240
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode and install packaging tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
+          test -n "$XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          brew install zstd jq gnu-tar bash
+          xcodebuild -version
+          codesign --version
+
+      - name: Download existing boot-verified ARM64 guest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p .downloaded-redroid-guest
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir .downloaded-redroid-guest
+          ARCHIVE="$(find .downloaded-redroid-guest -type f -name redroid-arm64-guest.tar.zst -print -quit)"
+          test -n "$ARCHIVE"
+          GUEST_DIR="$PWD/.downloaded-redroid-guest/extracted"
+          mkdir -p "$GUEST_DIR"
+          zstd -d --stdout "$ARCHIVE" | gtar --sparse -xf - -C "$GUEST_DIR"
+          grep -q '^CI Android boot verification: passed$' "$GUEST_DIR/build-manifest.txt"
+          grep -q '^CI Android sys.boot_completed: 1$' "$GUEST_DIR/build-manifest.txt"
+          echo "GUEST_DIR=$GUEST_DIR" >> "$GITHUB_ENV"
+
+      - name: Build LiveContainer-signable replacement IPA
+        shell: bash
+        run: |
+          set -o pipefail
+          "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" \
+            2>&1 | tee redroid-arm64-signing-fix-build.log
+
+      - name: Require all reported failing binaries to be signable
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/$IPA_NAME"
+          test -f "$IPA"
+          unzip -t "$IPA" >/dev/null
+          grep -q '^LiveContainer minimum version: 3.7.0$' "$OUT/build-manifest.txt"
+          grep -q '^Mach-O file permissions: normalized writable and executable$' "$OUT/build-manifest.txt"
+          grep -q '^Embedded Mach-O signatures: stripped and replaced with validated ad-hoc signatures$' "$OUT/build-manifest.txt"
+          grep -Eq '^LiveContainer signing smoke test: passed for [1-9][0-9]* Mach-O binaries$' "$OUT/build-manifest.txt"
+          grep -Eq '^signableMachOCount=[1-9][0-9]*$' "$OUT/livecontainer-import-metadata.txt"
+          test -s "$OUT/livecontainer-signable-machos.txt"
+          test -s "$OUT/livecontainer-signability-report.txt"
+          for required in \
+            'UTM SE' \
+            'Frameworks/vulkan.1.framework/vulkan.1' \
+            'Frameworks/pixman-1.0.framework/pixman-1.0' \
+            'Frameworks/MoltenVK.framework/MoltenVK' \
+            'Frameworks/epoxy.0.framework/epoxy.0' \
+            'Frameworks/glib-2.0.0.framework/glib-2.0.0' \
+            'Frameworks/GLESv2.framework/GLESv2' \
+            'Frameworks/vulkan_kosmickrisp.framework/vulkan_kosmickrisp' \
+            'Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' \
+            'Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu'; do
+            grep -Fxq "$required" "$OUT/livecontainer-signable-machos.txt"
+          done
+          test "$(stat -f%z "$IPA")" -lt 2147483648
+
+      - name: Upload replacement IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Redroid13-ARM64-SE-SigningFix-unsigned
+          path: |
+            build/livecontainer-redroid-arm64-se/*.ipa
+            build/livecontainer-redroid-arm64-se/*.sha256
+            build/livecontainer-redroid-arm64-se/build-manifest.txt
+            build/livecontainer-redroid-arm64-se/livecontainer-import-metadata.txt
+            build/livecontainer-redroid-arm64-se/livecontainer-signable-machos.txt
+            build/livecontainer-redroid-arm64-se/livecontainer-signability-report.txt
+            build/livecontainer-redroid-arm64-se/archive-entry-order.txt
+            redroid-arm64-signing-fix-build.log
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish replacement release using built-in token
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/$IPA_NAME"
+          SIZE="$(stat -f%z "$IPA")"
+
+          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
+          git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag "$RELEASE_TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Android iOSEmulator — ARM64 LiveContainer signing fix" \
+            --notes "Replacement for v0.4.0. Every Mach-O is writable/executable, stale embedded signatures are removed, fresh ad-hoc signature space is installed, and all binaries are verified again after extracting the completed IPA. This specifically covers UTM SE, Vulkan, MoltenVK, Pixman, GLib, Epoxy, GLESv2, and both required QEMU frameworks. Use LiveContainer 3.7.0 or newer. Android 13 ARM64 was already required to reach sys.boot_completed=1 in source run 29949669780." \
+            --prerelease
+          gh release upload "$RELEASE_TAG" "$IPA" --repo "$GITHUB_REPOSITORY" --clobber
+
+          RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease)"
+          test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
+          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$IPA_NAME"
+          test "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"
+          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
+          echo "$RELEASE_JSON" > "$OUT/release.json"
+
+      - name: Record verified signing-fix release
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/$IPA_NAME"
+          SIZE="$(stat -f%z "$IPA")"
+          MACHO_COUNT="$(awk -F= '/^signableMachOCount=/{print $2}' "$OUT/livecontainer-import-metadata.txt")"
+          RELEASE_URL="$(jq -r .url "$OUT/release.json")"
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          jq -n \
+            --arg tag "$RELEASE_TAG" \
+            --arg release_url "$RELEASE_URL" \
+            --arg asset_name "$IPA_NAME" \
+            --argjson asset_size_bytes "$SIZE" \
+            --argjson signable_macho_count "$MACHO_COUNT" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg source_run_id "$SOURCE_RUN_ID" \
+            --arg source_commit "$GITHUB_SHA" \
+            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,livecontainer_minimum_version:"3.7.0",macho_permissions_normalized:true,stale_signatures_removed:true,adhoc_signatures_verified:true,signable_macho_count:$signable_macho_count,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_run_id:$source_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' \
+            > .github/release-status/redroid-arm64-se-signing-fix.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-arm64-se-signing-fix.json
+          git commit -m "Record verified ARM64 LiveContainer signing fix" || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Record repackage run result
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          jq -n \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg conclusion "$JOB_STATUS" \
+            --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --arg head_sha "$GITHUB_SHA" \
+            '{run_id:$run_id,conclusion:$conclusion,run_url:$run_url,head_sha:$head_sha}' \
+            > .github/release-status/redroid-signing-fix-run.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-signing-fix-run.json
+          git commit -m "Record ARM64 signing-fix repackage result" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
