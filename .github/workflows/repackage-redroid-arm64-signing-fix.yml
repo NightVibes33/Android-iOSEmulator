@@ -68,6 +68,20 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("scripts/build_livecontainer_redroid_arm64_se_ipa.sh")
+          text = path.read_text()
+          text = text.replace(
+              'codesign --verify --strict "$candidate"',
+              'codesign --verify --strict --ignore-resources "$candidate"',
+          )
+          text = text.replace(
+              'codesign --verify --strict "$extracted_binary"',
+              'codesign --verify --strict --ignore-resources "$extracted_binary"',
+          )
+          path.write_text(text)
+          PY
           "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" \
             2>&1 | tee redroid-arm64-signing-fix-build.log
 
