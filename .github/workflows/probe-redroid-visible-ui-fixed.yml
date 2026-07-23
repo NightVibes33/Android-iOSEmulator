@@ -39,4 +39,4 @@ jobs:
           git pull --rebase origin main
           git push origin HEAD:main
 
-# probe: modular-v2
+# probe: deterministic-wayland-socket-retry
