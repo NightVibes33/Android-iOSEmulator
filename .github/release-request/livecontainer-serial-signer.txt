@@ -1,0 +1,5 @@
+product=LiveContainer 3.7.2 serial signer
+upstream=LiveContainer/LiveContainer@3.7.2
+patch=serialize Mach-O signing queue
+android_guest_release=v0.4.2-redroid13-arm64-se-qemu-loader-fix
+requested_at=2026-07-22T23:00:00-05:00
