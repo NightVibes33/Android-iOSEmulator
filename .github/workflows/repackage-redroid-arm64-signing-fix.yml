@@ -43,7 +43,6 @@ jobs:
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
           brew install zstd jq gnu-tar bash
           xcodebuild -version
-          codesign -h >/dev/null
 
       - name: Download existing boot-verified ARM64 guest
         shell: bash
