@@ -10,15 +10,35 @@ export SCRCPY_SERVER_PATH=/opt/scrcpy/scrcpy-server
 mkdir -p "$HOME/.android" "$XDG_RUNTIME_DIR"
 chmod 0700 "$XDG_RUNTIME_DIR"
 
+find_wayland_socket() {
+  for candidate in \
+    /run/weston/wayland-* \
+    /run/user/0/wayland-* \
+    /run/user/*/wayland-*; do
+    [ -S "$candidate" ] || continue
+    case "$candidate" in
+      *.lock) continue ;;
+    esac
+    printf '%s\n' "$candidate"
+    return 0
+  done
+  return 1
+}
+
 count=0
-while [ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && [ "$count" -lt 180 ]; do
+WAYLAND_SOCKET=
+until WAYLAND_SOCKET="$(find_wayland_socket 2>/dev/null)"; do
   count=$((count + 1))
+  [ "$count" -lt 240 ] || {
+    echo "Wayland socket did not appear under /run/weston or /run/user" >&2
+    find /run -maxdepth 4 -name 'wayland-*' -ls 2>/dev/null || true
+    exit 1
+  }
   sleep 1
 done
-[ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] || {
-  echo "Wayland socket did not appear: $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" >&2
-  exit 1
-}
+XDG_RUNTIME_DIR="$(dirname "$WAYLAND_SOCKET")"
+WAYLAND_DISPLAY="$(basename "$WAYLAND_SOCKET")"
+export XDG_RUNTIME_DIR WAYLAND_DISPLAY
 
 echo "Wayland display is ready: $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
 adb kill-server >/dev/null 2>&1 || true
