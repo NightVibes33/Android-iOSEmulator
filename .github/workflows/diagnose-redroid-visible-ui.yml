@@ -1,0 +1,265 @@
+name: Diagnose Android framebuffer and UTM display
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/release-request/redroid-visible-ui.txt"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: redroid-visible-ui-diagnostic
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: "29985656289"
+  SOURCE_ARTIFACT: Android-iOSEmulator-Redroid13-ARM64-SE-LowStorage-unsigned
+  SOURCE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+  ADB_PORT: "5557"
+
+jobs:
+  diagnose:
+    name: Capture Android and virtio-ramfb screens
+    runs-on: macos-26
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install QEMU and Android tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install qemu jq
+          if ! command -v adb >/dev/null 2>&1; then
+            brew install --cask android-platform-tools
+          fi
+          python3 -m pip install --user pillow
+          qemu-system-aarch64 --version
+          adb version
+
+      - name: Download and extract verified low-storage IPA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf source-artifact extracted-ipa
+          mkdir -p source-artifact extracted-ipa
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir source-artifact
+          IPA="$(find source-artifact -type f -name "$SOURCE_IPA" -print -quit)"
+          test -n "$IPA"
+          unzip -q "$IPA" -d extracted-ipa
+          APP="$(find extracted-ipa/Payload -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$APP"
+          VM="$APP/PreloadedData/Android-Redroid-ARM64-SE.utm"
+          test -f "$VM/Images/kernel"
+          test -f "$VM/Images/initrd.img"
+          test -f "$VM/Images/redroid-arm64-rootfs.qcow2"
+          echo "APP=$APP" >> "$GITHUB_ENV"
+          echo "VM=$VM" >> "$GITHUB_ENV"
+
+      - name: Boot with visible virtio-ramfb and capture both layers
+        shell: bash
+        run: |
+          set -euo pipefail
+          MONITOR_SOCKET=/tmp/redroid-visible-monitor.sock
+          SERIAL_LOG=redroid-visible-serial.log
+          QEMU_LOG=redroid-visible-qemu.log
+          rm -f "$MONITOR_SOCKET" "$SERIAL_LOG" "$QEMU_LOG" android-screencap.png virtio-ramfb.ppm
+
+          adb kill-server >/dev/null 2>&1 || true
+          adb start-server
+
+          qemu-system-aarch64 \
+            -machine virt,highmem=off \
+            -accel tcg,thread=multi \
+            -cpu max \
+            -smp 2 \
+            -m 2048 \
+            -kernel "$VM/Images/kernel" \
+            -initrd "$VM/Images/initrd.img" \
+            -append 'root=/dev/vda rw rootwait rootfstype=ext4 console=tty0 console=ttyAMA0 earlycon=pl011,0x09000000 systemd.show_status=yes systemd.log_target=console loglevel=6 consoleblank=0 vt.global_cursor_default=1' \
+            -drive "if=none,file=$VM/Images/redroid-arm64-rootfs.qcow2,format=qcow2,id=rootfs,cache=unsafe" \
+            -device virtio-blk-pci,drive=rootfs \
+            -device virtio-ramfb \
+            -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:$ADB_PORT-:5555" \
+            -device virtio-net-pci,netdev=net0,romfile= \
+            -device virtio-rng-pci \
+            -display vnc=127.0.0.1:1 \
+            -monitor "unix:$MONITOR_SOCKET,server=on,wait=off" \
+            -serial "file:$SERIAL_LOG" \
+            -snapshot \
+            -no-reboot >"$QEMU_LOG" 2>&1 &
+          QEMU_PID=$!
+          cleanup() {
+            kill "$QEMU_PID" >/dev/null 2>&1 || true
+            wait "$QEMU_PID" >/dev/null 2>&1 || true
+            adb disconnect "127.0.0.1:$ADB_PORT" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          BOOTED=0
+          for _ in $(seq 1 2700); do
+            adb connect "127.0.0.1:$ADB_PORT" >/dev/null 2>&1 || true
+            if [[ "$(adb -s "127.0.0.1:$ADB_PORT" get-state 2>/dev/null || true)" == device ]]; then
+              VALUE="$(adb -s "127.0.0.1:$ADB_PORT" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$VALUE" == 1 ]]; then
+                BOOTED=1
+                break
+              fi
+            fi
+            kill -0 "$QEMU_PID" 2>/dev/null || break
+            sleep 1
+          done
+          if [[ "$BOOTED" -ne 1 ]]; then
+            tail -n 500 "$SERIAL_LOG" || true
+            tail -n 200 "$QEMU_LOG" || true
+            exit 1
+          fi
+
+          DEVICE="127.0.0.1:$ADB_PORT"
+          {
+            echo '=== properties ==='
+            adb -s "$DEVICE" shell getprop ro.build.version.release
+            adb -s "$DEVICE" shell getprop ro.product.cpu.abi
+            echo '=== display ==='
+            adb -s "$DEVICE" shell wm size || true
+            adb -s "$DEVICE" shell wm density || true
+            echo '=== home resolution ==='
+            adb -s "$DEVICE" shell cmd package resolve-activity --brief \
+              -a android.intent.action.MAIN -c android.intent.category.HOME || true
+            echo '=== relevant packages ==='
+            adb -s "$DEVICE" shell pm list packages | grep -Ei 'launcher|systemui|settings' || true
+            echo '=== current focus before start ==='
+            adb -s "$DEVICE" shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' || true
+            echo '=== start home ==='
+            adb -s "$DEVICE" shell am start -W \
+              -a android.intent.action.MAIN -c android.intent.category.HOME || true
+          } | tee android-visible-diagnostic.txt
+
+          sleep 45
+          adb -s "$DEVICE" exec-out screencap -p > android-screencap.png
+          test -s android-screencap.png
+
+          python3 - "$MONITOR_SOCKET" <<'PY'
+          import socket
+          import sys
+          import time
+
+          path = sys.argv[1]
+          deadline = time.time() + 20
+          while not __import__('os').path.exists(path):
+              if time.time() > deadline:
+                  raise SystemExit('monitor socket did not appear')
+              time.sleep(0.2)
+          with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+              sock.connect(path)
+              sock.settimeout(2)
+              try:
+                  sock.recv(65536)
+              except Exception:
+                  pass
+              sock.sendall(b'screendump virtio-ramfb.ppm\n')
+              time.sleep(3)
+              sock.sendall(b'info display\n')
+              time.sleep(1)
+              chunks = []
+              while True:
+                  try:
+                      data = sock.recv(65536)
+                  except Exception:
+                      break
+                  if not data:
+                      break
+                  chunks.append(data)
+          open('qemu-monitor-output.txt', 'wb').write(b''.join(chunks))
+          PY
+          test -s virtio-ramfb.ppm
+
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json
+
+          def stats(path):
+              image = Image.open(path).convert('RGB')
+              pixels = list(image.getdata())
+              count = len(pixels)
+              nonblack = sum(1 for r, g, b in pixels if max(r, g, b) > 12)
+              bright = sum(1 for r, g, b in pixels if max(r, g, b) > 48)
+              sampled = pixels[::max(1, count // 50000)]
+              return {
+                  'width': image.width,
+                  'height': image.height,
+                  'nonblack_pixels': nonblack,
+                  'nonblack_ratio': nonblack / count,
+                  'bright_pixels': bright,
+                  'bright_ratio': bright / count,
+                  'sampled_unique_colors': len(set(sampled)),
+              }
+
+          result = {
+              'android_framebuffer': stats('android-screencap.png'),
+              'virtio_ramfb_output': stats('virtio-ramfb.ppm'),
+          }
+          Path('visible-ui-analysis.json').write_text(json.dumps(result, indent=2) + '\n')
+          print(json.dumps(result, indent=2))
+          PY
+
+          cleanup
+          trap - EXIT
+
+      - name: Upload display diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-visible-UI-diagnostic
+          path: |
+            android-visible-diagnostic.txt
+            android-screencap.png
+            virtio-ramfb.ppm
+            visible-ui-analysis.json
+            qemu-monitor-output.txt
+            redroid-visible-serial.log
+            redroid-visible-qemu.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Record diagnostic result
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          if [[ -f visible-ui-analysis.json ]]; then
+            jq --arg run_id "$GITHUB_RUN_ID" --arg status "$JOB_STATUS" \
+              '. + {workflow_run_id:$run_id,job_status:$status}' visible-ui-analysis.json \
+              > .github/release-status/redroid-visible-ui-diagnostic.json
+          else
+            jq -n --arg run_id "$GITHUB_RUN_ID" --arg status "$JOB_STATUS" \
+              '{workflow_run_id:$run_id,job_status:$status,analysis_available:false}' \
+              > .github/release-status/redroid-visible-ui-diagnostic.json
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-visible-ui-diagnostic.json
+          git commit -m "Record Android visible UI diagnostic" || exit 0
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 2
+          done
