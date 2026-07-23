@@ -1,0 +1,49 @@
+name: Observe QEMU loader-fix publication
+
+on:
+  workflow_run:
+    workflows: ["Repackage verified ARM64 IPA with QEMU loader fix"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record workflow and release state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OBSERVED_RUN_ID: ${{ github.event.workflow_run.id }}
+          OBSERVED_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          OBSERVED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_TAG: v0.4.2-redroid13-arm64-se-qemu-loader-fix
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+          RUN_JSON="$(gh run view "$OBSERVED_RUN_ID" --repo "$GITHUB_REPOSITORY" --json url,status,conclusion,jobs,headSha,event)"
+          RELEASE_JSON='{}'
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,tagName,isPrerelease,assets > /tmp/release.json 2>/dev/null; then
+            RELEASE_JSON="$(cat /tmp/release.json)"
+          fi
+          jq -n \
+            --arg run_id "$OBSERVED_RUN_ID" \
+            --arg conclusion "$OBSERVED_CONCLUSION" \
+            --arg head_sha "$OBSERVED_HEAD_SHA" \
+            --argjson run "$RUN_JSON" \
+            --argjson release "$RELEASE_JSON" \
+            '{run_id:$run_id,conclusion:$conclusion,head_sha:$head_sha,run:$run,release:$release}' \
+            > .github/release-status/redroid-qemu-loader-fix-observer.json
+          git fetch origin main
+          git checkout -B main origin/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-qemu-loader-fix-observer.json
+          git commit -m "Observe completed ARM64 QEMU loader-fix run" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
