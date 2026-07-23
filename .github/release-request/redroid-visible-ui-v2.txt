@@ -1,0 +1,5 @@
+product=Android iOSEmulator visible UI diagnostic v2
+source_release=v0.4.3-redroid13-arm64-se-low-storage-qcow2
+display_test_device=virtio-gpu-pci
+reported_symptom=UTM toolbar visible with completely black guest area
+requested_at=2026-07-23T14:25:00-05:00
