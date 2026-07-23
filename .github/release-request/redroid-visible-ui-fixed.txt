@@ -1,0 +1,8 @@
+product=Android iOSEmulator visible Android UI fix
+source_guest_run=29949669780
+source_release=v0.4.3-redroid13-arm64-se-low-storage-qcow2
+reported_symptom=UTM toolbar visible with completely black guest area
+confirmed_cause=Weston 14 rejects obsolete --tty=1 and scrcpy loses Wayland; Android remains in provisioning
+required_proof=Launcher3 focused plus non-black Android framebuffer and non-black virtio GPU capture
+release_assets=IPA only
+requested_at=2026-07-23T15:05:00-05:00
