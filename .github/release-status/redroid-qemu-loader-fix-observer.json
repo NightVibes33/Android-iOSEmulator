@@ -1,122 +1,142 @@
 {
-  "run_id": "29974030737",
-  "conclusion": "cancelled",
-  "head_sha": "cc346d5f2509eddf54d9d83deca253fdfbafcedd",
+  "run_id": "29974045487",
+  "conclusion": "success",
+  "head_sha": "3f98bfccba6abbe473472438f93b03bd112081bf",
   "run": {
-    "conclusion": "cancelled",
+    "conclusion": "success",
     "event": "push",
-    "headSha": "cc346d5f2509eddf54d9d83deca253fdfbafcedd",
+    "headSha": "3f98bfccba6abbe473472438f93b03bd112081bf",
     "jobs": [
       {
-        "completedAt": "2026-07-23T02:18:23Z",
-        "conclusion": "cancelled",
-        "databaseId": 89101915316,
+        "completedAt": "2026-07-23T02:33:01Z",
+        "conclusion": "success",
+        "databaseId": 89101997537,
         "name": "Repackage and publish QEMU loader-safe IPA",
-        "startedAt": "2026-07-23T02:17:47Z",
+        "startedAt": "2026-07-23T02:18:27Z",
         "status": "completed",
         "steps": [
           {
-            "completedAt": "2026-07-23T02:17:48Z",
+            "completedAt": "2026-07-23T02:18:29Z",
             "conclusion": "success",
             "name": "Set up job",
             "number": 1,
-            "startedAt": "2026-07-23T02:17:47Z",
+            "startedAt": "2026-07-23T02:18:28Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:17:50Z",
+            "completedAt": "2026-07-23T02:18:31Z",
             "conclusion": "success",
             "name": "Checkout repository",
             "number": 2,
-            "startedAt": "2026-07-23T02:17:48Z",
+            "startedAt": "2026-07-23T02:18:29Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:17:57Z",
+            "completedAt": "2026-07-23T02:18:38Z",
             "conclusion": "success",
             "name": "Select Xcode and install packaging tools",
             "number": 3,
-            "startedAt": "2026-07-23T02:17:50Z",
+            "startedAt": "2026-07-23T02:18:31Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:17Z",
-            "conclusion": "cancelled",
+            "completedAt": "2026-07-23T02:20:25Z",
+            "conclusion": "success",
             "name": "Download existing boot-verified ARM64 guest",
             "number": 4,
-            "startedAt": "2026-07-23T02:17:57Z",
+            "startedAt": "2026-07-23T02:18:38Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:17Z",
-            "conclusion": "skipped",
+            "completedAt": "2026-07-23T02:30:35Z",
+            "conclusion": "success",
             "name": "Build QEMU loader-safe replacement IPA",
             "number": 5,
-            "startedAt": "2026-07-23T02:18:17Z",
+            "startedAt": "2026-07-23T02:20:25Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:17Z",
-            "conclusion": "skipped",
+            "completedAt": "2026-07-23T02:31:26Z",
+            "conclusion": "success",
             "name": "Require loader-safe QEMU binaries and extracted paths",
             "number": 6,
-            "startedAt": "2026-07-23T02:18:17Z",
+            "startedAt": "2026-07-23T02:30:35Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:17Z",
-            "conclusion": "skipped",
+            "completedAt": "2026-07-23T02:31:47Z",
+            "conclusion": "success",
             "name": "Upload complete loader-fix IPA and diagnostics",
             "number": 7,
-            "startedAt": "2026-07-23T02:18:17Z",
+            "startedAt": "2026-07-23T02:31:26Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:17Z",
-            "conclusion": "skipped",
+            "completedAt": "2026-07-23T02:32:42Z",
+            "conclusion": "success",
             "name": "Publish QEMU loader-fix release using built-in token",
             "number": 8,
-            "startedAt": "2026-07-23T02:18:17Z",
+            "startedAt": "2026-07-23T02:31:47Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:17Z",
-            "conclusion": "skipped",
+            "completedAt": "2026-07-23T02:32:50Z",
+            "conclusion": "success",
             "name": "Record verified QEMU loader-fix release",
             "number": 9,
-            "startedAt": "2026-07-23T02:18:17Z",
+            "startedAt": "2026-07-23T02:32:42Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:20Z",
+            "completedAt": "2026-07-23T02:32:57Z",
             "conclusion": "success",
             "name": "Record QEMU loader-fix run result",
             "number": 10,
-            "startedAt": "2026-07-23T02:18:17Z",
+            "startedAt": "2026-07-23T02:32:50Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:20Z",
+            "completedAt": "2026-07-23T02:32:57Z",
             "conclusion": "success",
             "name": "Post Checkout repository",
             "number": 20,
-            "startedAt": "2026-07-23T02:18:20Z",
+            "startedAt": "2026-07-23T02:32:57Z",
             "status": "completed"
           },
           {
-            "completedAt": "2026-07-23T02:18:21Z",
+            "completedAt": "2026-07-23T02:32:58Z",
             "conclusion": "success",
             "name": "Complete job",
             "number": 21,
-            "startedAt": "2026-07-23T02:18:20Z",
+            "startedAt": "2026-07-23T02:32:57Z",
             "status": "completed"
           }
         ],
-        "url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29974030737/job/89101915316"
+        "url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29974045487/job/89101997537"
       }
     ],
     "status": "completed",
-    "url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29974030737"
+    "url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29974045487"
   },
-  "release": {}
+  "release": {
+    "assets": [
+      {
+        "apiUrl": "https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases/assets/486671122",
+        "contentType": "application/octet-stream",
+        "createdAt": "2026-07-23T02:31:53Z",
+        "digest": "sha256:63e6a179e53ef8362f54279f5c309bb43d996287e8ae57fb49c1ae9d527bd678",
+        "downloadCount": 0,
+        "id": "RA_kwDOTei-dM4dAgMS",
+        "label": "",
+        "name": "Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa",
+        "size": 1219189988,
+        "state": "uploaded",
+        "updatedAt": "2026-07-23T02:32:43Z",
+        "url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/download/v0.4.2-redroid13-arm64-se-qemu-loader-fix/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa"
+      }
+    ],
+    "isPrerelease": true,
+    "tagName": "v0.4.2-redroid13-arm64-se-qemu-loader-fix",
+    "url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.4.2-redroid13-arm64-se-qemu-loader-fix"
+  }
 }
