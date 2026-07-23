@@ -1,0 +1,22 @@
+{
+  "assets": [
+    {
+      "apiUrl": "https://api.github.com/repos/NightVibes33/Android-iOSEmulator/releases/assets/486588349",
+      "contentType": "application/octet-stream",
+      "createdAt": "2026-07-23T00:41:06Z",
+      "digest": "sha256:ee63ce8370e7dd1e6da5eefc33ca558a64db144881d1e53501895cabf29c4127",
+      "downloadCount": 0,
+      "id": "RA_kwDOTei-dM4dAL-9",
+      "label": "",
+      "name": "Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa",
+      "size": 1172593676,
+      "state": "uploaded",
+      "updatedAt": "2026-07-23T00:41:46Z",
+      "url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/download/v0.4.1-redroid13-arm64-se-signing-fix/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa"
+    }
+  ],
+  "isPrerelease": true,
+  "tagName": "v0.4.1-redroid13-arm64-se-signing-fix",
+  "url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.4.1-redroid13-arm64-se-signing-fix",
+  "observed": true
+}
