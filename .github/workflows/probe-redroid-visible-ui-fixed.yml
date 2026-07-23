@@ -26,17 +26,17 @@ jobs:
           mkdir -p .github/release-status
           gh run list \
             --repo "$GITHUB_REPOSITORY" \
-            --workflow build-redroid-visible-ui-fixed.yml \
+            --workflow build-redroid-visible-ui-fixed-v2.yml \
             --limit 10 \
             --json databaseId,status,conclusion,url,headSha,createdAt,updatedAt,event,displayTitle \
-            > .github/release-status/redroid-visible-ui-fixed-probe.json
+            > .github/release-status/redroid-visible-ui-fixed-v2-probe.json
           git fetch origin main
           git checkout -B main origin/main
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/release-status/redroid-visible-ui-fixed-probe.json
-          git commit -m "Probe visible Android UI fix workflow" || exit 0
+          git add .github/release-status/redroid-visible-ui-fixed-v2-probe.json
+          git commit -m "Probe modular visible Android UI build" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
 
-# probe: initial
+# probe: modular-v2
