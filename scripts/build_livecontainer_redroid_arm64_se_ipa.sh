@@ -21,7 +21,7 @@ VM_NAME="Android-Redroid-ARM64-SE.utm"
 DISK_NAME="redroid-arm64-rootfs.raw"
 GITHUB_RELEASE_LIMIT=2147483648
 
-for command in curl unzip zip zipinfo otool xcrun plutil python3 shasum file; do
+for command in curl unzip zip zipinfo otool xcrun plutil python3 shasum file codesign xattr ditto; do
   command -v "$command" >/dev/null || { echo "missing build dependency: $command" >&2; exit 1; }
 done
 for required in kernel initrd.img "$DISK_NAME" build-manifest.txt; do
@@ -37,24 +37,25 @@ grep -q '^Host bootconfig masked from Android: yes$' "$GUEST_SOURCE/build-manife
 rm -rf "$WORK" "$OUT"
 mkdir -p "$WORK/utm" "$WORK/package/Payload" "$OUT"
 
-printf '[1/8] Downloading official UTM SE %s\n' "$UTM_TAG"
+printf '[1/9] Downloading official UTM SE %s\n' "$UTM_TAG"
 curl --fail --location --retry 4 --retry-delay 2 "$UTM_IPA_URL" -o "$WORK/UTM-SE.ipa"
 unzip -q "$WORK/UTM-SE.ipa" -d "$WORK/utm"
 UTM_APP="$(find "$WORK/utm/Payload" -maxdepth 1 -type d -name '*.app' -print -quit)"
 [[ -n "$UTM_APP" ]]
 
-printf '[2/8] Creating the ARM64 no-JIT Redroid UTM bundle\n'
+printf '[2/9] Creating the ARM64 no-JIT Redroid UTM bundle\n'
 python3 "$ROOT/scripts/make_redroid_arm64_utm.py" \
   --guest-dir "$GUEST_SOURCE" \
   --output "$WORK/$VM_NAME"
 plutil -lint "$WORK/$VM_NAME/config.plist"
 
-printf '[3/8] Creating the import-safe LiveContainer guest application\n'
+printf '[3/9] Creating the import-safe LiveContainer guest application\n'
 PAYLOAD="$WORK/package/Payload"
 GUEST_APP="$PAYLOAD/$APP_NAME"
 cp -R "$UTM_APP" "$GUEST_APP"
 find "$GUEST_APP" -name '_CodeSignature' -type d -prune -exec rm -rf {} + || true
 find "$GUEST_APP" -name 'embedded.mobileprovision' -type f -delete || true
+xattr -cr "$GUEST_APP" || true
 INFO_PLIST="$GUEST_APP/Info.plist"
 EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO_PLIST")"
 [[ -n "$EXECUTABLE" && -f "$GUEST_APP/$EXECUTABLE" ]]
@@ -65,7 +66,7 @@ EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO_PLIS
   /usr/libexec/PlistBuddy -c 'Add :CFBundleName string Android iOSEmulator' "$INFO_PLIST"
 plutil -lint "$INFO_PLIST"
 
-printf '[4/8] Retaining only dyld-required and ARM64 QEMU frameworks\n'
+printf '[4/9] Retaining only dyld-required and ARM64 QEMU frameworks\n'
 REQUIRED_QEMU_FRAMEWORKS=(qemu-m68k-softmmu.framework qemu-aarch64-softmmu.framework)
 for framework in "${REQUIRED_QEMU_FRAMEWORKS[@]}"; do
   [[ -d "$GUEST_APP/Frameworks/$framework" ]] || { echo "UTM SE is missing $framework" >&2; exit 1; }
@@ -95,7 +96,7 @@ done < <(otool -L "$GUEST_APP/$EXECUTABLE" | tail -n +2 | awk '{print $1}')
 (( MISSING_LINKED_FRAMEWORK == 0 ))
 otool -L "$GUEST_APP/$EXECUTABLE" > "$OUT/utm-executable-dependencies.txt"
 
-printf '[5/8] Embedding the ARM64 Android runtime and bootstrap\n'
+printf '[5/9] Embedding the ARM64 Android runtime and bootstrap\n'
 mkdir -p "$GUEST_APP/PreloadedData" "$GUEST_APP/BootstrapTweaks"
 if ! cp -cR "$WORK/$VM_NAME" "$GUEST_APP/PreloadedData/$VM_NAME" 2>/dev/null; then
   cp -R "$WORK/$VM_NAME" "$GUEST_APP/PreloadedData/$VM_NAME"
@@ -127,7 +128,40 @@ with output.open("wb") as stream:
 PY
 plutil -lint "$GUEST_APP/LCAppInfo.plist"
 
-printf '[6/8] Verifying the no-JIT ARM64 guest contract\n'
+printf '[6/9] Normalizing and smoke-signing every Mach-O for LiveContainer\n'
+# LiveContainer re-signs every 64-bit Mach-O. Normalize file permissions, remove
+# upstream signatures and install fresh ad-hoc signatures so each binary has a
+# writable, structurally valid LC_CODE_SIGNATURE region before on-device signing.
+find "$GUEST_APP" -type d -exec chmod 0755 {} +
+find "$GUEST_APP" -type f -exec chmod u+rw,go+r {} +
+xattr -cr "$GUEST_APP" || true
+MACHO_LIST="$OUT/livecontainer-signable-machos.txt"
+SIGNABILITY_REPORT="$OUT/livecontainer-signability-report.txt"
+: > "$MACHO_LIST"
+: > "$SIGNABILITY_REPORT"
+MACHO_COUNT=0
+while IFS= read -r -d '' candidate; do
+  file_description="$(file -b "$candidate")"
+  if grep -Eq 'Mach-O (universal binary|64-bit)' <<<"$file_description"; then
+    chmod 0755 "$candidate"
+    codesign --remove-signature "$candidate" >/dev/null 2>&1 || true
+    codesign --force --sign - --timestamp=none "$candidate"
+    codesign --verify --strict "$candidate"
+    relative="${candidate#$GUEST_APP/}"
+    printf '%s\n' "$relative" >> "$MACHO_LIST"
+    printf 'PASS\t%s\t%s\n' "$relative" "$file_description" >> "$SIGNABILITY_REPORT"
+    MACHO_COUNT=$((MACHO_COUNT + 1))
+  fi
+done < <(find "$GUEST_APP" -type f -print0)
+(( MACHO_COUNT > 0 ))
+grep -Fxq "$EXECUTABLE" "$MACHO_LIST"
+grep -Fxq 'Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$MACHO_LIST"
+grep -Fxq 'Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' "$MACHO_LIST"
+grep -Fxq 'BootstrapTweaks/AndroidRedroidGuestBootstrap.dylib' "$MACHO_LIST"
+printf 'Mach-O count: %s\nAll binaries writable: yes\nExisting signatures normalized: yes\nAd-hoc signing smoke test: passed\n' \
+  "$MACHO_COUNT" >> "$SIGNABILITY_REPORT"
+
+printf '[7/9] Verifying the no-JIT ARM64 guest contract\n'
 CONFIG="$GUEST_APP/PreloadedData/$VM_NAME/config.plist"
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :System:Architecture' "$CONFIG")" == aarch64 ]]
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :System:Target' "$CONFIG")" == virt ]]
@@ -142,7 +176,7 @@ CONFIG="$GUEST_APP/PreloadedData/$VM_NAME/config.plist"
 file "$GUEST_APP/$EXECUTABLE" | grep -q 'Mach-O 64-bit executable arm64'
 file "$GUEST_APP/BootstrapTweaks/AndroidRedroidGuestBootstrap.dylib" | grep -q 'Mach-O 64-bit dynamically linked shared library arm64'
 
-printf '[7/8] Packaging with the proven LiveContainer archive ordering\n'
+printf '[8/9] Packaging with the proven LiveContainer archive ordering\n'
 ZIP_LIST="$WORK/zip-file-order.txt"
 (
   cd "$WORK/package"
@@ -170,10 +204,10 @@ for path in [*leading, *remaining]:
         print(text)
 PY
   rm -f "$OUT/$OUTPUT_IPA"
-  zip -9 -q "$OUT/$OUTPUT_IPA" -@ < "$ZIP_LIST"
+  COPYFILE_DISABLE=1 zip -9 -q -X "$OUT/$OUTPUT_IPA" -@ < "$ZIP_LIST"
 )
 
-printf '[8/8] Re-reading final IPA metadata exactly as LiveContainer does\n'
+printf '[9/9] Re-reading final IPA and rechecking every embedded signature\n'
 unzip -t "$OUT/$OUTPUT_IPA" >/dev/null
 zipinfo -1 "$OUT/$OUTPUT_IPA" > "$OUT/archive-entry-order.txt"
 unzip -l "$OUT/$OUTPUT_IPA" > "$OUT/ipa-contents.txt"
@@ -187,12 +221,9 @@ tail -n 1 "$OUT/archive-entry-order.txt" | grep -q "Payload/$APP_NAME/PreloadedD
 ! grep -Eq '(_CodeSignature|embedded.mobileprovision)' "$OUT/ipa-contents.txt"
 
 IMPORT_CHECK="$WORK/livecontainer-import-check"
+rm -rf "$IMPORT_CHECK"
 mkdir -p "$IMPORT_CHECK"
-unzip -q "$OUT/$OUTPUT_IPA" \
-  "Payload/$APP_NAME/Info.plist" \
-  "Payload/$APP_NAME/$EXECUTABLE" \
-  "Payload/$APP_NAME/LCAppInfo.plist" \
-  -d "$IMPORT_CHECK"
+ditto -x -k "$OUT/$OUTPUT_IPA" "$IMPORT_CHECK"
 EXTRACTED_APP="$IMPORT_CHECK/Payload/$APP_NAME"
 ARCHIVE_BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$EXTRACTED_APP/Info.plist")"
 ARCHIVE_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$EXTRACTED_APP/Info.plist")"
@@ -200,8 +231,19 @@ ARCHIVE_JIT="$(/usr/libexec/PlistBuddy -c 'Print :isJITNeeded' "$EXTRACTED_APP/L
 [[ "$ARCHIVE_BUNDLE_ID" == "$GUEST_BUNDLE_ID" ]]
 [[ "$ARCHIVE_EXECUTABLE" == "$EXECUTABLE" ]]
 [[ "$ARCHIVE_JIT" == false ]]
-printf 'bundleIdentifier=%s\nexecutable=%s\nisJITNeeded=%s\n' \
-  "$ARCHIVE_BUNDLE_ID" "$ARCHIVE_EXECUTABLE" "$ARCHIVE_JIT" > "$OUT/livecontainer-import-metadata.txt"
+FINAL_MACHO_COUNT=0
+while IFS= read -r relative; do
+  [[ -n "$relative" ]]
+  extracted_binary="$EXTRACTED_APP/$relative"
+  [[ -f "$extracted_binary" ]]
+  [[ -x "$extracted_binary" ]]
+  codesign --verify --strict "$extracted_binary"
+  FINAL_MACHO_COUNT=$((FINAL_MACHO_COUNT + 1))
+done < "$MACHO_LIST"
+[[ "$FINAL_MACHO_COUNT" -eq "$MACHO_COUNT" ]]
+printf 'bundleIdentifier=%s\nexecutable=%s\nisJITNeeded=%s\nsignableMachOCount=%s\n' \
+  "$ARCHIVE_BUNDLE_ID" "$ARCHIVE_EXECUTABLE" "$ARCHIVE_JIT" "$FINAL_MACHO_COUNT" \
+  > "$OUT/livecontainer-import-metadata.txt"
 
 IPA_SIZE="$(stat -f%z "$OUT/$OUTPUT_IPA")"
 if (( IPA_SIZE >= GITHUB_RELEASE_LIMIT )); then
@@ -225,12 +267,16 @@ x86_64 backend retained: no
 Display: virtio-gpu + Weston + scrcpy
 Android rendering: software guest renderer
 Root disk: sparse raw ext4
+LiveContainer minimum version: 3.7.0
 LiveContainer import metadata: extracted and validated from final IPA
 Archive order: Info.plist, executable and LCAppInfo.plist before root disk
 Unknown.app fallback: blocked by final archive checks
+Mach-O file permissions: normalized writable and executable
+Embedded Mach-O signatures: stripped and replaced with validated ad-hoc signatures
+LiveContainer signing smoke test: passed for ${MACHO_COUNT} Mach-O binaries
 Removed unused QEMU frameworks: ${UTM_TRIMMED_KIB} KiB
-Signing: unsigned
+Signing: developer provisioning absent; LiveContainer must replace ad-hoc signatures on device
 IPA size: ${IPA_SIZE} bytes
 Physical iPhone boot verification: pending
 MANIFEST
-printf 'Built no-JIT ARM64 Android IPA: %s\n' "$OUT/$OUTPUT_IPA"
+printf 'Built LiveContainer-signable no-JIT ARM64 Android IPA: %s\n' "$OUT/$OUTPUT_IPA"
