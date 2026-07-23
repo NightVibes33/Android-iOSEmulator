@@ -1,0 +1,76 @@
+#!/bin/sh
+set -eu
+
+export HOME=/root
+export XDG_RUNTIME_DIR=/run/weston
+export WAYLAND_DISPLAY=wayland-0
+export SDL_VIDEODRIVER=wayland
+export SCRCPY_SERVER_PATH=/opt/scrcpy/scrcpy-server
+
+mkdir -p "$HOME/.android" "$XDG_RUNTIME_DIR"
+chmod 0700 "$XDG_RUNTIME_DIR"
+
+count=0
+while [ ! -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && [ "$count" -lt 180 ]; do
+  count=$((count + 1))
+  sleep 1
+done
+[ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] || {
+  echo "Wayland socket did not appear: $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" >&2
+  exit 1
+}
+
+echo "Wayland display is ready: $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
+adb kill-server >/dev/null 2>&1 || true
+count=0
+until adb start-server >/dev/null 2>&1; do
+  count=$((count + 1))
+  [ "$count" -lt 30 ] || { echo "Could not start adb server" >&2; exit 1; }
+  sleep 1
+done
+
+count=0
+until adb connect 127.0.0.1:5555 >/dev/null 2>&1 && \
+      adb -s 127.0.0.1:5555 get-state 2>/dev/null | grep -q device; do
+  count=$((count + 1))
+  [ "$count" -lt 300 ] || { echo "Android ADB did not become ready" >&2; exit 1; }
+  sleep 2
+done
+
+count=0
+until [ "$(adb -s 127.0.0.1:5555 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; do
+  count=$((count + 1))
+  [ "$count" -lt 900 ] || { echo "Android did not complete boot" >&2; exit 1; }
+  sleep 2
+done
+
+DEVICE=127.0.0.1:5555
+adb -s "$DEVICE" shell settings put global device_provisioned 1 || true
+adb -s "$DEVICE" shell settings put secure user_setup_complete 1 || true
+adb -s "$DEVICE" shell settings put secure tv_user_setup_complete 1 || true
+adb -s "$DEVICE" shell settings put global setup_wizard_has_run 1 || true
+adb -s "$DEVICE" shell settings put system screen_off_timeout 2147483647 || true
+adb -s "$DEVICE" shell svc power stayon true || true
+adb -s "$DEVICE" shell pm disable-user --user 0 com.android.provision || true
+adb -s "$DEVICE" shell am force-stop com.android.provision || true
+adb -s "$DEVICE" shell wm dismiss-keyguard || true
+adb -s "$DEVICE" shell input keyevent 82 || true
+adb -s "$DEVICE" shell am start -a android.intent.action.MAIN -c android.intent.category.HOME || true
+sleep 5
+
+HOME_ACTIVITY="$(adb -s "$DEVICE" shell cmd package resolve-activity --brief \
+  -a android.intent.action.MAIN -c android.intent.category.HOME 2>/dev/null | \
+  tr -d '\r' | tail -n 1)"
+echo "Resolved Android HOME activity: $HOME_ACTIVITY"
+case "$HOME_ACTIVITY" in
+  */*) adb -s "$DEVICE" shell am start -n "$HOME_ACTIVITY" || true ;;
+esac
+
+exec scrcpy \
+  -s "$DEVICE" \
+  --fullscreen \
+  --no-audio \
+  --max-fps=15 \
+  --video-bit-rate=4M \
+  --stay-awake \
+  --turn-screen-on
