@@ -1,0 +1,42 @@
+name: Probe visible Android UI fix workflow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-redroid-visible-ui-fixed.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Record visible UI fix workflow state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+          gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow build-redroid-visible-ui-fixed.yml \
+            --limit 10 \
+            --json databaseId,status,conclusion,url,headSha,createdAt,updatedAt,event,displayTitle \
+            > .github/release-status/redroid-visible-ui-fixed-probe.json
+          git fetch origin main
+          git checkout -B main origin/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-visible-ui-fixed-probe.json
+          git commit -m "Probe visible Android UI fix workflow" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+# probe: initial
