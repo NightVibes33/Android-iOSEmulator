@@ -27,7 +27,7 @@ jobs:
           mkdir -p .github/release-status
           {
             echo "failed_run_id=$FAILED_RUN_ID"
-            gh run view "$FAILED_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed || true
+            gh run view "$FAILED_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed 2>&1 || true
           } | tail -n 500 > .github/release-status/redroid-qemu-loader-failure.log
           git fetch origin main
           git checkout -B main origin/main
