@@ -1,0 +1,239 @@
+name: Build verified visible Android UI v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/release-request/redroid-visible-ui-fixed-v2.txt"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: redroid-visible-ui-fixed-v2-release
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: "29949669780"
+  SOURCE_ARTIFACT: redroid-arm64-guest
+  RELEASE_TAG: v0.4.4-redroid13-arm64-se-visible-ui-fix
+  TAG_TARGET_COMMIT: "99ebff326f89d945573965b1decf700c5ebc7f7e"
+  OUTPUT_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-Visible-unsigned.ipa
+
+jobs:
+  visible-guest:
+    name: Prove Launcher3 and graphical output
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install guest test tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            zstd e2fsprogs qemu-system-arm qemu-utils adb jq python3-pil file
+          chmod +x scripts/prepare_visible_redroid_guest.sh
+
+      - name: Restore original boot-verified guest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf source-artifact source-guest visible-guest
+          mkdir -p source-artifact source-guest
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir source-artifact
+          ARCHIVE="$(find source-artifact -type f -name redroid-arm64-guest.tar.zst -print -quit)"
+          test -n "$ARCHIVE"
+          zstd -d --stdout "$ARCHIVE" | tar --sparse -xf - -C source-guest
+          grep -q '^CI Android sys.boot_completed: 1$' source-guest/build-manifest.txt
+
+      - name: Patch, boot and require two non-black screenshots
+        shell: bash
+        run: |
+          set -o pipefail
+          sudo --preserve-env=PATH,GITHUB_WORKSPACE \
+            scripts/prepare_visible_redroid_guest.sh source-guest visible-guest \
+            2>&1 | tee visible-guest-preparation.log
+
+      - name: Pack verified visible guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -cf - -C visible-guest \
+            kernel initrd.img redroid-arm64-rootfs.qcow2 build-manifest.txt \
+            weston-redroid.service.installed start-redroid-ui.installed \
+            visible-ui-fixed-analysis.json visible-ui-fixed-android-state.txt \
+            android-launcher3.png virtio-gpu-launcher3.ppm \
+            visible-ui-fixed-serial.log visible-ui-fixed-qemu.log \
+            visible-ui-fixed-monitor.txt visible-ui-qcow2-info.json | \
+            zstd -10 -T0 -o redroid-arm64-visible-guest.tar.zst
+          test -s redroid-arm64-visible-guest.tar.zst
+
+      - name: Upload verified visible guest
+        uses: actions/upload-artifact@v4
+        with:
+          name: redroid-arm64-visible-guest-v2
+          path: redroid-arm64-visible-guest.tar.zst
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload graphical proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redroid-arm64-visible-ui-proof-v2
+          path: |
+            visible-guest-preparation.log
+            visible-guest/build-manifest.txt
+            visible-guest/weston-redroid.service.installed
+            visible-guest/start-redroid-ui.installed
+            visible-guest/weston-redroid.service.stat
+            visible-guest/start-redroid-ui.stat
+            visible-guest/visible-ui-fixed-analysis.json
+            visible-guest/visible-ui-fixed-android-state.txt
+            visible-guest/android-launcher3.png
+            visible-guest/virtio-gpu-launcher3.ppm
+            visible-guest/visible-ui-fixed-serial.log
+            visible-guest/visible-ui-fixed-qemu.log
+            visible-guest/visible-ui-fixed-monitor.txt
+            visible-guest/visible-ui-qcow2-info.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  package-release:
+    name: Package and publish IPA-only release
+    needs: visible-guest
+    runs-on: macos-26
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install packaging tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
+          test -n "$XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          brew install zstd jq gnu-tar bash qemu
+          chmod +x scripts/package_visible_redroid_ipa.sh
+
+      - name: Download verified visible guest
+        uses: actions/download-artifact@v4
+        with:
+          name: redroid-arm64-visible-guest-v2
+          path: visible-guest-artifact
+
+      - name: Restore verified visible guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf visible-guest visible-output
+          mkdir -p visible-guest
+          zstd -d --stdout visible-guest-artifact/redroid-arm64-visible-guest.tar.zst | \
+            gtar -xf - -C visible-guest
+          grep -q '^Visible UI CI framebuffer verification: passed$' visible-guest/build-manifest.txt
+          qemu-img check visible-guest/redroid-arm64-rootfs.qcow2
+
+      - name: Build and validate final visible Android IPA
+        shell: bash
+        run: |
+          set -o pipefail
+          scripts/package_visible_redroid_ipa.sh visible-guest visible-output \
+            2>&1 | tee visible-package-run.log
+
+      - name: Upload complete IPA and proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-VisibleUI-v0.4.4
+          path: |
+            visible-output/${{ env.OUTPUT_IPA }}
+            visible-output/${{ env.OUTPUT_IPA }}.sha256
+            visible-output/${{ env.OUTPUT_IPA }}.size
+            visible-output/visible-ui-validation.json
+            visible-output/visible-ui-fixed-analysis.json
+            visible-output/visible-ui-fixed-android-state.txt
+            visible-output/android-launcher3.png
+            visible-output/virtio-gpu-launcher3.ppm
+            visible-package-run.log
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish IPA-only release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          IPA="visible-output/$OUTPUT_IPA"
+          SIZE="$(cat "$IPA.size")"
+          git cat-file -e "$TAG_TARGET_COMMIT^{commit}"
+
+          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
+          git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag "$RELEASE_TAG" "$TAG_TARGET_COMMIT"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Android iOSEmulator — Visible Android UI fix" \
+            --notes "Fixes the confirmed black screen. Weston 14 rejected the obsolete --tty=1 option, causing Weston to restart and scrcpy to lose Wayland. This build removes that option, waits for wayland-0, completes Android provisioning, disables com.android.provision, launches Launcher3, and then starts scrcpy. CI requires both a non-black Android screencap and a non-black virtio GPU display capture. The low-storage QCOW2, no-JIT ARM64 runtime, QEMU loader relocation, fresh LiveContainer identity, and serial-signing compatibility remain included. Delete the old guest and import this distinct Visible IPA in LiveContainer Serial." \
+            --prerelease
+          gh release upload "$RELEASE_TAG" "$IPA" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+          RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease)"
+          test "$(jq -r .isPrerelease <<<"$RELEASE_JSON")" = true
+          test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
+          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$OUTPUT_IPA"
+          test "$(jq -r '.assets[0].size' <<<"$RELEASE_JSON")" = "$SIZE"
+          echo "$RELEASE_JSON" > visible-output/release.json
+
+      - name: Record verified release
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="visible-output/$OUTPUT_IPA"
+          SHA256="$(awk '{print $1}' "$IPA.sha256")"
+          SIZE="$(cat "$IPA.size")"
+          RELEASE_URL="$(jq -r .url visible-output/release.json)"
+          VALIDATION="$(cat visible-output/visible-ui-validation.json)"
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          jq -n \
+            --arg release_url "$RELEASE_URL" \
+            --arg tag "$RELEASE_TAG" \
+            --arg asset_name "$OUTPUT_IPA" \
+            --arg asset_sha256 "$SHA256" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg package_commit "$GITHUB_SHA" \
+            --argjson asset_size_bytes "$SIZE" \
+            --argjson validation "$VALIDATION" \
+            '{verified:true,product:"Android iOSEmulator visible Android UI guest",weston_14_obsolete_tty_option_removed:true,wayland_socket_wait:true,android_provisioning_completed:true,launcher3_home_started:true,android_framebuffer_ci_verified:true,virtio_gpu_output_ci_verified:true,fresh_bundle_identifier:true,fresh_livecontainer_data_container:true,low_storage_qcow2:true,jit_required:false,guest_architecture:"aarch64",release_assets:"IPA only",tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,package_commit:$package_commit,validation:$validation,physical_iphone_android_ui_verified:false}' \
+            > .github/release-status/redroid-visible-ui-fixed-v2-release.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-visible-ui-fixed-v2-release.json
+          git commit -m "Record verified visible Android UI v2 release" || exit 0
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 2
+          done
