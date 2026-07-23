@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Patch the ARM64 LiveContainer packager with early @loader_path QEMU copies."""
+"""Patch the ARM64 LiveContainer packager with early QEMU fallback copies."""
 
 from __future__ import annotations
 
@@ -42,8 +42,9 @@ def main() -> int:
     dependency_patch = dependency_marker + r'''
 
 # LiveContainer's libarchive path can leave late framework entries absent while
-# still returning success. Create independent regular-file QEMU copies beside
-# the executable and relocate both strong load commands to @loader_path.
+# still returning success. The main executable strongly links m68k, so relocate
+# that dependency to an early regular file beside UTM SE. Keep an early aarch64
+# copy too, while retaining both original framework directories as fallbacks.
 QEMU_M68K_ROOT="qemu-m68k-softmmu.dylib"
 QEMU_AARCH64_ROOT="qemu-aarch64-softmmu.dylib"
 cp -f "$GUEST_APP/Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu" \
@@ -55,15 +56,9 @@ install_name_tool \
   -change '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' \
           '@loader_path/qemu-m68k-softmmu.dylib' \
   "$GUEST_APP/$EXECUTABLE"
-install_name_tool \
-  -change '@rpath/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' \
-          '@loader_path/qemu-aarch64-softmmu.dylib' \
-  "$GUEST_APP/$EXECUTABLE"
 otool -L "$GUEST_APP/$EXECUTABLE" > "$OUT/utm-executable-dependencies-relocated.txt"
 grep -Fq '@loader_path/qemu-m68k-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"
-grep -Fq '@loader_path/qemu-aarch64-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"
 ! grep -Fq '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"
-! grep -Fq '@rpath/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"
 '''
     text = replace_once(
         text,
@@ -127,7 +122,8 @@ grep -Fxq "Payload/$APP_NAME/Frameworks/qemu-aarch64-softmmu.framework/qemu-aarc
 
     manifest_marker = "Removed unused QEMU frameworks: ${UTM_TRIMMED_KIB} KiB\n"
     manifest_patch = (
-        "QEMU loader path: @loader_path root copies\n"
+        "QEMU m68k loader path: @loader_path root copy\n"
+        "QEMU aarch64 early root copy: yes\n"
         "QEMU root copies archive entries: 6 and 7\n"
         "Original QEMU frameworks retained as fallback: yes\n"
         + manifest_marker
