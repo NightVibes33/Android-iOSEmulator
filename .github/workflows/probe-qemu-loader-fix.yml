@@ -39,4 +39,4 @@ jobs:
           git pull --rebase origin main
           git push origin HEAD:main
 
-# probe: valid-workflow-2026-07-22
+# probe: m68k-only-loader-2026-07-22
