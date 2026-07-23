@@ -83,13 +83,17 @@ jobs:
           set -euo pipefail
           SCHEME=LiveContainer
           ARCHIVE_PATH="$PWD/archive"
-          if ls -1 *.xcworkspace >/dev/null 2>&1; then
+          WORKSPACE="$(find . -maxdepth 1 -type d -name '*.xcworkspace' -print -quit | sed 's#^./##')"
+          PROJECT="$(find . -maxdepth 1 -type d -name '*.xcodeproj' -print -quit | sed 's#^./##')"
+          if [[ -n "$WORKSPACE" ]]; then
             BUILD_KIND=workspace
-            BUILD_FILE="$(ls -1 *.xcworkspace | head -1)"
+            BUILD_FILE="$WORKSPACE"
           else
+            test -n "$PROJECT"
             BUILD_KIND=project
-            BUILD_FILE="$(ls -1 *.xcodeproj | head -1)"
+            BUILD_FILE="$PROJECT"
           fi
+          echo "Building -$BUILD_KIND $BUILD_FILE"
 
           xcodebuild archive \
             -archivePath "$ARCHIVE_PATH" \
