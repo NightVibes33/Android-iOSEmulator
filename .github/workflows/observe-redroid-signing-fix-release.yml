@@ -1,0 +1,42 @@
+name: Observe ARM64 signing-fix release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/observe-redroid-signing-fix-release.yml"
+      - ".github/release-request/observe-redroid-signing-fix-release.txt"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Capture release state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v0.4.1-redroid13-arm64-se-signing-fix
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url,tagName,isPrerelease,assets > .github/release-status/redroid-signing-fix-release-observation.json; then
+            jq '. + {observed:true}' .github/release-status/redroid-signing-fix-release-observation.json > /tmp/release.json
+            mv /tmp/release.json .github/release-status/redroid-signing-fix-release-observation.json
+          else
+            jq -n --arg tag "$TAG" '{observed:false,tagName:$tag,assets:[]}' > .github/release-status/redroid-signing-fix-release-observation.json
+          fi
+      - name: Commit release state
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-signing-fix-release-observation.json
+          git commit -m "Observe ARM64 signing-fix release state"
+          git pull --rebase origin main
+          git push origin HEAD:main
