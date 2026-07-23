@@ -5,5 +5,5 @@ fix=Weston 14 compatible service plus forced wayland-0 plus socket discovery plu
 required_proof=non-black Android framebuffer and non-black virtio GPU capture
 storage_budget=9 GB
 release_assets=IPA only
-requested_at=2026-07-23T15:43:00-05:00
-retry_reason=force deterministic Weston socket and discover fallback paths
+requested_at=2026-07-23T15:48:00-05:00
+retry_reason=reordered Weston arguments so exact injected-service assertion passes
