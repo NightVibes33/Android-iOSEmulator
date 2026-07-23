@@ -1,79 +1,78 @@
-failed_run_id=29980898885
-failed_job_id=89122229003
-2026-07-23T04:59:46.1832730Z [36;1mAPP=package/Payload/LiveContainer.app[0m
-2026-07-23T04:59:46.1833020Z [36;1mINFO="$APP/Info.plist"[0m
-2026-07-23T04:59:46.1833230Z [36;1mtest -f "$INFO"[0m
-2026-07-23T04:59:46.1833380Z [36;1m[0m
-2026-07-23T04:59:46.1833590Z [36;1mrm -rf "$APP/Frameworks/SideStore.framework"[0m
-2026-07-23T04:59:46.1833970Z [36;1mfind "$APP" -name _CodeSignature -type d -prune -exec rm -rf {} +[0m
-2026-07-23T04:59:46.1834450Z [36;1mfind "$APP" -name embedded.mobileprovision -type f -delete[0m
-2026-07-23T04:59:46.1834800Z [36;1mxattr -cr "$APP"[0m
-2026-07-23T04:59:46.1834970Z [36;1m[0m
-2026-07-23T04:59:46.1835250Z [36;1m/usr/libexec/PlistBuddy -c 'Delete :LCSerialMachOSigning' "$INFO" >/dev/null 2>&1 || true[0m
-2026-07-23T04:59:46.1835820Z [36;1m/usr/libexec/PlistBuddy -c 'Add :LCSerialMachOSigning bool true' "$INFO"[0m
-2026-07-23T04:59:46.1836370Z [36;1m/usr/libexec/PlistBuddy -c 'Delete :LCSerialSignerBuild' "$INFO" >/dev/null 2>&1 || true[0m
-2026-07-23T04:59:46.1836880Z [36;1m/usr/libexec/PlistBuddy -c 'Add :LCSerialSignerBuild string NightVibes33-2afc9c3-v1' "$INFO"[0m
-2026-07-23T04:59:46.1837490Z [36;1m/usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName LiveContainer Serial' "$INFO" || \[0m
-2026-07-23T04:59:46.1838020Z [36;1m  /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string LiveContainer Serial' "$INFO"[0m
-2026-07-23T04:59:46.1838470Z [36;1mplutil -lint "$INFO"[0m
-2026-07-23T04:59:46.1838650Z [36;1m[0m
-2026-07-23T04:59:46.1838980Z [36;1mMAIN_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO")"[0m
-2026-07-23T04:59:46.1839370Z [36;1mtest -f "$APP/$MAIN_EXECUTABLE"[0m
-2026-07-23T04:59:46.1839650Z [36;1mstrings "$APP/$MAIN_EXECUTABLE" | grep -Fq \[0m
-2026-07-23T04:59:46.1840010Z [36;1m  'com.nightvibes33.livecontainer.serial-macho-signing'[0m
-2026-07-23T04:59:46.1840330Z [36;1m[0m
-2026-07-23T04:59:46.1840480Z [36;1m([0m
-2026-07-23T04:59:46.1840600Z [36;1m  cd package[0m
-2026-07-23T04:59:46.1840790Z [36;1m  /usr/bin/zip -qry -y "../$IPA_NAME" Payload[0m
-2026-07-23T04:59:46.1841000Z [36;1m)[0m
-2026-07-23T04:59:46.1841120Z [36;1m[0m
-2026-07-23T04:59:46.1841260Z [36;1munzip -t "$IPA_NAME" >/dev/null[0m
-2026-07-23T04:59:46.1841470Z [36;1munzip -q "$IPA_NAME" -d extracted[0m
-2026-07-23T04:59:46.1841760Z [36;1mEXTRACTED_INFO=extracted/Payload/LiveContainer.app/Info.plist[0m
-2026-07-23T04:59:46.1842200Z [36;1mtest "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialMachOSigning' "$EXTRACTED_INFO")" = true[0m
-2026-07-23T04:59:46.1842770Z [36;1mtest "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialSignerBuild' "$EXTRACTED_INFO")" = NightVibes33-2afc9c3-v1[0m
-2026-07-23T04:59:46.1843370Z [36;1mEXTRACTED_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$EXTRACTED_INFO")"[0m
-2026-07-23T04:59:46.1844260Z [36;1mstrings "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE" | grep -Fq \[0m
-2026-07-23T04:59:46.1844670Z [36;1m  'com.nightvibes33.livecontainer.serial-macho-signing'[0m
-2026-07-23T04:59:46.1844920Z [36;1m[0m
-2026-07-23T04:59:46.1845080Z [36;1mshasum -a 256 "$IPA_NAME" > "$IPA_NAME.sha256"[0m
-2026-07-23T04:59:46.1845340Z [36;1mstat -f%z "$IPA_NAME" > "$IPA_NAME.size"[0m
-2026-07-23T04:59:46.1845530Z [36;1m{[0m
-2026-07-23T04:59:46.1845700Z [36;1m  echo 'Upstream: LiveContainer/LiveContainer'[0m
-2026-07-23T04:59:46.1845940Z [36;1m  echo "Upstream ref: $UPSTREAM_REF"[0m
-2026-07-23T04:59:46.1846230Z [36;1m  echo "Upstream commit: $(cat upstream-livecontainer-commit.txt)"[0m
-2026-07-23T04:59:46.1846820Z [36;1m  echo 'Patch: Mach-O signing queue changed from global concurrent to serial'[0m
-2026-07-23T04:59:46.1847170Z [36;1m  echo 'Bundle marker: LCSerialMachOSigning=true'[0m
-2026-07-23T04:59:46.1847500Z [36;1m  echo 'Bundle marker: LCSerialSignerBuild=NightVibes33-2afc9c3-v1'[0m
-2026-07-23T04:59:46.1847800Z [36;1m  echo "Package commit: $GITHUB_SHA"[0m
-2026-07-23T04:59:46.1848060Z [36;1m} > LiveContainer-SerialSigner-build-manifest.txt[0m
-2026-07-23T04:59:46.2011970Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
-2026-07-23T04:59:46.2012290Z env:
-2026-07-23T04:59:46.2012470Z   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
-2026-07-23T04:59:46.2012750Z   UPSTREAM_REF: 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
-2026-07-23T04:59:46.2013040Z   RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
-2026-07-23T04:59:46.2013330Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
-2026-07-23T04:59:46.2013610Z   IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
-2026-07-23T04:59:46.2013830Z ##[endgroup]
-2026-07-23T04:59:46.4521940Z package/Payload/LiveContainer.app/Info.plist: OK
-2026-07-23T04:59:47.2701040Z ##[error]Process completed with exit code 1.
-2026-07-23T04:59:47.2852880Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-2026-07-23T04:59:47.2854410Z Post job cleanup.
-2026-07-23T04:59:47.6648900Z [command]/opt/homebrew/bin/git version
-2026-07-23T04:59:47.6858550Z git version 2.55.0
-2026-07-23T04:59:47.6878200Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/89d39ab8-0dc8-46d8-b3c5-3f00334784ee/.gitconfig'
-2026-07-23T04:59:47.6885410Z Temporarily overriding HOME='/Users/runner/work/_temp/89d39ab8-0dc8-46d8-b3c5-3f00334784ee' before making global git config changes
-2026-07-23T04:59:47.6886180Z Adding repository directory to the temporary git global config as a safe directory
-2026-07-23T04:59:47.6888820Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
-2026-07-23T04:59:47.7030880Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
-2026-07-23T04:59:47.7164630Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2026-07-23T04:59:47.8061750Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2026-07-23T04:59:47.8110640Z http.https://github.com/.extraheader
-2026-07-23T04:59:47.8117570Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
-2026-07-23T04:59:47.8175840Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2026-07-23T04:59:47.8844140Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-2026-07-23T04:59:47.8895220Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
-2026-07-23T04:59:47.9796190Z Cleaning up orphan processes
-2026-07-23T04:59:48.0394040Z Terminate orphan process: pid (28828) (ibtoold)
-2026-07-23T04:59:48.4361220Z Terminate orphan process: pid (26972) (ibtoold)
-2026-07-23T04:59:48.5640770Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+failed_run_id=29981195849
+failed_job_id=89123126576
+2026-07-23T05:06:52.0662060Z [36;1mAPP=package/Payload/LiveContainer.app[0m
+2026-07-23T05:06:52.0662320Z [36;1mINFO="$APP/Info.plist"[0m
+2026-07-23T05:06:52.0662500Z [36;1mtest -f "$INFO"[0m
+2026-07-23T05:06:52.0662670Z [36;1m[0m
+2026-07-23T05:06:52.0662880Z [36;1mrm -rf "$APP/Frameworks/SideStore.framework"[0m
+2026-07-23T05:06:52.0663260Z [36;1mfind "$APP" -name _CodeSignature -type d -prune -exec rm -rf {} +[0m
+2026-07-23T05:06:52.0663870Z [36;1mfind "$APP" -name embedded.mobileprovision -type f -delete[0m
+2026-07-23T05:06:52.0664180Z [36;1mxattr -cr "$APP"[0m
+2026-07-23T05:06:52.0664380Z [36;1m[0m
+2026-07-23T05:06:52.0664730Z [36;1m/usr/libexec/PlistBuddy -c 'Delete :LCSerialMachOSigning' "$INFO" >/dev/null 2>&1 || true[0m
+2026-07-23T05:06:52.0673860Z [36;1m/usr/libexec/PlistBuddy -c 'Add :LCSerialMachOSigning bool true' "$INFO"[0m
+2026-07-23T05:06:52.0674350Z [36;1m/usr/libexec/PlistBuddy -c 'Delete :LCSerialSignerBuild' "$INFO" >/dev/null 2>&1 || true[0m
+2026-07-23T05:06:52.0675640Z [36;1m/usr/libexec/PlistBuddy -c 'Add :LCSerialSignerBuild string NightVibes33-2afc9c3-v1' "$INFO"[0m
+2026-07-23T05:06:52.0677310Z [36;1m/usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName LiveContainer Serial' "$INFO" || \[0m
+2026-07-23T05:06:52.0679050Z [36;1m  /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string LiveContainer Serial' "$INFO"[0m
+2026-07-23T05:06:52.0680150Z [36;1mplutil -lint "$INFO"[0m
+2026-07-23T05:06:52.0680710Z [36;1m[0m
+2026-07-23T05:06:52.0681620Z [36;1mMAIN_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO")"[0m
+2026-07-23T05:06:52.0682660Z [36;1mtest -f "$APP/$MAIN_EXECUTABLE"[0m
+2026-07-23T05:06:52.0683510Z [36;1mstrings "$APP/$MAIN_EXECUTABLE" > livecontainer-main.strings[0m
+2026-07-23T05:06:52.0684840Z [36;1mgrep -Fq 'com.nightvibes33.livecontainer.serial-macho-signing' livecontainer-main.strings[0m
+2026-07-23T05:06:52.0685890Z [36;1m[0m
+2026-07-23T05:06:52.0686240Z [36;1m([0m
+2026-07-23T05:06:52.0686630Z [36;1m  cd package[0m
+2026-07-23T05:06:52.0687190Z [36;1m  /usr/bin/zip -qry -y "../$IPA_NAME" Payload[0m
+2026-07-23T05:06:52.0687900Z [36;1m)[0m
+2026-07-23T05:06:52.0688310Z [36;1m[0m
+2026-07-23T05:06:52.0688740Z [36;1munzip -t "$IPA_NAME" >/dev/null[0m
+2026-07-23T05:06:52.0689370Z [36;1munzip -q "$IPA_NAME" -d extracted[0m
+2026-07-23T05:06:52.0690230Z [36;1mEXTRACTED_INFO=extracted/Payload/LiveContainer.app/Info.plist[0m
+2026-07-23T05:06:52.0691530Z [36;1mtest "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialMachOSigning' "$EXTRACTED_INFO")" = true[0m
+2026-07-23T05:06:52.0693130Z [36;1mtest "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialSignerBuild' "$EXTRACTED_INFO")" = NightVibes33-2afc9c3-v1[0m
+2026-07-23T05:06:52.0696000Z [36;1mEXTRACTED_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$EXTRACTED_INFO")"[0m
+2026-07-23T05:06:52.0698600Z [36;1mstrings "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE" > livecontainer-extracted.strings[0m
+2026-07-23T05:06:52.0700460Z [36;1mgrep -Fq 'com.nightvibes33.livecontainer.serial-macho-signing' livecontainer-extracted.strings[0m
+2026-07-23T05:06:52.0701530Z [36;1m[0m
+2026-07-23T05:06:52.0702020Z [36;1mshasum -a 256 "$IPA_NAME" > "$IPA_NAME.sha256"[0m
+2026-07-23T05:06:52.0702760Z [36;1mstat -f%z "$IPA_NAME" > "$IPA_NAME.size"[0m
+2026-07-23T05:06:52.0703340Z [36;1m{[0m
+2026-07-23T05:06:52.0703870Z [36;1m  echo 'Upstream: LiveContainer/LiveContainer'[0m
+2026-07-23T05:06:52.0704610Z [36;1m  echo "Upstream ref: $UPSTREAM_REF"[0m
+2026-07-23T05:06:52.0707060Z [36;1m  echo "Upstream commit: $(cat upstream-livecontainer-commit.txt)"[0m
+2026-07-23T05:06:52.0708890Z [36;1m  echo 'Patch: Mach-O signing queue changed from global concurrent to serial'[0m
+2026-07-23T05:06:52.0709350Z [36;1m  echo 'Bundle marker: LCSerialMachOSigning=true'[0m
+2026-07-23T05:06:52.0709780Z [36;1m  echo 'Bundle marker: LCSerialSignerBuild=NightVibes33-2afc9c3-v1'[0m
+2026-07-23T05:06:52.0710110Z [36;1m  echo "Package commit: $GITHUB_SHA"[0m
+2026-07-23T05:06:52.0710390Z [36;1m} > LiveContainer-SerialSigner-build-manifest.txt[0m
+2026-07-23T05:06:52.1174320Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-23T05:06:52.1174590Z env:
+2026-07-23T05:06:52.1174780Z   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
+2026-07-23T05:06:52.1175070Z   UPSTREAM_REF: 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
+2026-07-23T05:06:52.1175360Z   RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
+2026-07-23T05:06:52.1175680Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
+2026-07-23T05:06:52.1175970Z   IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
+2026-07-23T05:06:52.1176190Z ##[endgroup]
+2026-07-23T05:06:52.4910790Z package/Payload/LiveContainer.app/Info.plist: OK
+2026-07-23T05:06:54.1468110Z ##[error]Process completed with exit code 1.
+2026-07-23T05:06:54.1957690Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T05:06:54.1959310Z Post job cleanup.
+2026-07-23T05:06:54.7513030Z [command]/opt/homebrew/bin/git version
+2026-07-23T05:06:54.7816210Z git version 2.55.0
+2026-07-23T05:06:54.7838960Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/b7bd3e16-4439-469c-a341-0cde7bf839de/.gitconfig'
+2026-07-23T05:06:54.7851170Z Temporarily overriding HOME='/Users/runner/work/_temp/b7bd3e16-4439-469c-a341-0cde7bf839de' before making global git config changes
+2026-07-23T05:06:54.7852940Z Adding repository directory to the temporary git global config as a safe directory
+2026-07-23T05:06:54.7855200Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
+2026-07-23T05:06:54.8022870Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-07-23T05:06:54.8108930Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-07-23T05:06:54.9441360Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-07-23T05:06:54.9526160Z http.https://github.com/.extraheader
+2026-07-23T05:06:54.9552480Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-07-23T05:06:54.9656690Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-07-23T05:06:55.1034950Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-07-23T05:06:55.1036640Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-07-23T05:06:55.2933740Z Cleaning up orphan processes
+2026-07-23T05:06:56.0404310Z Terminate orphan process: pid (6595) (ibtoold)
+2026-07-23T05:06:56.4119710Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
