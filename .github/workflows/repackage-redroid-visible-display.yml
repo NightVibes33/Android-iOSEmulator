@@ -1,0 +1,234 @@
+name: Repackage low-storage guest with visible UTM display
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/release-request/redroid-visible-display.txt"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: redroid-visible-display-release
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: "29985656289"
+  SOURCE_ARTIFACT: Android-iOSEmulator-Redroid13-ARM64-SE-LowStorage-unsigned
+  SOURCE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+  OUTPUT_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-Visible-unsigned.ipa
+  RELEASE_TAG: v0.4.4-redroid13-arm64-se-visible-display
+  TAG_TARGET_COMMIT: "99ebff326f89d945573965b1decf700c5ebc7f7e"
+
+jobs:
+  repackage:
+    name: Build and publish visible-display IPA
+    runs-on: macos-26
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode and tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
+          test -n "$XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          brew install jq
+          xcodebuild -version
+          zip -v | head -n 2
+
+      - name: Download verified low-storage IPA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf source-artifact visible-work visible-output
+          mkdir -p source-artifact visible-work/extracted visible-output
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir source-artifact
+          SOURCE_IPA_PATH="$(find source-artifact -type f -name "$SOURCE_IPA" -print -quit)"
+          test -n "$SOURCE_IPA_PATH"
+          unzip -t "$SOURCE_IPA_PATH" >/dev/null
+          zipinfo -1 "$SOURCE_IPA_PATH" > visible-work/original-entry-order.txt
+          unzip -q "$SOURCE_IPA_PATH" -d visible-work/extracted
+          APP="$(find visible-work/extracted/Payload -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$APP"
+          echo "SOURCE_IPA_PATH=$SOURCE_IPA_PATH" >> "$GITHUB_ENV"
+          echo "APP=$APP" >> "$GITHUB_ENV"
+
+      - name: Patch UTM display and force a fresh LiveContainer container
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/patch_visible_display_ipa.py "$APP" | tee visible-display-patch.log
+          plutil -lint "$APP/Info.plist"
+          plutil -lint "$APP/LCAppInfo.plist"
+          plutil -lint "$APP/PreloadedData/Android-Redroid-ARM64-SE.utm/config.plist"
+
+      - name: Rebuild IPA in the proven archive order
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$PWD/visible-output/$OUTPUT_IPA"
+          rm -f "$OUT"
+          (
+            cd visible-work/extracted
+            COPYFILE_DISABLE=1 zip -9 -q -X -y "$OUT" -@ < ../original-entry-order.txt
+          )
+          test -f "$OUT"
+          unzip -t "$OUT" >/dev/null
+          shasum -a 256 "$OUT" > "$OUT.sha256"
+          stat -f%z "$OUT" > "$OUT.size"
+
+      - name: Validate extracted visible-display package
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$PWD/visible-output/$OUTPUT_IPA"
+          rm -rf visible-work/final
+          mkdir -p visible-work/final
+          unzip -q "$OUT" -d visible-work/final
+          FINAL_APP="$(find visible-work/final/Payload -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$FINAL_APP"
+          INFO="$FINAL_APP/Info.plist"
+          LCINFO="$FINAL_APP/LCAppInfo.plist"
+          CONFIG="$FINAL_APP/PreloadedData/Android-Redroid-ARM64-SE.utm/config.plist"
+
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO")" = \
+            com.nightvibes33.androidiosemulator.redroid.arm64.se.visible
+          test "$(/usr/libexec/PlistBuddy -c 'Print :AndroidVisibleDisplayBuild' "$INFO")" = \
+            redroid13-arm64-se-lowstorage-visible-v1
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LCDataUUID' "$LCINFO")" = \
+            AndroidRedroidArm64SEVisibleData
+          test "$(/usr/libexec/PlistBuddy -c 'Print :isJITNeeded' "$LCINFO")" = false
+          test "$(/usr/libexec/PlistBuddy -c 'Print :Display:DisplayCard' "$CONFIG")" = virtio-ramfb
+          test "$(/usr/libexec/PlistBuddy -c 'Print :Display:DisplayFitScreen' "$CONFIG")" = true
+          /usr/libexec/PlistBuddy -c 'Print :System:AddArgs' "$CONFIG" > visible-work/final-add-args.txt
+          grep -q 'systemd.show_status=yes' visible-work/final-add-args.txt
+          grep -q 'loglevel=6' visible-work/final-add-args.txt
+          grep -q 'consoleblank=0' visible-work/final-add-args.txt
+          ! grep -Eq '(^|[[:space:]])quiet([[:space:]]|$)' visible-work/final-add-args.txt
+
+          zipinfo -1 "$OUT" > visible-work/final-entry-order.txt
+          test "$(sed -n '1p' visible-work/final-entry-order.txt)" = 'Payload/'
+          test "$(sed -n '2p' visible-work/final-entry-order.txt)" = 'Payload/Android iOSEmulator.app/'
+          test "$(sed -n '6p' visible-work/final-entry-order.txt)" = 'Payload/Android iOSEmulator.app/qemu-m68k-softmmu.dylib'
+          test "$(sed -n '7p' visible-work/final-entry-order.txt)" = 'Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib'
+          test -f "$FINAL_APP/PreloadedData/Android-Redroid-ARM64-SE.utm/Images/redroid-arm64-rootfs.qcow2"
+
+          MACHO_COUNT=0
+          while IFS= read -r -d '' candidate; do
+            description="$(file -b "$candidate")"
+            if grep -Eq 'Mach-O (universal binary|64-bit)' <<<"$description"; then
+              test -x "$candidate"
+              codesign --verify --strict --ignore-resources "$candidate"
+              MACHO_COUNT=$((MACHO_COUNT + 1))
+            fi
+          done < <(find "$FINAL_APP" -type f -print0)
+          test "$MACHO_COUNT" -ge 50
+
+          IPA_BYTES="$(stat -f%z "$OUT")"
+          APP_BYTES="$(( $(du -sk "$FINAL_APP" | awk '{print $1}') * 1024 ))"
+          ESTIMATED_PEAK_BYTES="$(( IPA_BYTES + APP_BYTES * 3 ))"
+          BUDGET_BYTES="$(( 9 * 1024 * 1024 * 1024 ))"
+          test "$ESTIMATED_PEAK_BYTES" -lt "$BUDGET_BYTES"
+          jq -n \
+            --argjson ipa_bytes "$IPA_BYTES" \
+            --argjson extracted_app_bytes "$APP_BYTES" \
+            --argjson estimated_peak_bytes "$ESTIMATED_PEAK_BYTES" \
+            --argjson budget_bytes "$BUDGET_BYTES" \
+            --argjson macho_count "$MACHO_COUNT" \
+            '{ipa_bytes:$ipa_bytes,extracted_app_bytes:$extracted_app_bytes,estimated_peak_bytes:$estimated_peak_bytes,budget_bytes:$budget_bytes,within_9gb_budget:($estimated_peak_bytes < $budget_bytes),verified_macho_count:$macho_count,display_card:"virtio-ramfb",fresh_data_container:true,visible_boot_status:true}' \
+            > visible-output/visible-display-validation.json
+          cat visible-output/visible-display-validation.json
+
+      - name: Upload complete visible-display IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Redroid13-ARM64-SE-VisibleDisplay-unsigned
+          path: |
+            visible-output/${{ env.OUTPUT_IPA }}
+            visible-output/${{ env.OUTPUT_IPA }}.sha256
+            visible-output/${{ env.OUTPUT_IPA }}.size
+            visible-output/visible-display-validation.json
+            visible-display-patch.log
+            visible-work/final-add-args.txt
+            visible-work/final-entry-order.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish visible-display release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          IPA="visible-output/$OUTPUT_IPA"
+          SIZE="$(cat "$IPA.size")"
+          git cat-file -e "$TAG_TARGET_COMMIT^{commit}"
+
+          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
+          git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag "$RELEASE_TAG" "$TAG_TARGET_COMMIT"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Android iOSEmulator — Visible display fix" \
+            --notes "Replacement for the v0.4.3 black-screen build. The UTM display card is changed from virtio-gpu-pci to UTM's virt-machine-compatible virtio-ramfb. Quiet boot is disabled and framebuffer/systemd status output is enabled so failures remain visible. The bundle ID and LiveContainer data UUID are new, preventing reuse of the prior black-screen VM container. The low-storage QCOW2, no-JIT ARM64 runtime, QEMU loader relocation, and serial-signing compatibility remain included. Import this IPA as a new guest in LiveContainer Serial." \
+            --prerelease
+          gh release upload "$RELEASE_TAG" \
+            "$IPA" "$IPA.sha256" visible-output/visible-display-validation.json \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+          RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease)"
+          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
+          test "$(jq -r --arg name "$OUTPUT_IPA" '.assets[] | select(.name==$name) | .size' <<<"$RELEASE_JSON")" = "$SIZE"
+          echo "$RELEASE_JSON" > visible-output/release.json
+
+      - name: Record verified visible-display release
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="visible-output/$OUTPUT_IPA"
+          SHA256="$(awk '{print $1}' "$IPA.sha256")"
+          SIZE="$(cat "$IPA.size")"
+          RELEASE_URL="$(jq -r .url visible-output/release.json)"
+          VALIDATION="$(cat visible-output/visible-display-validation.json)"
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          jq -n \
+            --arg release_url "$RELEASE_URL" \
+            --arg tag "$RELEASE_TAG" \
+            --arg asset_name "$OUTPUT_IPA" \
+            --arg asset_sha256 "$SHA256" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg package_commit "$GITHUB_SHA" \
+            --argjson asset_size_bytes "$SIZE" \
+            --argjson validation "$VALIDATION" \
+            '{verified:true,product:"Android iOSEmulator visible-display guest",display_card:"virtio-ramfb",visible_boot_status:true,fresh_bundle_identifier:true,fresh_livecontainer_data_container:true,low_storage_qcow2:true,jit_required:false,guest_architecture:"aarch64",tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,package_commit:$package_commit,validation:$validation,physical_iphone_android_ui_verified:false}' \
+            > .github/release-status/redroid-visible-display-release.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-visible-display-release.json
+          git commit -m "Record verified Android visible-display release" || exit 0
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 2
+          done
