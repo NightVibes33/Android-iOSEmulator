@@ -1,0 +1,5 @@
+release_tag=v0.4.2-redroid13-arm64-se-qemu-loader-fix
+source_android_run=29949669780
+package_contract=m68k-loader-path-root-copy
+archive_entries=qemu-m68k:6,qemu-aarch64:7
+requested_at=2026-07-22T21:05:00-05:00
