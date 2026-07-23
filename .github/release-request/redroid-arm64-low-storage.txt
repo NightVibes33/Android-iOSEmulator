@@ -1,0 +1,8 @@
+product=Android iOSEmulator low-storage guest
+source_run=29949669780
+source_artifact=redroid-arm64-guest
+conversion=raw ext4 to compressed writable qcow2
+virtual_capacity_preserved=yes
+storage_target=under 9 GiB conservative import estimate
+release_tag=v0.4.3-redroid13-arm64-se-low-storage-qcow2
+requested_at=2026-07-23T00:30:00-05:00
