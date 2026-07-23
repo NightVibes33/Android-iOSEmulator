@@ -92,5 +92,4 @@ exec scrcpy \
   --no-audio \
   --max-fps=15 \
   --video-bit-rate=4M \
-  --stay-awake \
-  --turn-screen-on
+  --stay-awake
