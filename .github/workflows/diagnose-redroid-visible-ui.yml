@@ -41,7 +41,8 @@ jobs:
           if ! command -v adb >/dev/null 2>&1; then
             brew install --cask android-platform-tools
           fi
-          python3 -m pip install --user pillow
+          python3 -m venv .diagnostic-venv
+          .diagnostic-venv/bin/pip install pillow
           qemu-system-aarch64 --version
           adb version
 
@@ -153,13 +154,14 @@ jobs:
           test -s android-screencap.png
 
           python3 - "$MONITOR_SOCKET" <<'PY'
+          import os
           import socket
           import sys
           import time
 
           path = sys.argv[1]
           deadline = time.time() + 20
-          while not __import__('os').path.exists(path):
+          while not os.path.exists(path):
               if time.time() > deadline:
                   raise SystemExit('monitor socket did not appear')
               time.sleep(0.2)
@@ -187,7 +189,7 @@ jobs:
           PY
           test -s virtio-ramfb.ppm
 
-          python3 - <<'PY'
+          .diagnostic-venv/bin/python - <<'PY'
           from pathlib import Path
           from PIL import Image
           import json
