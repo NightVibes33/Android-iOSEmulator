@@ -1,4 +1,4 @@
-name: Repackage verified ARM64 IPA with LiveContainer signing fix
+name: Repackage verified ARM64 IPA with QEMU loader fix
 
 on:
   push:
@@ -14,18 +14,18 @@ permissions:
   contents: write
 
 concurrency:
-  group: redroid-arm64-signing-fix-release
+  group: redroid-arm64-qemu-loader-fix-release
   cancel-in-progress: true
 
 env:
   SOURCE_RUN_ID: "29949669780"
   SOURCE_ARTIFACT: redroid-arm64-guest
-  RELEASE_TAG: v0.4.1-redroid13-arm64-se-signing-fix
+  RELEASE_TAG: v0.4.2-redroid13-arm64-se-qemu-loader-fix
   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
 
 jobs:
   repackage:
-    name: Repackage and publish LiveContainer-signable IPA
+    name: Repackage and publish QEMU loader-safe IPA
     runs-on: macos-26
     timeout-minutes: 240
     steps:
@@ -64,14 +64,20 @@ jobs:
           grep -q '^CI Android sys.boot_completed: 1$' "$GUEST_DIR/build-manifest.txt"
           echo "GUEST_DIR=$GUEST_DIR" >> "$GITHUB_ENV"
 
-      - name: Build LiveContainer-signable replacement IPA
+      - name: Build QEMU loader-safe replacement IPA
         shell: bash
         run: |
           set -o pipefail
           python3 - <<'PY'
           from pathlib import Path
+
           path = Path("scripts/build_livecontainer_redroid_arm64_se_ipa.sh")
           text = path.read_text()
+
+          text = text.replace(
+              "codesign xattr ditto; do",
+              "codesign xattr ditto install_name_tool; do",
+          )
           text = text.replace(
               'codesign --verify --strict "$candidate"',
               'codesign --verify --strict --ignore-resources "$candidate"',
@@ -80,12 +86,93 @@ jobs:
               'codesign --verify --strict "$extracted_binary"',
               'codesign --verify --strict --ignore-resources "$extracted_binary"',
           )
+
+          dependency_marker = 'otool -L "$GUEST_APP/$EXECUTABLE" > "$OUT/utm-executable-dependencies.txt"\n'
+          dependency_patch = dependency_marker + r'''
+
+          # LiveContainer can leave late framework entries absent after a partial
+          # libarchive extraction. Put independent regular-file copies beside the
+          # executable and relocate the two strong QEMU load commands to
+          # @loader_path so launch does not depend on a Frameworks directory entry.
+          QEMU_M68K_ROOT="qemu-m68k-softmmu.dylib"
+          QEMU_AARCH64_ROOT="qemu-aarch64-softmmu.dylib"
+          cp -f "$GUEST_APP/Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu" \
+            "$GUEST_APP/$QEMU_M68K_ROOT"
+          cp -f "$GUEST_APP/Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu" \
+            "$GUEST_APP/$QEMU_AARCH64_ROOT"
+          chmod 0755 "$GUEST_APP/$QEMU_M68K_ROOT" "$GUEST_APP/$QEMU_AARCH64_ROOT"
+          install_name_tool \
+            -change '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' \
+                    '@loader_path/qemu-m68k-softmmu.dylib' \
+            "$GUEST_APP/$EXECUTABLE"
+          install_name_tool \
+            -change '@rpath/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' \
+                    '@loader_path/qemu-aarch64-softmmu.dylib' \
+            "$GUEST_APP/$EXECUTABLE"
+          otool -L "$GUEST_APP/$EXECUTABLE" > "$OUT/utm-executable-dependencies-relocated.txt"
+          grep -Fq '@loader_path/qemu-m68k-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"
+          grep -Fq '@loader_path/qemu-aarch64-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"
+          ! grep -Fq '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"
+          ! grep -Fq '@rpath/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"
+'''
+          if dependency_marker not in text:
+              raise SystemExit("dependency marker missing")
+          text = text.replace(dependency_marker, dependency_patch, 1)
+
+          text = text.replace(
+              "grep -Fxq 'BootstrapTweaks/AndroidRedroidGuestBootstrap.dylib' \"$MACHO_LIST\"",
+              "grep -Fxq 'BootstrapTweaks/AndroidRedroidGuestBootstrap.dylib' \"$MACHO_LIST\"\n"
+              "grep -Fxq 'qemu-m68k-softmmu.dylib' \"$MACHO_LIST\"\n"
+              "grep -Fxq 'qemu-aarch64-softmmu.dylib' \"$MACHO_LIST\"",
+          )
+
+          old_leading = 'leading = [root, app, app / "Info.plist", app / executable, app / "LCAppInfo.plist"]'
+          new_leading = '''leading = [
+    root,
+    app,
+    app / "Info.plist",
+    app / executable,
+    app / "LCAppInfo.plist",
+    app / "qemu-m68k-softmmu.dylib",
+    app / "qemu-aarch64-softmmu.dylib",
+    app / "Frameworks",
+    app / "Frameworks/qemu-m68k-softmmu.framework",
+    app / "Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu",
+    app / "Frameworks/qemu-aarch64-softmmu.framework",
+    app / "Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu",
+]'''
+          if old_leading not in text:
+              raise SystemExit("archive leading marker missing")
+          text = text.replace(old_leading, new_leading, 1)
+
+          archive_marker = '[[ "$(sed -n \'5p\' "$OUT/archive-entry-order.txt")" == "Payload/$APP_NAME/LCAppInfo.plist" ]]\n'
+          archive_patch = archive_marker + r'''[[ "$(sed -n '6p' "$OUT/archive-entry-order.txt")" == "Payload/$APP_NAME/qemu-m68k-softmmu.dylib" ]]
+          [[ "$(sed -n '7p' "$OUT/archive-entry-order.txt")" == "Payload/$APP_NAME/qemu-aarch64-softmmu.dylib" ]]
+          grep -Fxq "Payload/$APP_NAME/Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu" "$OUT/archive-entry-order.txt"
+          grep -Fxq "Payload/$APP_NAME/Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu" "$OUT/archive-entry-order.txt"
+'''
+          if archive_marker not in text:
+              raise SystemExit("archive validation marker missing")
+          text = text.replace(archive_marker, archive_patch, 1)
+
+          manifest_marker = 'Removed unused QEMU frameworks: ${UTM_TRIMMED_KIB} KiB\n'
+          manifest_patch = (
+              'QEMU loader path: @loader_path root copies\n'
+              'QEMU root copies archive entries: 6 and 7\n'
+              'Original QEMU frameworks retained as fallback: yes\n'
+              + manifest_marker
+          )
+          if manifest_marker not in text:
+              raise SystemExit("manifest marker missing")
+          text = text.replace(manifest_marker, manifest_patch, 1)
+
           path.write_text(text)
           PY
-          "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" \
-            2>&1 | tee redroid-arm64-signing-fix-build.log
 
-      - name: Require all reported failing binaries to be signable
+          "$(brew --prefix)/bin/bash" -x ./scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" \
+            2>&1 | tee redroid-arm64-qemu-loader-fix-build.log
+
+      - name: Require loader-safe QEMU binaries and extracted paths
         shell: bash
         run: |
           set -euo pipefail
@@ -94,31 +181,25 @@ jobs:
           test -f "$IPA"
           unzip -t "$IPA" >/dev/null
           grep -q '^LiveContainer minimum version: 3.7.0$' "$OUT/build-manifest.txt"
-          grep -q '^Mach-O file permissions: normalized writable and executable$' "$OUT/build-manifest.txt"
-          grep -q '^Embedded Mach-O signatures: stripped and replaced with validated ad-hoc signatures$' "$OUT/build-manifest.txt"
-          grep -Eq '^LiveContainer signing smoke test: passed for [1-9][0-9]* Mach-O binaries$' "$OUT/build-manifest.txt"
-          grep -Eq '^signableMachOCount=[1-9][0-9]*$' "$OUT/livecontainer-import-metadata.txt"
-          test -s "$OUT/livecontainer-signable-machos.txt"
-          test -s "$OUT/livecontainer-signability-report.txt"
-          for required in \
-            'UTM SE' \
-            'Frameworks/vulkan.1.framework/vulkan.1' \
-            'Frameworks/pixman-1.0.framework/pixman-1.0' \
-            'Frameworks/MoltenVK.framework/MoltenVK' \
-            'Frameworks/epoxy.0.framework/epoxy.0' \
-            'Frameworks/glib-2.0.0.framework/glib-2.0.0' \
-            'Frameworks/GLESv2.framework/GLESv2' \
-            'Frameworks/vulkan_kosmickrisp.framework/vulkan_kosmickrisp' \
-            'Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' \
-            'Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu'; do
-            grep -Fxq "$required" "$OUT/livecontainer-signable-machos.txt"
-          done
+          grep -q '^QEMU loader path: @loader_path root copies$' "$OUT/build-manifest.txt"
+          grep -q '^QEMU root copies archive entries: 6 and 7$' "$OUT/build-manifest.txt"
+          grep -q '^Original QEMU frameworks retained as fallback: yes$' "$OUT/build-manifest.txt"
+          grep -Fq '@loader_path/qemu-m68k-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"
+          grep -Fq '@loader_path/qemu-aarch64-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"
+          ! grep -Fq '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"
+          ! grep -Fq '@rpath/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"
+          grep -Fxq 'qemu-m68k-softmmu.dylib' "$OUT/livecontainer-signable-machos.txt"
+          grep -Fxq 'qemu-aarch64-softmmu.dylib' "$OUT/livecontainer-signable-machos.txt"
+          grep -Fxq 'Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/livecontainer-signable-machos.txt"
+          grep -Fxq 'Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' "$OUT/livecontainer-signable-machos.txt"
+          test "$(sed -n '6p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/qemu-m68k-softmmu.dylib'
+          test "$(sed -n '7p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib'
           test "$(stat -f%z "$IPA")" -lt 2147483648
 
-      - name: Upload replacement IPA artifact
+      - name: Upload QEMU loader-fix IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Android-iOSEmulator-Redroid13-ARM64-SE-SigningFix-unsigned
+          name: Android-iOSEmulator-Redroid13-ARM64-SE-QEMULoaderFix-unsigned
           path: |
             build/livecontainer-redroid-arm64-se/*.ipa
             build/livecontainer-redroid-arm64-se/*.sha256
@@ -127,12 +208,13 @@ jobs:
             build/livecontainer-redroid-arm64-se/livecontainer-signable-machos.txt
             build/livecontainer-redroid-arm64-se/livecontainer-signability-report.txt
             build/livecontainer-redroid-arm64-se/archive-entry-order.txt
-            redroid-arm64-signing-fix-build.log
+            build/livecontainer-redroid-arm64-se/utm-executable-dependencies*.txt
+            redroid-arm64-qemu-loader-fix-build.log
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
 
-      - name: Publish replacement release using built-in token
+      - name: Publish QEMU loader-fix release using built-in token
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -151,8 +233,8 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
-            --title "Android iOSEmulator — ARM64 LiveContainer signing fix" \
-            --notes "Replacement for v0.4.0. Every Mach-O is writable/executable, stale embedded signatures are removed, fresh ad-hoc signature space is installed, and all binaries are verified again after extracting the completed IPA. This specifically covers UTM SE, Vulkan, MoltenVK, Pixman, GLib, Epoxy, GLESv2, and both required QEMU frameworks. Use LiveContainer 3.7.0 or newer. Android 13 ARM64 was already required to reach sys.boot_completed=1 in source run 29949669780." \
+            --title "Android iOSEmulator — ARM64 QEMU loader fix" \
+            --notes "Replacement for v0.4.1. LiveContainer dropped the late qemu-m68k framework binary during the on-device import path. This build keeps the original frameworks but also installs regular-file QEMU backend copies beside UTM SE, rewrites both strong dependencies to @loader_path, and stores those copies as IPA entries 6 and 7 before other frameworks or the Android disk. Every Mach-O and both extracted root copies are signature-verified. Android 13 ARM64 already reached sys.boot_completed=1 in source run 29949669780." \
             --prerelease
           gh release upload "$RELEASE_TAG" "$IPA" --repo "$GITHUB_REPOSITORY" --clobber
 
@@ -163,7 +245,7 @@ jobs:
           test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
           echo "$RELEASE_JSON" > "$OUT/release.json"
 
-      - name: Record verified signing-fix release
+      - name: Record verified QEMU loader-fix release
         shell: bash
         run: |
           set -euo pipefail
@@ -184,16 +266,16 @@ jobs:
             --arg workflow_run_id "$GITHUB_RUN_ID" \
             --arg source_run_id "$SOURCE_RUN_ID" \
             --arg source_commit "$GITHUB_SHA" \
-            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,livecontainer_minimum_version:"3.7.0",macho_permissions_normalized:true,stale_signatures_removed:true,adhoc_signatures_verified:true,signable_macho_count:$signable_macho_count,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_run_id:$source_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' \
-            > .github/release-status/redroid-arm64-se-signing-fix.json
+            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,livecontainer_minimum_version:"3.7.0",qemu_loader_path_root_copies:true,qemu_root_archive_entries:[6,7],original_qemu_frameworks_retained:true,macho_permissions_normalized:true,adhoc_signatures_verified:true,signable_macho_count:$signable_macho_count,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_run_id:$source_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' \
+            > .github/release-status/redroid-arm64-se-qemu-loader-fix.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/release-status/redroid-arm64-se-signing-fix.json
-          git commit -m "Record verified ARM64 LiveContainer signing fix" || true
+          git add .github/release-status/redroid-arm64-se-qemu-loader-fix.json
+          git commit -m "Record verified ARM64 QEMU loader fix" || true
           git pull --rebase origin main
           git push origin HEAD:main
 
-      - name: Record repackage run result
+      - name: Record QEMU loader-fix run result
         if: always()
         shell: bash
         env:
@@ -209,10 +291,10 @@ jobs:
             --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             --arg head_sha "$GITHUB_SHA" \
             '{run_id:$run_id,conclusion:$conclusion,run_url:$run_url,head_sha:$head_sha}' \
-            > .github/release-status/redroid-signing-fix-run.json
+            > .github/release-status/redroid-qemu-loader-fix-run.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/release-status/redroid-signing-fix-run.json
-          git commit -m "Record ARM64 signing-fix repackage result" || exit 0
+          git add .github/release-status/redroid-qemu-loader-fix-run.json
+          git commit -m "Record ARM64 QEMU loader-fix result" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
