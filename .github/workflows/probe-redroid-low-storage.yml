@@ -14,27 +14,74 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-24.04
+    env:
+      RELEASE_TAG: v0.4.3-redroid13-arm64-se-low-storage-qcow2
+      IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+      SUCCESS_RUN_ID: "29985656289"
+      PACKAGE_COMMIT: a36d0ee4d5579b1ae97c747d2836ee766778c412
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Record low-storage workflow state
+      - name: Verify run, release and storage budget
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          mkdir -p .github/release-status
+          rm -rf /tmp/low-storage-release
+          mkdir -p /tmp/low-storage-release
+
           gh run list \
             --repo "$GITHUB_REPOSITORY" \
             --workflow repackage-redroid-arm64-low-storage.yml \
             --limit 10 \
             --json databaseId,status,conclusion,url,headSha,createdAt,updatedAt,event,displayTitle \
-            > .github/release-status/redroid-low-storage-probe.json
+            > /tmp/low-storage-release/run-list.json
+          jq -e --arg id "$SUCCESS_RUN_ID" \
+            '.[] | select((.databaseId|tostring)==$id and .status=="completed" and .conclusion=="success")' \
+            /tmp/low-storage-release/run-list.json >/dev/null
+
+          gh release view "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json url,assets,isPrerelease \
+            > /tmp/low-storage-release/release.json
+          test "$(jq -r .isPrerelease /tmp/low-storage-release/release.json)" = true
+          IPA_SIZE="$(jq -r --arg name "$IPA_NAME" '.assets[] | select(.name==$name) | .size' /tmp/low-storage-release/release.json)"
+          test -n "$IPA_SIZE"
+          test "$IPA_SIZE" -gt 0
+
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern low-storage-budget.json \
+            --dir /tmp/low-storage-release
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$IPA_NAME.sha256" \
+            --dir /tmp/low-storage-release
+          jq -e '.within_9gb_budget == true' /tmp/low-storage-release/low-storage-budget.json >/dev/null
+          IPA_SHA256="$(awk '{print $1}' "/tmp/low-storage-release/$IPA_NAME.sha256")"
+          RELEASE_URL="$(jq -r .url /tmp/low-storage-release/release.json)"
+
           git fetch origin main
           git checkout -B main origin/main
+          mkdir -p .github/release-status
+          cp /tmp/low-storage-release/run-list.json .github/release-status/redroid-low-storage-probe.json
+          jq -n \
+            --arg release_url "$RELEASE_URL" \
+            --arg tag "$RELEASE_TAG" \
+            --arg asset_name "$IPA_NAME" \
+            --arg asset_sha256 "$IPA_SHA256" \
+            --arg workflow_run_id "$SUCCESS_RUN_ID" \
+            --arg package_commit "$PACKAGE_COMMIT" \
+            --argjson asset_size_bytes "$IPA_SIZE" \
+            --slurpfile budget /tmp/low-storage-release/low-storage-budget.json \
+            '{verified:true,product:"Android iOSEmulator low-storage guest",android_version:13,android_sys_boot_completed_from_qcow2:true,guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,root_disk_format:"qcow2",compressed_writable_disk:true,raw_8192_mib_extraction_avoided:true,within_9gb_budget:$budget[0].within_9gb_budget,storage_budget:$budget[0],tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,package_commit:$package_commit,physical_iphone_boot_verified:false}' \
+            > .github/release-status/redroid-arm64-se-low-storage.json
+
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/release-status/redroid-low-storage-probe.json
-          git commit -m "Probe Android low-storage run" || exit 0
+          git add .github/release-status/redroid-low-storage-probe.json \
+            .github/release-status/redroid-arm64-se-low-storage.json
+          git commit -m "Verify published 9 GB Android guest release" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
