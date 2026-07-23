@@ -1,0 +1,122 @@
+name: Diagnose Android UI through stock virtio GPU
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/release-request/redroid-visible-ui-v2.txt"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: redroid-visible-ui-diagnostic-v2
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: "29985656289"
+  SOURCE_ARTIFACT: Android-iOSEmulator-Redroid13-ARM64-SE-LowStorage-unsigned
+  SOURCE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+  ADB_PORT: "5557"
+
+jobs:
+  diagnose:
+    name: Capture Android and virtio GPU screens
+    runs-on: macos-26
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install diagnostic tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          brew install qemu jq
+          if ! command -v adb >/dev/null 2>&1; then
+            brew install --cask android-platform-tools
+          fi
+          python3 -m venv .diagnostic-venv
+          .diagnostic-venv/bin/pip install pillow
+          chmod +x scripts/diagnose_redroid_visible_ui.sh
+
+      - name: Download and extract verified low-storage IPA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf source-artifact extracted-ipa
+          mkdir -p source-artifact extracted-ipa
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir source-artifact
+          IPA="$(find source-artifact -type f -name "$SOURCE_IPA" -print -quit)"
+          test -n "$IPA"
+          unzip -q "$IPA" -d extracted-ipa
+          APP="$(find extracted-ipa/Payload -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$APP"
+          VM="$APP/PreloadedData/Android-Redroid-ARM64-SE.utm"
+          test -d "$VM"
+          echo "VM=$VM" >> "$GITHUB_ENV"
+
+      - name: Boot and capture Android and current display bridge
+        shell: bash
+        env:
+          DIAGNOSTIC_PYTHON: .diagnostic-venv/bin/python
+          DISPLAY_DUMP: virtio-gpu.ppm
+        run: |
+          set -o pipefail
+          scripts/diagnose_redroid_visible_ui.sh "$VM" 2>&1 | tee visible-ui-diagnostic-run.log
+
+      - name: Upload display diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-visible-UI-diagnostic-v2
+          path: |
+            android-visible-diagnostic.txt
+            android-screencap.png
+            virtio-gpu.ppm
+            visible-ui-analysis.json
+            qemu-monitor-output.txt
+            redroid-visible-serial.log
+            redroid-visible-qemu.log
+            visible-ui-diagnostic-run.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Record diagnostic result
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          if [[ -f visible-ui-analysis.json ]]; then
+            jq --arg run_id "$GITHUB_RUN_ID" --arg status "$JOB_STATUS" \
+              '. + {workflow_run_id:$run_id,job_status:$status,display_test_device:"virtio-gpu-pci"}' \
+              visible-ui-analysis.json \
+              > .github/release-status/redroid-visible-ui-diagnostic-v2.json
+          else
+            jq -n --arg run_id "$GITHUB_RUN_ID" --arg status "$JOB_STATUS" \
+              '{workflow_run_id:$run_id,job_status:$status,analysis_available:false,display_test_device:"virtio-gpu-pci"}' \
+              > .github/release-status/redroid-visible-ui-diagnostic-v2.json
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-visible-ui-diagnostic-v2.json
+          git commit -m "Record stock virtio GPU Android UI diagnostic" || exit 0
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 2
+          done
