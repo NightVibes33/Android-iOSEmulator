@@ -1,0 +1,29 @@
+{
+  "verified": true,
+  "product": "Android iOSEmulator low-storage guest",
+  "android_version": 13,
+  "android_sys_boot_completed_from_qcow2": true,
+  "guest_architecture": "aarch64",
+  "execution_mode": "UTM SE interpreter",
+  "jit_required": false,
+  "root_disk_format": "qcow2",
+  "compressed_writable_disk": true,
+  "raw_8192_mib_extraction_avoided": true,
+  "within_9gb_budget": true,
+  "storage_budget": {
+    "ipa_bytes": 1284167693,
+    "extracted_app_bytes": 2358349824,
+    "qcow2_bytes": 1115291648,
+    "estimated_peak_bytes": 8359217165,
+    "budget_bytes": 9663676416,
+    "within_9gb_budget": true
+  },
+  "tag": "v0.4.3-redroid13-arm64-se-low-storage-qcow2",
+  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/v0.4.3-redroid13-arm64-se-low-storage-qcow2",
+  "asset_name": "Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa",
+  "asset_size_bytes": 1284167693,
+  "asset_sha256": "c32200d0f52238a84989d93c2eaffcbff47f4fd96fe3afecf724fa0e592ad830",
+  "workflow_run_id": "29985656289",
+  "package_commit": "a36d0ee4d5579b1ae97c747d2836ee766778c412",
+  "physical_iphone_boot_verified": false
+}
