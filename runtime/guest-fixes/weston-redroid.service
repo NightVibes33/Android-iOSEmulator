@@ -13,7 +13,7 @@ ExecStartPre=/usr/bin/mkdir -p /run/weston
 ExecStartPre=/usr/bin/chmod 0700 /run/weston
 ExecStartPre=/bin/sh -c 'rm -f /run/weston/wayland-* /run/weston/wayland-*.lock'
 ExecStartPre=/bin/sh -c 'count=0; while [ ! -e /dev/dri/card0 ] && [ "$count" -lt 120 ]; do count=$((count + 1)); sleep 1; done; [ -e /dev/dri/card0 ]'
-ExecStart=/usr/bin/weston --backend=drm-backend.so --socket=wayland-0 --idle-time=0 --config=/etc/xdg/weston/weston.ini
+ExecStart=/usr/bin/weston --backend=drm-backend.so --idle-time=0 --socket=wayland-0 --config=/etc/xdg/weston/weston.ini
 Restart=on-failure
 RestartSec=2
 TimeoutStartSec=0
