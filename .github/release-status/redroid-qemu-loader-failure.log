@@ -1,43 +1,500 @@
-failed_run_id=29972384284
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	﻿2026-07-23T01:53:56.4541360Z ##[group]Run set -euo pipefail
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4541770Z ^[[36;1mset -euo pipefail^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4542050Z ^[[36;1mOUT=build/livecontainer-redroid-arm64-se^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4542400Z ^[[36;1mIPA="$OUT/$IPA_NAME"^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4542670Z ^[[36;1mSIZE="$(stat -f%z "$IPA")"^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4542910Z ^[[36;1m^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4543340Z ^[[36;1mgh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4543930Z ^[[36;1mgit push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4544380Z ^[[36;1mgit tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4544720Z ^[[36;1mgit tag "$RELEASE_TAG" "$GITHUB_SHA"^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4545050Z ^[[36;1mgit push origin "refs/tags/$RELEASE_TAG"^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4545340Z ^[[36;1m^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4545530Z ^[[36;1mgh release create "$RELEASE_TAG" \^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4545830Z ^[[36;1m  --repo "$GITHUB_REPOSITORY" \^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4546140Z ^[[36;1m  --verify-tag \^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4546460Z ^[[36;1m  --title "Android iOSEmulator — ARM64 QEMU loader fix" \^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4547980Z ^[[36;1m  --notes "Replacement for v0.4.1. The strong qemu-m68k dependency now loads from a regular file beside UTM SE through @loader_path. Both m68k and aarch64 root copies are IPA entries 6 and 7, before later framework and Android-disk entries, while both original frameworks remain as fallback. Every extracted Mach-O is signature-verified. Android 13 ARM64 reached sys.boot_completed=1 in source run 29949669780." \^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4549820Z ^[[36;1m  --prerelease^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4550120Z ^[[36;1mgh release upload "$RELEASE_TAG" "$IPA" \^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4550460Z ^[[36;1m  --repo "$GITHUB_REPOSITORY" --clobber^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4550750Z ^[[36;1m^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4550990Z ^[[36;1mRELEASE_JSON="$(gh release view "$RELEASE_TAG" \^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4551330Z ^[[36;1m  --repo "$GITHUB_REPOSITORY" \^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4551640Z ^[[36;1m  --json url,assets,isPrerelease)"^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4551980Z ^[[36;1mtest "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4552500Z ^[[36;1mtest "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$IPA_NAME"^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4552920Z ^[[36;1mtest "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4553340Z ^[[36;1mtest "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4553710Z ^[[36;1mecho "$RELEASE_JSON" > "$OUT/release.json"^[[0m
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4571480Z shell: /opt/homebrew/bin/bash --noprofile --norc -e -o pipefail {0}
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4571890Z env:
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4572110Z   SOURCE_RUN_ID: 29949669780
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4572340Z   SOURCE_ARTIFACT: redroid-arm64-guest
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4572710Z   RELEASE_TAG: v0.4.2-redroid13-arm64-se-qemu-loader-fix
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4573170Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4573800Z   GUEST_DIR: /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.downloaded-redroid-guest/extracted
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4576390Z   GH_TOKEN: ***
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:56.4576630Z ##[endgroup]
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:59.3408380Z To https://github.com/NightVibes33/Android-iOSEmulator
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:59.3411700Z  ! [remote rejected] v0.4.2-redroid13-arm64-se-qemu-loader-fix -> v0.4.2-redroid13-arm64-se-qemu-loader-fix (refusing to allow a GitHub App to create or update workflow `.github/workflows/probe-qemu-loader-fix.yml` without `workflows` permission)
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:59.3414460Z error: failed to push some refs to 'https://github.com/NightVibes33/Android-iOSEmulator'
-Repackage and publish QEMU loader-safe IPA	Publish QEMU loader-fix release using built-in token	2026-07-23T01:53:59.3430060Z ##[error]Process completed with exit code 1.
+2026-07-23T01:52:58.3143430Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/png16.16.framework/png16.16 ]]
+2026-07-23T01:52:58.3145080Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/png16.16.framework/png16.16 ]]
+2026-07-23T01:52:58.3146790Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/png16.16.framework/png16.16'
+2026-07-23T01:52:58.3273250Z + FINAL_MACHO_COUNT=15
+2026-07-23T01:52:58.3273930Z + IFS=
+2026-07-23T01:52:58.3276380Z + read -r relative
+2026-07-23T01:52:58.3277230Z + [[ -n Frameworks/gstcheck-1.0.0.framework/gstcheck-1.0.0 ]]
+2026-07-23T01:52:58.3280280Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstcheck-1.0.0.framework/gstcheck-1.0.0'
+2026-07-23T01:52:58.3284070Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstcheck-1.0.0.framework/gstcheck-1.0.0 ]]
+2026-07-23T01:52:58.3288220Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstcheck-1.0.0.framework/gstcheck-1.0.0 ]]
+2026-07-23T01:52:58.3292700Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstcheck-1.0.0.framework/gstcheck-1.0.0'
+2026-07-23T01:52:58.3390650Z + FINAL_MACHO_COUNT=16
+2026-07-23T01:52:58.3391130Z + IFS=
+2026-07-23T01:52:58.3391450Z + read -r relative
+2026-07-23T01:52:58.3391700Z + [[ -n Frameworks/libswift_Concurrency.dylib ]]
+2026-07-23T01:52:58.3392750Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/libswift_Concurrency.dylib'
+2026-07-23T01:52:58.3394230Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/libswift_Concurrency.dylib ]]
+2026-07-23T01:52:58.3395750Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/libswift_Concurrency.dylib ]]
+2026-07-23T01:52:58.3400000Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/libswift_Concurrency.dylib'
+2026-07-23T01:52:58.4150450Z + FINAL_MACHO_COUNT=17
+2026-07-23T01:52:58.4151200Z + IFS=
+2026-07-23T01:52:58.4152580Z + read -r relative
+2026-07-23T01:52:58.4153630Z + [[ -n Frameworks/gobject-2.0.0.framework/gobject-2.0.0 ]]
+2026-07-23T01:52:58.4156180Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gobject-2.0.0.framework/gobject-2.0.0'
+2026-07-23T01:52:58.4158160Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gobject-2.0.0.framework/gobject-2.0.0 ]]
+2026-07-23T01:52:58.4159780Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gobject-2.0.0.framework/gobject-2.0.0 ]]
+2026-07-23T01:52:58.4161290Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gobject-2.0.0.framework/gobject-2.0.0'
+2026-07-23T01:52:58.4260940Z + FINAL_MACHO_COUNT=18
+2026-07-23T01:52:58.4262620Z + IFS=
+2026-07-23T01:52:58.4263660Z + read -r relative
+2026-07-23T01:52:58.4264110Z + [[ -n Frameworks/gstreamer-1.0.0.framework/gstreamer-1.0.0 ]]
+2026-07-23T01:52:58.4265560Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstreamer-1.0.0.framework/gstreamer-1.0.0'
+2026-07-23T01:52:58.4267060Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstreamer-1.0.0.framework/gstreamer-1.0.0 ]]
+2026-07-23T01:52:58.4268710Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstreamer-1.0.0.framework/gstreamer-1.0.0 ]]
+2026-07-23T01:52:58.4270300Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstreamer-1.0.0.framework/gstreamer-1.0.0'
+2026-07-23T01:52:58.4398210Z + FINAL_MACHO_COUNT=19
+2026-07-23T01:52:58.4400110Z + IFS=
+2026-07-23T01:52:58.4401150Z + read -r relative
+2026-07-23T01:52:58.4401600Z + [[ -n Frameworks/MoltenVK.framework/MoltenVK ]]
+2026-07-23T01:52:58.4402690Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/MoltenVK.framework/MoltenVK'
+2026-07-23T01:52:58.4404020Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/MoltenVK.framework/MoltenVK ]]
+2026-07-23T01:52:58.4405740Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/MoltenVK.framework/MoltenVK ]]
+2026-07-23T01:52:58.4407190Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/MoltenVK.framework/MoltenVK'
+2026-07-23T01:52:58.4641070Z + FINAL_MACHO_COUNT=20
+2026-07-23T01:52:58.4641330Z + IFS=
+2026-07-23T01:52:58.4641710Z + read -r relative
+2026-07-23T01:52:58.4641990Z + [[ -n Frameworks/GLESv2.framework/GLESv2 ]]
+2026-07-23T01:52:58.4642990Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/GLESv2.framework/GLESv2'
+2026-07-23T01:52:58.4646110Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/GLESv2.framework/GLESv2 ]]
+2026-07-23T01:52:58.4648000Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/GLESv2.framework/GLESv2 ]]
+2026-07-23T01:52:58.4649470Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/GLESv2.framework/GLESv2'
+2026-07-23T01:52:58.4913040Z + FINAL_MACHO_COUNT=21
+2026-07-23T01:52:58.4913630Z + IFS=
+2026-07-23T01:52:58.4914000Z + read -r relative
+2026-07-23T01:52:58.4915330Z + [[ -n Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu ]]
+2026-07-23T01:52:58.4916620Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu'
+2026-07-23T01:52:58.4940360Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu ]]
+2026-07-23T01:52:58.4946890Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu ]]
+2026-07-23T01:52:58.4954440Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu'
+2026-07-23T01:52:59.4214350Z + FINAL_MACHO_COUNT=22
+2026-07-23T01:52:59.4214650Z + IFS=
+2026-07-23T01:52:59.4214870Z + read -r relative
+2026-07-23T01:52:59.4215260Z + [[ -n Frameworks/gstaudio-1.0.0.framework/gstaudio-1.0.0 ]]
+2026-07-23T01:52:59.4216220Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstaudio-1.0.0.framework/gstaudio-1.0.0'
+2026-07-23T01:52:59.4218080Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstaudio-1.0.0.framework/gstaudio-1.0.0 ]]
+2026-07-23T01:52:59.4219920Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstaudio-1.0.0.framework/gstaudio-1.0.0 ]]
+2026-07-23T01:52:59.4221550Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstaudio-1.0.0.framework/gstaudio-1.0.0'
+2026-07-23T01:52:59.4358370Z + FINAL_MACHO_COUNT=23
+2026-07-23T01:52:59.4359030Z + IFS=
+2026-07-23T01:52:59.4360350Z + read -r relative
+2026-07-23T01:52:59.4360810Z + [[ -n Frameworks/crypto.1.1.framework/crypto.1.1 ]]
+2026-07-23T01:52:59.4361850Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/crypto.1.1.framework/crypto.1.1'
+2026-07-23T01:52:59.4363400Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/crypto.1.1.framework/crypto.1.1 ]]
+2026-07-23T01:52:59.4364770Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/crypto.1.1.framework/crypto.1.1 ]]
+2026-07-23T01:52:59.4367230Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/crypto.1.1.framework/crypto.1.1'
+2026-07-23T01:52:59.4635700Z + FINAL_MACHO_COUNT=24
+2026-07-23T01:52:59.4636320Z + IFS=
+2026-07-23T01:52:59.4636880Z + read -r relative
+2026-07-23T01:52:59.4637460Z + [[ -n Frameworks/slirp.0.framework/slirp.0 ]]
+2026-07-23T01:52:59.4639650Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/slirp.0.framework/slirp.0'
+2026-07-23T01:52:59.4643130Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/slirp.0.framework/slirp.0 ]]
+2026-07-23T01:52:59.4646650Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/slirp.0.framework/slirp.0 ]]
+2026-07-23T01:52:59.4651020Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/slirp.0.framework/slirp.0'
+2026-07-23T01:52:59.4742290Z + FINAL_MACHO_COUNT=25
+2026-07-23T01:52:59.4742850Z + IFS=
+2026-07-23T01:52:59.4743330Z + read -r relative
+2026-07-23T01:52:59.4744080Z + [[ -n Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu ]]
+2026-07-23T01:52:59.4746570Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu'
+2026-07-23T01:52:59.4750430Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu ]]
+2026-07-23T01:52:59.4753990Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu ]]
+2026-07-23T01:52:59.4757830Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu'
+2026-07-23T01:53:00.3006760Z + FINAL_MACHO_COUNT=26
+2026-07-23T01:53:00.3007150Z + IFS=
+2026-07-23T01:53:00.3007310Z + read -r relative
+2026-07-23T01:53:00.3007610Z + [[ -n Frameworks/glib-2.0.0.framework/glib-2.0.0 ]]
+2026-07-23T01:53:00.3008480Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/glib-2.0.0.framework/glib-2.0.0'
+2026-07-23T01:53:00.3009870Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/glib-2.0.0.framework/glib-2.0.0 ]]
+2026-07-23T01:53:00.3011030Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/glib-2.0.0.framework/glib-2.0.0 ]]
+2026-07-23T01:53:00.3012290Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/glib-2.0.0.framework/glib-2.0.0'
+2026-07-23T01:53:00.3137050Z + FINAL_MACHO_COUNT=27
+2026-07-23T01:53:00.3137290Z + IFS=
+2026-07-23T01:53:00.3137550Z + read -r relative
+2026-07-23T01:53:00.3137900Z + [[ -n Frameworks/gstrtp-1.0.0.framework/gstrtp-1.0.0 ]]
+2026-07-23T01:53:00.3138830Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstrtp-1.0.0.framework/gstrtp-1.0.0'
+2026-07-23T01:53:00.3140240Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstrtp-1.0.0.framework/gstrtp-1.0.0 ]]
+2026-07-23T01:53:00.3141480Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstrtp-1.0.0.framework/gstrtp-1.0.0 ]]
+2026-07-23T01:53:00.3142850Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstrtp-1.0.0.framework/gstrtp-1.0.0'
+2026-07-23T01:53:00.3217870Z + FINAL_MACHO_COUNT=28
+2026-07-23T01:53:00.3218110Z + IFS=
+2026-07-23T01:53:00.3218270Z + read -r relative
+2026-07-23T01:53:00.3218530Z + [[ -n Frameworks/gstsdp-1.0.0.framework/gstsdp-1.0.0 ]]
+2026-07-23T01:53:00.3219640Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstsdp-1.0.0.framework/gstsdp-1.0.0'
+2026-07-23T01:53:00.3221020Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstsdp-1.0.0.framework/gstsdp-1.0.0 ]]
+2026-07-23T01:53:00.3222220Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstsdp-1.0.0.framework/gstsdp-1.0.0 ]]
+2026-07-23T01:53:00.3223580Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstsdp-1.0.0.framework/gstsdp-1.0.0'
+2026-07-23T01:53:00.3289960Z + FINAL_MACHO_COUNT=29
+2026-07-23T01:53:00.3290280Z + IFS=
+2026-07-23T01:53:00.3290420Z + read -r relative
+2026-07-23T01:53:00.3290610Z + [[ -n Frameworks/epoxy.0.framework/epoxy.0 ]]
+2026-07-23T01:53:00.3291430Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/epoxy.0.framework/epoxy.0'
+2026-07-23T01:53:00.3292740Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/epoxy.0.framework/epoxy.0 ]]
+2026-07-23T01:53:00.3293940Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/epoxy.0.framework/epoxy.0 ]]
+2026-07-23T01:53:00.3295230Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/epoxy.0.framework/epoxy.0'
+2026-07-23T01:53:00.3400340Z + FINAL_MACHO_COUNT=30
+2026-07-23T01:53:00.3400590Z + IFS=
+2026-07-23T01:53:00.3400720Z + read -r relative
+2026-07-23T01:53:00.3400940Z + [[ -n Frameworks/gthread-2.0.0.framework/gthread-2.0.0 ]]
+2026-07-23T01:53:00.3401840Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gthread-2.0.0.framework/gthread-2.0.0'
+2026-07-23T01:53:00.3403600Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gthread-2.0.0.framework/gthread-2.0.0 ]]
+2026-07-23T01:53:00.3404820Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gthread-2.0.0.framework/gthread-2.0.0 ]]
+2026-07-23T01:53:00.3406190Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gthread-2.0.0.framework/gthread-2.0.0'
+2026-07-23T01:53:00.3459320Z + FINAL_MACHO_COUNT=31
+2026-07-23T01:53:00.3459510Z + IFS=
+2026-07-23T01:53:00.3459670Z + read -r relative
+2026-07-23T01:53:00.3459880Z + [[ -n Frameworks/gsttag-1.0.0.framework/gsttag-1.0.0 ]]
+2026-07-23T01:53:00.3460770Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gsttag-1.0.0.framework/gsttag-1.0.0'
+2026-07-23T01:53:00.3462310Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gsttag-1.0.0.framework/gsttag-1.0.0 ]]
+2026-07-23T01:53:00.3463520Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gsttag-1.0.0.framework/gsttag-1.0.0 ]]
+2026-07-23T01:53:00.3464870Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gsttag-1.0.0.framework/gsttag-1.0.0'
+2026-07-23T01:53:00.3546100Z + FINAL_MACHO_COUNT=32
+2026-07-23T01:53:00.3546380Z + IFS=
+2026-07-23T01:53:00.3546600Z + read -r relative
+2026-07-23T01:53:00.3547710Z + [[ -n Frameworks/gpg-error.0.framework/gpg-error.0 ]]
+2026-07-23T01:53:00.3549570Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gpg-error.0.framework/gpg-error.0'
+2026-07-23T01:53:00.3551390Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gpg-error.0.framework/gpg-error.0 ]]
+2026-07-23T01:53:00.3553040Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gpg-error.0.framework/gpg-error.0 ]]
+2026-07-23T01:53:00.3554710Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gpg-error.0.framework/gpg-error.0'
+2026-07-23T01:53:00.3710680Z + FINAL_MACHO_COUNT=33
+2026-07-23T01:53:00.3711050Z + IFS=
+2026-07-23T01:53:00.3711290Z + read -r relative
+2026-07-23T01:53:00.3711520Z + [[ -n Frameworks/gstapp-1.0.0.framework/gstapp-1.0.0 ]]
+2026-07-23T01:53:00.3714210Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstapp-1.0.0.framework/gstapp-1.0.0'
+2026-07-23T01:53:00.3715790Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstapp-1.0.0.framework/gstapp-1.0.0 ]]
+2026-07-23T01:53:00.3718460Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstapp-1.0.0.framework/gstapp-1.0.0 ]]
+2026-07-23T01:53:00.3719920Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstapp-1.0.0.framework/gstapp-1.0.0'
+2026-07-23T01:53:00.3818240Z + FINAL_MACHO_COUNT=34
+2026-07-23T01:53:00.3818480Z + IFS=
+2026-07-23T01:53:00.3818640Z + read -r relative
+2026-07-23T01:53:00.3818940Z + [[ -n Frameworks/spice-client-glib-2.0.8.framework/spice-client-glib-2.0.8 ]]
+2026-07-23T01:53:00.3819950Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/spice-client-glib-2.0.8.framework/spice-client-glib-2.0.8'
+2026-07-23T01:53:00.3821610Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/spice-client-glib-2.0.8.framework/spice-client-glib-2.0.8 ]]
+2026-07-23T01:53:00.3822960Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/spice-client-glib-2.0.8.framework/spice-client-glib-2.0.8 ]]
+2026-07-23T01:53:00.3824630Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/spice-client-glib-2.0.8.framework/spice-client-glib-2.0.8'
+2026-07-23T01:53:00.3942090Z + FINAL_MACHO_COUNT=35
+2026-07-23T01:53:00.3942360Z + IFS=
+2026-07-23T01:53:00.3942490Z + read -r relative
+2026-07-23T01:53:00.3942670Z + [[ -n Frameworks/intl.8.framework/intl.8 ]]
+2026-07-23T01:53:00.3943530Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/intl.8.framework/intl.8'
+2026-07-23T01:53:00.3944870Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/intl.8.framework/intl.8 ]]
+2026-07-23T01:53:00.3946050Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/intl.8.framework/intl.8 ]]
+2026-07-23T01:53:00.3947330Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/intl.8.framework/intl.8'
+2026-07-23T01:53:00.4024380Z + FINAL_MACHO_COUNT=36
+2026-07-23T01:53:00.4024800Z + IFS=
+2026-07-23T01:53:00.4025090Z + read -r relative
+2026-07-23T01:53:00.4025350Z + [[ -n Frameworks/gstallocators-1.0.0.framework/gstallocators-1.0.0 ]]
+2026-07-23T01:53:00.4026350Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstallocators-1.0.0.framework/gstallocators-1.0.0'
+2026-07-23T01:53:00.4027820Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstallocators-1.0.0.framework/gstallocators-1.0.0 ]]
+2026-07-23T01:53:00.4029160Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstallocators-1.0.0.framework/gstallocators-1.0.0 ]]
+2026-07-23T01:53:00.4030850Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstallocators-1.0.0.framework/gstallocators-1.0.0'
+2026-07-23T01:53:00.4082770Z + FINAL_MACHO_COUNT=37
+2026-07-23T01:53:00.4083030Z + IFS=
+2026-07-23T01:53:00.4083180Z + read -r relative
+2026-07-23T01:53:00.4083380Z + [[ -n Frameworks/iconv.2.framework/iconv.2 ]]
+2026-07-23T01:53:00.4084270Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/iconv.2.framework/iconv.2'
+2026-07-23T01:53:00.4085600Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/iconv.2.framework/iconv.2 ]]
+2026-07-23T01:53:00.4086750Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/iconv.2.framework/iconv.2 ]]
+2026-07-23T01:53:00.4088040Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/iconv.2.framework/iconv.2'
+2026-07-23T01:53:00.4191570Z + FINAL_MACHO_COUNT=38
+2026-07-23T01:53:00.4191940Z + IFS=
+2026-07-23T01:53:00.4192250Z + read -r relative
+2026-07-23T01:53:00.4192590Z + [[ -n Frameworks/vulkan_kosmickrisp.framework/vulkan_kosmickrisp ]]
+2026-07-23T01:53:00.4193640Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/vulkan_kosmickrisp.framework/vulkan_kosmickrisp'
+2026-07-23T01:53:00.4195050Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/vulkan_kosmickrisp.framework/vulkan_kosmickrisp ]]
+2026-07-23T01:53:00.4196410Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/vulkan_kosmickrisp.framework/vulkan_kosmickrisp ]]
+2026-07-23T01:53:00.4197820Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/vulkan_kosmickrisp.framework/vulkan_kosmickrisp'
+2026-07-23T01:53:00.4738200Z + FINAL_MACHO_COUNT=39
+2026-07-23T01:53:00.4738490Z + IFS=
+2026-07-23T01:53:00.4738700Z + read -r relative
+2026-07-23T01:53:00.4738980Z + [[ -n Frameworks/gstriff-1.0.0.framework/gstriff-1.0.0 ]]
+2026-07-23T01:53:00.4740080Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstriff-1.0.0.framework/gstriff-1.0.0'
+2026-07-23T01:53:00.4741690Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstriff-1.0.0.framework/gstriff-1.0.0 ]]
+2026-07-23T01:53:00.4742950Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstriff-1.0.0.framework/gstriff-1.0.0 ]]
+2026-07-23T01:53:00.4744400Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstriff-1.0.0.framework/gstriff-1.0.0'
+2026-07-23T01:53:00.4842650Z + FINAL_MACHO_COUNT=40
+2026-07-23T01:53:00.4843760Z + IFS=
+2026-07-23T01:53:00.4844150Z + read -r relative
+2026-07-23T01:53:00.4844840Z + [[ -n Frameworks/gmodule-2.0.0.framework/gmodule-2.0.0 ]]
+2026-07-23T01:53:00.4845810Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gmodule-2.0.0.framework/gmodule-2.0.0'
+2026-07-23T01:53:00.4847260Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gmodule-2.0.0.framework/gmodule-2.0.0 ]]
+2026-07-23T01:53:00.4848550Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gmodule-2.0.0.framework/gmodule-2.0.0 ]]
+2026-07-23T01:53:00.4850150Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gmodule-2.0.0.framework/gmodule-2.0.0'
+2026-07-23T01:53:00.4946220Z + FINAL_MACHO_COUNT=41
+2026-07-23T01:53:00.4946870Z + IFS=
+2026-07-23T01:53:00.4947020Z + read -r relative
+2026-07-23T01:53:00.4947260Z + [[ -n Frameworks/gstpbutils-1.0.0.framework/gstpbutils-1.0.0 ]]
+2026-07-23T01:53:00.4948560Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstpbutils-1.0.0.framework/gstpbutils-1.0.0'
+2026-07-23T01:53:00.4950140Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstpbutils-1.0.0.framework/gstpbutils-1.0.0 ]]
+2026-07-23T01:53:00.4951440Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstpbutils-1.0.0.framework/gstpbutils-1.0.0 ]]
+2026-07-23T01:53:00.4953050Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstpbutils-1.0.0.framework/gstpbutils-1.0.0'
+2026-07-23T01:53:00.5039040Z + FINAL_MACHO_COUNT=42
+2026-07-23T01:53:00.5039270Z + IFS=
+2026-07-23T01:53:00.5039460Z + read -r relative
+2026-07-23T01:53:00.5039760Z + [[ -n Frameworks/gstnet-1.0.0.framework/gstnet-1.0.0 ]]
+2026-07-23T01:53:00.5040890Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstnet-1.0.0.framework/gstnet-1.0.0'
+2026-07-23T01:53:00.5042310Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstnet-1.0.0.framework/gstnet-1.0.0 ]]
+2026-07-23T01:53:00.5043630Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstnet-1.0.0.framework/gstnet-1.0.0 ]]
+2026-07-23T01:53:00.5045010Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstnet-1.0.0.framework/gstnet-1.0.0'
+2026-07-23T01:53:00.5113610Z + FINAL_MACHO_COUNT=43
+2026-07-23T01:53:00.5113850Z + IFS=
+2026-07-23T01:53:00.5114570Z + read -r relative
+2026-07-23T01:53:00.5115170Z + [[ -n Frameworks/gstfft-1.0.0.framework/gstfft-1.0.0 ]]
+2026-07-23T01:53:00.5116130Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstfft-1.0.0.framework/gstfft-1.0.0'
+2026-07-23T01:53:00.5118060Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstfft-1.0.0.framework/gstfft-1.0.0 ]]
+2026-07-23T01:53:00.5119290Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstfft-1.0.0.framework/gstfft-1.0.0 ]]
+2026-07-23T01:53:00.5120640Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstfft-1.0.0.framework/gstfft-1.0.0'
+2026-07-23T01:53:00.5193060Z + FINAL_MACHO_COUNT=44
+2026-07-23T01:53:00.5193810Z + IFS=
+2026-07-23T01:53:00.5194070Z + read -r relative
+2026-07-23T01:53:00.5194280Z + [[ -n Frameworks/EGL.framework/EGL ]]
+2026-07-23T01:53:00.5195120Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/EGL.framework/EGL'
+2026-07-23T01:53:00.5196440Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/EGL.framework/EGL ]]
+2026-07-23T01:53:00.5197880Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/EGL.framework/EGL ]]
+2026-07-23T01:53:00.5199210Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/EGL.framework/EGL'
+2026-07-23T01:53:00.5266200Z + FINAL_MACHO_COUNT=45
+2026-07-23T01:53:00.5266430Z + IFS=
+2026-07-23T01:53:00.5266600Z + read -r relative
+2026-07-23T01:53:00.5266920Z + [[ -n Frameworks/opus.0.framework/opus.0 ]]
+2026-07-23T01:53:00.5267830Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/opus.0.framework/opus.0'
+2026-07-23T01:53:00.5269160Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/opus.0.framework/opus.0 ]]
+2026-07-23T01:53:00.5270310Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/opus.0.framework/opus.0 ]]
+2026-07-23T01:53:00.5271580Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/opus.0.framework/opus.0'
+2026-07-23T01:53:00.5368770Z + FINAL_MACHO_COUNT=46
+2026-07-23T01:53:00.5368980Z + IFS=
+2026-07-23T01:53:00.5369100Z + read -r relative
+2026-07-23T01:53:00.5369280Z + [[ -n Frameworks/zstd.1.framework/zstd.1 ]]
+2026-07-23T01:53:00.5370070Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/zstd.1.framework/zstd.1'
+2026-07-23T01:53:00.5371420Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/zstd.1.framework/zstd.1 ]]
+2026-07-23T01:53:00.5372600Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/zstd.1.framework/zstd.1 ]]
+2026-07-23T01:53:00.5374120Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/zstd.1.framework/zstd.1'
+2026-07-23T01:53:00.5447520Z + FINAL_MACHO_COUNT=47
+2026-07-23T01:53:00.5447790Z + IFS=
+2026-07-23T01:53:00.5447990Z + read -r relative
+2026-07-23T01:53:00.5448230Z + [[ -n Frameworks/gstvideo-1.0.0.framework/gstvideo-1.0.0 ]]
+2026-07-23T01:53:00.5449150Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstvideo-1.0.0.framework/gstvideo-1.0.0'
+2026-07-23T01:53:00.5450590Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstvideo-1.0.0.framework/gstvideo-1.0.0 ]]
+2026-07-23T01:53:00.5451830Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstvideo-1.0.0.framework/gstvideo-1.0.0 ]]
+2026-07-23T01:53:00.5453210Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gstvideo-1.0.0.framework/gstvideo-1.0.0'
+2026-07-23T01:53:00.5578890Z + FINAL_MACHO_COUNT=48
+2026-07-23T01:53:00.5579380Z + IFS=
+2026-07-23T01:53:00.5579540Z + read -r relative
+2026-07-23T01:53:00.5579770Z + [[ -n Frameworks/json-glib-1.0.0.framework/json-glib-1.0.0 ]]
+2026-07-23T01:53:00.5580730Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/json-glib-1.0.0.framework/json-glib-1.0.0'
+2026-07-23T01:53:00.5582300Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/json-glib-1.0.0.framework/json-glib-1.0.0 ]]
+2026-07-23T01:53:00.5583660Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/json-glib-1.0.0.framework/json-glib-1.0.0 ]]
+2026-07-23T01:53:00.5585370Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/json-glib-1.0.0.framework/json-glib-1.0.0'
+2026-07-23T01:53:00.5686880Z + FINAL_MACHO_COUNT=49
+2026-07-23T01:53:00.5687230Z + IFS=
+2026-07-23T01:53:00.5687410Z + read -r relative
+2026-07-23T01:53:00.5688030Z + [[ -n Frameworks/gcrypt.20.framework/gcrypt.20 ]]
+2026-07-23T01:53:00.5689940Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gcrypt.20.framework/gcrypt.20'
+2026-07-23T01:53:00.5691590Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gcrypt.20.framework/gcrypt.20 ]]
+2026-07-23T01:53:00.5693110Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gcrypt.20.framework/gcrypt.20 ]]
+2026-07-23T01:53:00.5695480Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/gcrypt.20.framework/gcrypt.20'
+2026-07-23T01:53:00.5857450Z + FINAL_MACHO_COUNT=50
+2026-07-23T01:53:00.5858560Z + IFS=
+2026-07-23T01:53:00.5859110Z + read -r relative
+2026-07-23T01:53:00.5859830Z + [[ -n Frameworks/jpeg.62.framework/jpeg.62 ]]
+2026-07-23T01:53:00.5861940Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/jpeg.62.framework/jpeg.62'
+2026-07-23T01:53:00.5865460Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/jpeg.62.framework/jpeg.62 ]]
+2026-07-23T01:53:00.5881160Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/jpeg.62.framework/jpeg.62 ]]
+2026-07-23T01:53:00.5884670Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/jpeg.62.framework/jpeg.62'
+2026-07-23T01:53:00.5978790Z + FINAL_MACHO_COUNT=51
+2026-07-23T01:53:00.5979430Z + IFS=
+2026-07-23T01:53:00.5979970Z + read -r relative
+2026-07-23T01:53:00.5980680Z + [[ -n Frameworks/virglrenderer.1.framework/virglrenderer.1 ]]
+2026-07-23T01:53:00.5983260Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/virglrenderer.1.framework/virglrenderer.1'
+2026-07-23T01:53:00.5986810Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/virglrenderer.1.framework/virglrenderer.1 ]]
+2026-07-23T01:53:00.5990380Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/virglrenderer.1.framework/virglrenderer.1 ]]
+2026-07-23T01:53:00.5994180Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/Frameworks/virglrenderer.1.framework/virglrenderer.1'
+2026-07-23T01:53:00.6237550Z + FINAL_MACHO_COUNT=52
+2026-07-23T01:53:00.6238080Z + IFS=
+2026-07-23T01:53:00.6238460Z + read -r relative
+2026-07-23T01:53:00.6238950Z + [[ -n qemu-m68k-softmmu.dylib ]]
+2026-07-23T01:53:00.6240820Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/qemu-m68k-softmmu.dylib'
+2026-07-23T01:53:00.6243910Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/qemu-m68k-softmmu.dylib ]]
+2026-07-23T01:53:00.6246910Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/qemu-m68k-softmmu.dylib ]]
+2026-07-23T01:53:00.6250200Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/qemu-m68k-softmmu.dylib'
+2026-07-23T01:53:01.3116500Z + FINAL_MACHO_COUNT=53
+2026-07-23T01:53:01.3117020Z + IFS=
+2026-07-23T01:53:01.3117440Z + read -r relative
+2026-07-23T01:53:01.3117910Z + [[ -n qemu-aarch64-softmmu.dylib ]]
+2026-07-23T01:53:01.3119830Z + extracted_binary='/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib'
+2026-07-23T01:53:01.3123110Z + [[ -f /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib ]]
+2026-07-23T01:53:01.3126730Z + [[ -x /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib ]]
+2026-07-23T01:53:01.3128710Z + codesign --verify --strict --ignore-resources '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.build/livecontainer-redroid-arm64-se/livecontainer-import-check/Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib'
+2026-07-23T01:53:02.0463870Z + FINAL_MACHO_COUNT=54
+2026-07-23T01:53:02.0464110Z + IFS=
+2026-07-23T01:53:02.0464260Z + read -r relative
+2026-07-23T01:53:02.0464400Z + [[ 54 -eq 54 ]]
+2026-07-23T01:53:02.0464920Z + printf 'bundleIdentifier=%s\nexecutable=%s\nisJITNeeded=%s\nsignableMachOCount=%s\n' com.nightvibes33.androidiosemulator.redroid.arm64.se 'UTM SE' false 54
+2026-07-23T01:53:02.0474420Z ++ stat -f%z /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/build/livecontainer-redroid-arm64-se/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-23T01:53:02.0566240Z + IPA_SIZE=1219189988
+2026-07-23T01:53:02.0566750Z + ((  IPA_SIZE >= GITHUB_RELEASE_LIMIT  ))
+2026-07-23T01:53:02.0567500Z + shasum -a 256 /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/build/livecontainer-redroid-arm64-se/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-23T01:53:06.3866440Z + cat
+2026-07-23T01:53:06.4072340Z + printf 'Built LiveContainer-signable no-JIT ARM64 Android IPA: %s\n' /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/build/livecontainer-redroid-arm64-se/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-23T01:53:06.4073930Z Built LiveContainer-signable no-JIT ARM64 Android IPA: /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/build/livecontainer-redroid-arm64-se/Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-23T01:53:06.4439860Z ##[group]Run set -euo pipefail
+2026-07-23T01:53:06.4440140Z [36;1mset -euo pipefail[0m
+2026-07-23T01:53:06.4440380Z [36;1mOUT=build/livecontainer-redroid-arm64-se[0m
+2026-07-23T01:53:06.4440660Z [36;1mIPA="$OUT/$IPA_NAME"[0m
+2026-07-23T01:53:06.4440850Z [36;1mtest -f "$IPA"[0m
+2026-07-23T01:53:06.4441050Z [36;1munzip -t "$IPA" >/dev/null[0m
+2026-07-23T01:53:06.4441410Z [36;1mgrep -q '^LiveContainer minimum version: 3.7.0$' "$OUT/build-manifest.txt"[0m
+2026-07-23T01:53:06.4441930Z [36;1mgrep -q '^QEMU m68k loader path: @loader_path root copy$' "$OUT/build-manifest.txt"[0m
+2026-07-23T01:53:06.4442430Z [36;1mgrep -q '^QEMU aarch64 early root copy: yes$' "$OUT/build-manifest.txt"[0m
+2026-07-23T01:53:06.4442910Z [36;1mgrep -q '^QEMU root copies archive entries: 6 and 7$' "$OUT/build-manifest.txt"[0m
+2026-07-23T01:53:06.4443460Z [36;1mgrep -q '^Original QEMU frameworks retained as fallback: yes$' "$OUT/build-manifest.txt"[0m
+2026-07-23T01:53:06.4444100Z [36;1mgrep -Fq '@loader_path/qemu-m68k-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"[0m
+2026-07-23T01:53:06.4444820Z [36;1m! grep -Fq '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"[0m
+2026-07-23T01:53:06.4445470Z [36;1mgrep -Fxq 'qemu-m68k-softmmu.dylib' "$OUT/livecontainer-signable-machos.txt"[0m
+2026-07-23T01:53:06.4446000Z [36;1mgrep -Fxq 'qemu-aarch64-softmmu.dylib' "$OUT/livecontainer-signable-machos.txt"[0m
+2026-07-23T01:53:06.4446640Z [36;1mgrep -Fxq 'Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/livecontainer-signable-machos.txt"[0m
+2026-07-23T01:53:06.4447410Z [36;1mgrep -Fxq 'Frameworks/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' "$OUT/livecontainer-signable-machos.txt"[0m
+2026-07-23T01:53:06.4448150Z [36;1mtest "$(sed -n '6p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/qemu-m68k-softmmu.dylib'[0m
+2026-07-23T01:53:06.4448870Z [36;1mtest "$(sed -n '7p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib'[0m
+2026-07-23T01:53:06.4449540Z [36;1mtest "$(stat -f%z "$IPA")" -lt 2147483648[0m
+2026-07-23T01:53:06.4493680Z shell: /opt/homebrew/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-23T01:53:06.4494000Z env:
+2026-07-23T01:53:06.4494150Z   SOURCE_RUN_ID: 29949669780
+2026-07-23T01:53:06.4494370Z   SOURCE_ARTIFACT: redroid-arm64-guest
+2026-07-23T01:53:06.4494660Z   RELEASE_TAG: v0.4.2-redroid13-arm64-se-qemu-loader-fix
+2026-07-23T01:53:06.4495050Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-23T01:53:06.4495620Z   GUEST_DIR: /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.downloaded-redroid-guest/extracted
+2026-07-23T01:53:06.4496070Z ##[endgroup]
+2026-07-23T01:53:54.9194300Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T01:53:54.9195600Z ##[group]Run actions/upload-artifact@v4
+2026-07-23T01:53:54.9195800Z with:
+2026-07-23T01:53:54.9196180Z   name: Android-iOSEmulator-Redroid13-ARM64-QEMULoaderFix-diagnostics
+2026-07-23T01:53:54.9197930Z   path: build/livecontainer-redroid-arm64-se/*.sha256
+build/livecontainer-redroid-arm64-se/build-manifest.txt
+build/livecontainer-redroid-arm64-se/livecontainer-import-metadata.txt
+build/livecontainer-redroid-arm64-se/livecontainer-signable-machos.txt
+build/livecontainer-redroid-arm64-se/livecontainer-signability-report.txt
+build/livecontainer-redroid-arm64-se/archive-entry-order.txt
+build/livecontainer-redroid-arm64-se/utm-executable-dependencies*.txt
+redroid-arm64-qemu-loader-fix-build.log
+
+2026-07-23T01:53:54.9207610Z   if-no-files-found: error
+2026-07-23T01:53:54.9207860Z   retention-days: 30
+2026-07-23T01:53:54.9208010Z   compression-level: 6
+2026-07-23T01:53:54.9208180Z   overwrite: false
+2026-07-23T01:53:54.9208340Z   include-hidden-files: false
+2026-07-23T01:53:54.9208520Z env:
+2026-07-23T01:53:54.9208650Z   SOURCE_RUN_ID: 29949669780
+2026-07-23T01:53:54.9208840Z   SOURCE_ARTIFACT: redroid-arm64-guest
+2026-07-23T01:53:54.9209100Z   RELEASE_TAG: v0.4.2-redroid13-arm64-se-qemu-loader-fix
+2026-07-23T01:53:54.9209510Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-23T01:53:54.9210000Z   GUEST_DIR: /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.downloaded-redroid-guest/extracted
+2026-07-23T01:53:54.9210390Z ##[endgroup]
+2026-07-23T01:53:55.2535720Z (node:51151) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-07-23T01:53:55.2537310Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-07-23T01:53:55.2636870Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-07-23T01:53:55.2638240Z The least common ancestor is /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator. This will be the root directory of the artifact
+2026-07-23T01:53:55.2638970Z With the provided path, there will be 9 files uploaded
+2026-07-23T01:53:55.2640860Z Artifact name is valid!
+2026-07-23T01:53:55.2641190Z Root directory input is valid!
+2026-07-23T01:53:55.6532490Z Beginning upload of artifact content to blob storage
+2026-07-23T01:53:55.6903660Z (node:51151) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-07-23T01:53:56.1061270Z Uploaded bytes 25597
+2026-07-23T01:53:56.1954800Z Finished uploading artifact content to blob storage!
+2026-07-23T01:53:56.1956780Z SHA256 digest of uploaded artifact zip is 374f27d7130681c00df0bf20a958d6af5fca40e8698846b7827a762465d17c2f
+2026-07-23T01:53:56.1958180Z Finalizing artifact upload
+2026-07-23T01:53:56.4291910Z Artifact Android-iOSEmulator-Redroid13-ARM64-QEMULoaderFix-diagnostics.zip successfully finalized. Artifact ID 8550389662
+2026-07-23T01:53:56.4295750Z Artifact Android-iOSEmulator-Redroid13-ARM64-QEMULoaderFix-diagnostics has been successfully uploaded! Final size is 25597 bytes. Artifact ID is 8550389662
+2026-07-23T01:53:56.4319460Z Artifact download URL: https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29972384284/artifacts/8550389662
+2026-07-23T01:53:56.4541370Z ##[group]Run set -euo pipefail
+2026-07-23T01:53:56.4541770Z [36;1mset -euo pipefail[0m
+2026-07-23T01:53:56.4542050Z [36;1mOUT=build/livecontainer-redroid-arm64-se[0m
+2026-07-23T01:53:56.4542400Z [36;1mIPA="$OUT/$IPA_NAME"[0m
+2026-07-23T01:53:56.4542680Z [36;1mSIZE="$(stat -f%z "$IPA")"[0m
+2026-07-23T01:53:56.4542910Z [36;1m[0m
+2026-07-23T01:53:56.4543340Z [36;1mgh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true[0m
+2026-07-23T01:53:56.4543930Z [36;1mgit push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true[0m
+2026-07-23T01:53:56.4544380Z [36;1mgit tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true[0m
+2026-07-23T01:53:56.4544720Z [36;1mgit tag "$RELEASE_TAG" "$GITHUB_SHA"[0m
+2026-07-23T01:53:56.4545050Z [36;1mgit push origin "refs/tags/$RELEASE_TAG"[0m
+2026-07-23T01:53:56.4545340Z [36;1m[0m
+2026-07-23T01:53:56.4545530Z [36;1mgh release create "$RELEASE_TAG" \[0m
+2026-07-23T01:53:56.4545880Z [36;1m  --repo "$GITHUB_REPOSITORY" \[0m
+2026-07-23T01:53:56.4546140Z [36;1m  --verify-tag \[0m
+2026-07-23T01:53:56.4546460Z [36;1m  --title "Android iOSEmulator — ARM64 QEMU loader fix" \[0m
+2026-07-23T01:53:56.4547990Z [36;1m  --notes "Replacement for v0.4.1. The strong qemu-m68k dependency now loads from a regular file beside UTM SE through @loader_path. Both m68k and aarch64 root copies are IPA entries 6 and 7, before later framework and Android-disk entries, while both original frameworks remain as fallback. Every extracted Mach-O is signature-verified. Android 13 ARM64 reached sys.boot_completed=1 in source run 29949669780." \[0m
+2026-07-23T01:53:56.4549830Z [36;1m  --prerelease[0m
+2026-07-23T01:53:56.4550130Z [36;1mgh release upload "$RELEASE_TAG" "$IPA" \[0m
+2026-07-23T01:53:56.4550460Z [36;1m  --repo "$GITHUB_REPOSITORY" --clobber[0m
+2026-07-23T01:53:56.4550750Z [36;1m[0m
+2026-07-23T01:53:56.4550990Z [36;1mRELEASE_JSON="$(gh release view "$RELEASE_TAG" \[0m
+2026-07-23T01:53:56.4551330Z [36;1m  --repo "$GITHUB_REPOSITORY" \[0m
+2026-07-23T01:53:56.4551640Z [36;1m  --json url,assets,isPrerelease)"[0m
+2026-07-23T01:53:56.4551980Z [36;1mtest "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1[0m
+2026-07-23T01:53:56.4552500Z [36;1mtest "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$IPA_NAME"[0m
+2026-07-23T01:53:56.4552920Z [36;1mtest "$(jq '.assets[0].size' <<<"$RELEASE_JSON")" -eq "$SIZE"[0m
+2026-07-23T01:53:56.4553350Z [36;1mtest "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true[0m
+2026-07-23T01:53:56.4553710Z [36;1mecho "$RELEASE_JSON" > "$OUT/release.json"[0m
+2026-07-23T01:53:56.4571500Z shell: /opt/homebrew/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-23T01:53:56.4571900Z env:
+2026-07-23T01:53:56.4572120Z   SOURCE_RUN_ID: 29949669780
+2026-07-23T01:53:56.4572350Z   SOURCE_ARTIFACT: redroid-arm64-guest
+2026-07-23T01:53:56.4572710Z   RELEASE_TAG: v0.4.2-redroid13-arm64-se-qemu-loader-fix
+2026-07-23T01:53:56.4573190Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-23T01:53:56.4573800Z   GUEST_DIR: /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.downloaded-redroid-guest/extracted
+2026-07-23T01:53:56.4576400Z   GH_TOKEN: ***
+2026-07-23T01:53:56.4576630Z ##[endgroup]
+2026-07-23T01:53:59.3408640Z To https://github.com/NightVibes33/Android-iOSEmulator
+2026-07-23T01:53:59.3411710Z  ! [remote rejected] v0.4.2-redroid13-arm64-se-qemu-loader-fix -> v0.4.2-redroid13-arm64-se-qemu-loader-fix (refusing to allow a GitHub App to create or update workflow `.github/workflows/probe-qemu-loader-fix.yml` without `workflows` permission)
+2026-07-23T01:53:59.3414470Z error: failed to push some refs to 'https://github.com/NightVibes33/Android-iOSEmulator'
+2026-07-23T01:53:59.3430080Z ##[error]Process completed with exit code 1.
+2026-07-23T01:53:59.3576400Z ##[group]Run set -euo pipefail
+2026-07-23T01:53:59.3577110Z [36;1mset -euo pipefail[0m
+2026-07-23T01:53:59.3577670Z [36;1mgit fetch origin main[0m
+2026-07-23T01:53:59.3578280Z [36;1mgit checkout -B main origin/main[0m
+2026-07-23T01:53:59.3578960Z [36;1mmkdir -p .github/release-status[0m
+2026-07-23T01:53:59.3579590Z [36;1mjq -n \[0m
+2026-07-23T01:53:59.3580090Z [36;1m  --arg run_id "$GITHUB_RUN_ID" \[0m
+2026-07-23T01:53:59.3580790Z [36;1m  --arg conclusion "$JOB_STATUS" \[0m
+2026-07-23T01:53:59.3581910Z [36;1m  --arg run_url "https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \[0m
+2026-07-23T01:53:59.3583260Z [36;1m  --arg head_sha "$GITHUB_SHA" \[0m
+2026-07-23T01:53:59.3584460Z [36;1m  '{run_id:$run_id,conclusion:$conclusion,run_url:$run_url,head_sha:$head_sha}' \[0m
+2026-07-23T01:53:59.3585880Z [36;1m  > .github/release-status/redroid-qemu-loader-fix-run.json[0m
+2026-07-23T01:53:59.3587170Z [36;1mgit config user.name github-actions[bot][0m
+2026-07-23T01:53:59.3588740Z [36;1mgit config user.email 41898282+github-actions[bot]@users.noreply.github.com[0m
+2026-07-23T01:53:59.3590580Z [36;1mgit add .github/release-status/redroid-qemu-loader-fix-run.json[0m
+2026-07-23T01:53:59.3591930Z [36;1mgit commit -m "Record ARM64 QEMU loader-fix result" || exit 0[0m
+2026-07-23T01:53:59.3592990Z [36;1mfor attempt in 1 2 3; do[0m
+2026-07-23T01:53:59.3594330Z [36;1m  git pull --rebase origin main && git push origin HEAD:main && break[0m
+2026-07-23T01:53:59.3595590Z [36;1m  sleep 2[0m
+2026-07-23T01:53:59.3596310Z [36;1mdone[0m
+2026-07-23T01:53:59.3632380Z shell: /opt/homebrew/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-23T01:53:59.3633180Z env:
+2026-07-23T01:53:59.3633610Z   SOURCE_RUN_ID: 29949669780
+2026-07-23T01:53:59.3634350Z   SOURCE_ARTIFACT: redroid-arm64-guest
+2026-07-23T01:53:59.3635110Z   RELEASE_TAG: v0.4.2-redroid13-arm64-se-qemu-loader-fix
+2026-07-23T01:53:59.3636150Z   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
+2026-07-23T01:53:59.3637590Z   GUEST_DIR: /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.downloaded-redroid-guest/extracted
+2026-07-23T01:53:59.3638740Z   JOB_STATUS: failure
+2026-07-23T01:53:59.3639220Z ##[endgroup]
+2026-07-23T01:53:59.9249430Z From https://github.com/NightVibes33/Android-iOSEmulator
+2026-07-23T01:53:59.9251620Z  * branch            main       -> FETCH_HEAD
+2026-07-23T01:53:59.9252250Z    eec215c..332f267  main       -> origin/main
+2026-07-23T01:53:59.9673100Z Reset branch 'main'
+2026-07-23T01:53:59.9677370Z M	scripts/build_livecontainer_redroid_arm64_se_ipa.sh
+2026-07-23T01:53:59.9677820Z branch 'main' set up to track 'origin/main'.
+2026-07-23T01:53:59.9678100Z Your branch is up to date with 'origin/main'.
+2026-07-23T01:54:00.0179370Z [main b86731a] Record ARM64 QEMU loader-fix result
+2026-07-23T01:54:00.0179770Z  1 file changed, 4 insertions(+), 4 deletions(-)
+2026-07-23T01:54:00.0246800Z error: cannot pull with rebase: You have unstaged changes.
+2026-07-23T01:54:00.0256440Z error: Please commit or stash them.
+2026-07-23T01:54:02.1571940Z error: cannot pull with rebase: You have unstaged changes.
+2026-07-23T01:54:02.1581170Z error: Please commit or stash them.
+2026-07-23T01:54:04.2559120Z error: cannot pull with rebase: You have unstaged changes.
+2026-07-23T01:54:04.2580220Z error: Please commit or stash them.
+2026-07-23T01:54:06.4612750Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T01:54:06.4615380Z Post job cleanup.
+2026-07-23T01:54:06.5589590Z [command]/opt/homebrew/bin/git version
+2026-07-23T01:54:06.5652500Z git version 2.55.0
+2026-07-23T01:54:06.5668830Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/d477db35-ec70-4f81-b2df-8d77e219b04e/.gitconfig'
+2026-07-23T01:54:06.5677680Z Temporarily overriding HOME='/Users/runner/work/_temp/d477db35-ec70-4f81-b2df-8d77e219b04e' before making global git config changes
+2026-07-23T01:54:06.5679540Z Adding repository directory to the temporary git global config as a safe directory
+2026-07-23T01:54:06.5681270Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
+2026-07-23T01:54:06.5749530Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-07-23T01:54:06.5803610Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-07-23T01:54:06.6536560Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-07-23T01:54:06.6582530Z http.https://github.com/.extraheader
+2026-07-23T01:54:06.6589280Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-07-23T01:54:06.6641080Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-07-23T01:54:06.7434550Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-07-23T01:54:06.7513460Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-07-23T01:54:06.8564680Z Cleaning up orphan processes
+2026-07-23T01:54:07.1047680Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
