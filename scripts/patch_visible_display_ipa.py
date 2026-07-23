@@ -10,7 +10,7 @@ from pathlib import Path
 
 NEW_BUNDLE_ID = "com.nightvibes33.androidiosemulator.redroid.arm64.se.visible"
 NEW_DATA_UUID = "AndroidRedroidArm64SEVisibleData"
-BUILD_MARKER = "redroid13-arm64-se-lowstorage-visible-v1"
+BUILD_MARKER = "redroid13-arm64-se-lowstorage-visible-v2"
 VM_NAME = "Android-Redroid-ARM64-SE.utm"
 
 
@@ -46,7 +46,7 @@ def patch_kernel_append(argument: str) -> str:
         "vt.global_cursor_default=1",
     ):
         key = required.split("=", 1)[0]
-        if key in {"console"}:
+        if key == "console":
             if required not in tokens:
                 tokens.append(required)
         elif not any(token == required or token.startswith(key + "=") for token in tokens):
@@ -96,7 +96,10 @@ def main() -> int:
     if old_card not in {"virtio-gpu-pci", "virtio-ramfb"}:
         raise SystemExit(f"unexpected original display card: {old_card!r}")
     display["ConsoleOnly"] = False
-    display["DisplayCard"] = "virtio-ramfb"
+    # The graphical smoke test reached Weston and enabled Virtual-1 with this
+    # device. The black screen came from Weston's removed --tty option, not from
+    # the virtio GPU model, so keep the validated display device.
+    display["DisplayCard"] = "virtio-gpu-pci"
     display["DisplayFitScreen"] = True
     display["DisplayRetina"] = False
     display["DisplayUpscaler"] = "linear"
@@ -104,7 +107,11 @@ def main() -> int:
 
     system = config.setdefault("System", {})
     add_args = list(system.get("AddArgs") or [])
-    append_indexes = [i for i, value in enumerate(add_args) if isinstance(value, str) and value.startswith('-append "')]
+    append_indexes = [
+        i
+        for i, value in enumerate(add_args)
+        if isinstance(value, str) and value.startswith('-append "')
+    ]
     if len(append_indexes) != 1:
         raise SystemExit(f"expected one kernel append argument, found {len(append_indexes)}")
     index = append_indexes[0]
@@ -114,14 +121,14 @@ def main() -> int:
     info_section = config.setdefault("Info", {})
     existing_notes = str(info_section.get("Notes") or "").strip()
     visible_note = (
-        "Visible display build: UTM virtio-ramfb, framebuffer boot status, "
-        "and fresh LiveContainer data container."
+        "Visible display build: Weston 14 compatible service, setup bypass, "
+        "Launcher3 startup, framebuffer boot status, and a fresh LiveContainer "
+        "data container."
     )
     info_section["Notes"] = f"{existing_notes}\n{visible_note}".strip()
     info_section["VisibleDisplayBuild"] = BUILD_MARKER
     save_plist(config_path, config, config_fmt)
 
-    # Re-read everything so malformed output cannot be packaged.
     verified_info, _ = load_plist(info_path)
     verified_lc, _ = load_plist(lc_info_path)
     verified_config, _ = load_plist(config_path)
@@ -129,15 +136,19 @@ def main() -> int:
     assert verified_info["AndroidVisibleDisplayBuild"] == BUILD_MARKER
     assert verified_lc["LCDataUUID"] == NEW_DATA_UUID
     assert verified_lc["isJITNeeded"] is False
-    assert verified_config["Display"]["DisplayCard"] == "virtio-ramfb"
+    assert verified_config["Display"]["DisplayCard"] == "virtio-gpu-pci"
     assert verified_config["Display"]["DisplayFitScreen"] is True
-    append_value = next(value for value in verified_config["System"]["AddArgs"] if value.startswith('-append "'))
+    append_value = next(
+        value
+        for value in verified_config["System"]["AddArgs"]
+        if value.startswith('-append "')
+    )
     assert "systemd.show_status=yes" in append_value
     assert "loglevel=6" in append_value
     assert "consoleblank=0" in append_value
     assert " quiet " not in f" {append_value} "
 
-    print(f"Patched display card: {old_card} -> virtio-ramfb")
+    print(f"Validated display card retained: {old_card} -> virtio-gpu-pci")
     print(f"Patched bundle identifier: {old_bundle_id} -> {NEW_BUNDLE_ID}")
     print(f"Fresh data container: {NEW_DATA_UUID}")
     return 0
