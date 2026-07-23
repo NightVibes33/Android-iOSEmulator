@@ -39,4 +39,4 @@ jobs:
           git pull --rebase origin main
           git push origin HEAD:main
 
-# probe: serial-signer-2026-07-22
+# probe: matching-source-2afc9c3-2026-07-22
