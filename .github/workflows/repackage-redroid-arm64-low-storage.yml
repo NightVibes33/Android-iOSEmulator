@@ -1,0 +1,306 @@
+name: Repackage verified ARM64 guest for 9 GB devices
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/release-request/redroid-arm64-low-storage.txt"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: redroid-arm64-low-storage-release
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: "29949669780"
+  SOURCE_ARTIFACT: redroid-arm64-guest
+  RELEASE_TAG: v0.4.3-redroid13-arm64-se-low-storage-qcow2
+  TAG_TARGET_COMMIT: "99ebff326f89d945573965b1decf700c5ebc7f7e"
+  IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+  RAW_DISK_NAME: redroid-arm64-rootfs.raw
+  QCOW_DISK_NAME: redroid-arm64-rootfs.qcow2
+
+jobs:
+  repackage:
+    name: Build, boot-test and publish low-storage IPA
+    runs-on: macos-26
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode and install conversion tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
+          test -n "$XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          brew install zstd jq gnu-tar bash qemu coreutils
+          if ! command -v adb >/dev/null 2>&1; then
+            brew install --cask android-platform-tools
+          fi
+          xcodebuild -version
+          qemu-img --version
+          qemu-system-aarch64 --version
+          adb version
+
+      - name: Restore existing boot-verified ARM64 guest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p .downloaded-redroid-guest
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir .downloaded-redroid-guest
+          ARCHIVE="$(find .downloaded-redroid-guest -type f -name redroid-arm64-guest.tar.zst -print -quit)"
+          test -n "$ARCHIVE"
+          GUEST_DIR="$PWD/.downloaded-redroid-guest/extracted"
+          mkdir -p "$GUEST_DIR"
+          zstd -d --stdout "$ARCHIVE" | gtar --sparse -xf - -C "$GUEST_DIR"
+          grep -q '^CI Android boot verification: passed$' "$GUEST_DIR/build-manifest.txt"
+          grep -q '^CI Android sys.boot_completed: 1$' "$GUEST_DIR/build-manifest.txt"
+          test -f "$GUEST_DIR/$RAW_DISK_NAME"
+          echo "GUEST_DIR=$GUEST_DIR" >> "$GITHUB_ENV"
+
+      - name: Convert raw ext4 guest to compressed writable QCOW2
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW="$GUEST_DIR/$RAW_DISK_NAME"
+          QCOW="$GUEST_DIR/$QCOW_DISK_NAME"
+          RAW_SIZE="$(stat -f%z "$RAW")"
+          test "$RAW_SIZE" -ge 8589934592
+
+          rm -f "$QCOW"
+          qemu-img convert -p -f raw -O qcow2 -c \
+            -o cluster_size=65536,lazy_refcounts=on \
+            "$RAW" "$QCOW"
+          qemu-img check "$QCOW"
+          qemu-img info --output=json "$QCOW" | tee qcow2-info.json
+          test "$(jq -r .format qcow2-info.json)" = qcow2
+          test "$(jq -r '."virtual-size"' qcow2-info.json)" = "$RAW_SIZE"
+
+          QCOW_SIZE="$(stat -f%z "$QCOW")"
+          test "$QCOW_SIZE" -lt 3758096384
+          printf 'raw_size_bytes=%s\nqcow2_size_bytes=%s\n' "$RAW_SIZE" "$QCOW_SIZE" \
+            > low-storage-disk-sizes.txt
+          cat >> "$GUEST_DIR/build-manifest.txt" <<EOF
+          Low-storage conversion: compressed writable QCOW2
+          Low-storage raw size bytes: $RAW_SIZE
+          Low-storage QCOW2 size bytes: $QCOW_SIZE
+          Low-storage virtual capacity preserved: yes
+          EOF
+
+      - name: Boot Android from the compressed QCOW2 disk
+        shell: bash
+        run: |
+          set -euo pipefail
+          QCOW="$GUEST_DIR/$QCOW_DISK_NAME"
+          QEMU_LOG=low-storage-qcow2-boot.log
+          BOOT_PROPS=low-storage-android-properties.txt
+          rm -f "$QEMU_LOG" "$BOOT_PROPS"
+          adb kill-server >/dev/null 2>&1 || true
+          adb start-server
+
+          qemu-system-aarch64 \
+            -machine virt,highmem=off \
+            -accel tcg,thread=multi \
+            -cpu max \
+            -smp 2 \
+            -m 2048 \
+            -kernel "$GUEST_DIR/kernel" \
+            -initrd "$GUEST_DIR/initrd.img" \
+            -append 'root=/dev/vda rw rootwait rootfstype=ext4 console=ttyAMA0 earlycon=pl011,0x09000000 systemd.show_status=auto systemd.log_target=console loglevel=4' \
+            -drive "if=none,file=$QCOW,format=qcow2,id=rootfs,cache=unsafe" \
+            -device virtio-blk-pci,drive=rootfs \
+            -netdev user,id=net0,hostfwd=tcp:127.0.0.1:5555-:5555 \
+            -device virtio-net-pci,netdev=net0,romfile= \
+            -device virtio-rng-pci \
+            -display none \
+            -monitor none \
+            -serial stdio \
+            -snapshot \
+            -no-reboot >"$QEMU_LOG" 2>&1 &
+          QEMU_PID=$!
+          cleanup() {
+            kill "$QEMU_PID" >/dev/null 2>&1 || true
+            wait "$QEMU_PID" >/dev/null 2>&1 || true
+            adb disconnect 127.0.0.1:5555 >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          BOOTED=0
+          for _ in $(seq 1 1800); do
+            adb connect 127.0.0.1:5555 >/dev/null 2>&1 || true
+            if [[ "$(adb -s 127.0.0.1:5555 get-state 2>/dev/null || true)" == device ]]; then
+              VALUE="$(adb -s 127.0.0.1:5555 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$VALUE" == 1 ]]; then
+                BOOTED=1
+                break
+              fi
+            fi
+            kill -0 "$QEMU_PID" 2>/dev/null || break
+            sleep 1
+          done
+          if [[ "$BOOTED" -ne 1 ]]; then
+            tail -n 400 "$QEMU_LOG" || true
+            exit 1
+          fi
+
+          adb -s 127.0.0.1:5555 shell getprop > "$BOOT_PROPS"
+          test "$(adb -s 127.0.0.1:5555 shell getprop ro.build.version.release | tr -d '\r')" = 13
+          test "$(adb -s 127.0.0.1:5555 shell getprop ro.product.cpu.abi | tr -d '\r')" = arm64-v8a
+          adb -s 127.0.0.1:5555 shell 'test -e /dev/binder && test -e /dev/hwbinder && test -e /dev/vndbinder'
+          ! grep -Eqi 'kernel panic|not syncing|VFS: Unable to mount root' "$QEMU_LOG"
+          echo 'Low-storage QCOW2 Android sys.boot_completed: 1' >> "$GUEST_DIR/build-manifest.txt"
+          cleanup
+          trap - EXIT
+
+          rm -f "$GUEST_DIR/$RAW_DISK_NAME"
+          test ! -e "$GUEST_DIR/$RAW_DISK_NAME"
+          test -f "$GUEST_DIR/$QCOW_DISK_NAME"
+
+      - name: Build QEMU-loader-safe low-storage LiveContainer guest IPA
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/patch_qemu_loader_packaging.py \
+            scripts/build_livecontainer_redroid_arm64_se_ipa.sh
+          python3 scripts/patch_low_storage_qcow2_packaging.py \
+            scripts/make_redroid_arm64_utm.py \
+            scripts/build_livecontainer_redroid_arm64_se_ipa.sh
+          "$(brew --prefix)/bin/bash" -x \
+            scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$GUEST_DIR" \
+            2>&1 | tee redroid-arm64-low-storage-build.log
+
+      - name: Validate extracted QCOW2 and 9 GB storage budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/$IPA_NAME"
+          APP_BUILD="$PWD/.build/livecontainer-redroid-arm64-se/package/Payload/Android iOSEmulator.app"
+          DISK_BUILD="$APP_BUILD/PreloadedData/Android-Redroid-ARM64-SE.utm/Images/$QCOW_DISK_NAME"
+          test -f "$IPA"
+          test -f "$DISK_BUILD"
+          unzip -t "$IPA" >/dev/null
+          grep -q '^Root disk: compressed writable QCOW2 containing ext4$' "$OUT/build-manifest.txt"
+          grep -q '^Low-storage package: yes$' "$OUT/build-manifest.txt"
+          grep -q '^Raw 8192 MiB extraction avoided: yes$' "$OUT/build-manifest.txt"
+          grep -q '^QEMU m68k loader path: @loader_path root copy$' "$OUT/build-manifest.txt"
+          qemu-img check "$DISK_BUILD"
+          test "$(qemu-img info --output=json "$DISK_BUILD" | jq -r .format)" = qcow2
+
+          IPA_BYTES="$(stat -f%z "$IPA")"
+          APP_BYTES="$(( $(du -sk "$APP_BUILD" | awk '{print $1}') * 1024 ))"
+          DISK_BYTES="$(stat -f%z "$DISK_BUILD")"
+          # Conservative import estimate: downloaded IPA + extracted app + signer
+          # working copy + installed guest + first-launch writable VM copy.
+          ESTIMATED_PEAK_BYTES="$(( IPA_BYTES + APP_BYTES * 3 ))"
+          BUDGET_BYTES="$(( 9 * 1024 * 1024 * 1024 ))"
+          test "$ESTIMATED_PEAK_BYTES" -lt "$BUDGET_BYTES"
+          jq -n \
+            --argjson ipa_bytes "$IPA_BYTES" \
+            --argjson extracted_app_bytes "$APP_BYTES" \
+            --argjson qcow2_bytes "$DISK_BYTES" \
+            --argjson estimated_peak_bytes "$ESTIMATED_PEAK_BYTES" \
+            --argjson budget_bytes "$BUDGET_BYTES" \
+            '{ipa_bytes:$ipa_bytes,extracted_app_bytes:$extracted_app_bytes,qcow2_bytes:$qcow2_bytes,estimated_peak_bytes:$estimated_peak_bytes,budget_bytes:$budget_bytes,within_9gb_budget:($estimated_peak_bytes < $budget_bytes)}' \
+            > "$OUT/low-storage-budget.json"
+          cat "$OUT/low-storage-budget.json"
+
+      - name: Upload complete low-storage IPA and diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Redroid13-ARM64-SE-LowStorage-unsigned
+          path: |
+            build/livecontainer-redroid-arm64-se/*.ipa
+            build/livecontainer-redroid-arm64-se/*.sha256
+            build/livecontainer-redroid-arm64-se/build-manifest.txt
+            build/livecontainer-redroid-arm64-se/livecontainer-import-metadata.txt
+            build/livecontainer-redroid-arm64-se/livecontainer-signability-report.txt
+            build/livecontainer-redroid-arm64-se/archive-entry-order.txt
+            build/livecontainer-redroid-arm64-se/low-storage-budget.json
+            qcow2-info.json
+            low-storage-disk-sizes.txt
+            low-storage-qcow2-boot.log
+            low-storage-android-properties.txt
+            redroid-arm64-low-storage-build.log
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish low-storage release using built-in token
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/$IPA_NAME"
+          SIZE="$(stat -f%z "$IPA")"
+          git cat-file -e "$TAG_TARGET_COMMIT^{commit}"
+
+          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
+          git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag "$RELEASE_TAG" "$TAG_TARGET_COMMIT"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Android iOSEmulator — Low-storage QCOW2 build" \
+            --notes "For devices with about 9 GB free. The former 8192 MiB raw root disk is replaced by a compressed writable QCOW2 while preserving the same virtual capacity. The converted disk is boot-tested to Android 13 sys.boot_completed=1 before packaging. The QEMU loader relocation and serial-signing LiveContainer compatibility fixes remain included. Install with LiveContainer Serial and import this distinct LowStorage IPA as a fresh guest." \
+            --prerelease
+          gh release upload "$RELEASE_TAG" "$IPA" \
+            "$OUT/low-storage-budget.json" "$OUT/$IPA_NAME.sha256" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+          RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease)"
+          test "$(jq -r --arg name "$IPA_NAME" '.assets[] | select(.name==$name) | .size' <<<"$RELEASE_JSON")" = "$SIZE"
+          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
+          echo "$RELEASE_JSON" > "$OUT/release.json"
+
+      - name: Record verified low-storage release
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=build/livecontainer-redroid-arm64-se
+          IPA="$OUT/$IPA_NAME"
+          RELEASE_URL="$(jq -r .url "$OUT/release.json")"
+          SHA256="$(awk '{print $1}' "$OUT/$IPA_NAME.sha256")"
+          BUDGET_JSON="$(cat "$OUT/low-storage-budget.json")"
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          jq -n \
+            --arg release_url "$RELEASE_URL" \
+            --arg tag "$RELEASE_TAG" \
+            --arg asset_name "$IPA_NAME" \
+            --arg asset_sha256 "$SHA256" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg package_commit "$GITHUB_SHA" \
+            --arg source_run_id "$SOURCE_RUN_ID" \
+            --argjson budget "$BUDGET_JSON" \
+            '{verified:true,product:"Android iOSEmulator low-storage guest",android_version:13,android_sys_boot_completed_from_qcow2:true,guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,root_disk_format:"qcow2",compressed_writable_disk:true,raw_8192_mib_extraction_avoided:true,within_9gb_budget:$budget.within_9gb_budget,storage_budget:$budget,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,source_run_id:$source_run_id,package_commit:$package_commit,physical_iphone_boot_verified:false}' \
+            > .github/release-status/redroid-arm64-se-low-storage.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-arm64-se-low-storage.json
+          git commit -m "Record verified 9 GB Android guest release" || true
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 2
+          done
