@@ -1,0 +1,49 @@
+name: Capture visible UI diagnostic failure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/capture-redroid-visible-ui-failure.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Capture failed job log tail
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED_JOB_ID: "89314271215"
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+          curl --fail --location --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/jobs/$FAILED_JOB_ID/logs" \
+            -o /tmp/job-log
+          if file /tmp/job-log | grep -qi zip; then
+            unzip -p /tmp/job-log > /tmp/job.txt
+          else
+            cp /tmp/job-log /tmp/job.txt
+          fi
+          tail -n 180 /tmp/job.txt > .github/release-status/redroid-visible-ui-failure-tail.log
+          git fetch origin main
+          git checkout -B main origin/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-visible-ui-failure-tail.log
+          git commit -m "Capture visible UI diagnostic failure" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+# capture: initial
