@@ -2,5 +2,5 @@ product=LiveContainer serial signer
 upstream=LiveContainer/LiveContainer@2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
 patch=serialize Mach-O signing queue
 android_guest_release=v0.4.2-redroid13-arm64-se-qemu-loader-fix
-requested_at=2026-07-23T00:18:00-05:00
-retry_reason=fixed pipefail marker verification false negative
+requested_at=2026-07-23T00:25:00-05:00
+retry_reason=replace stripped binary string check with source checksum and extracted IPA markers
