@@ -1,0 +1,8 @@
+product=Android iOSEmulator visible Android UI fix v2
+source_guest_run=29949669780
+confirmed_cause=Weston 14 rejects --tty=1; Wayland disappears; Android remains in provisioning
+fix=Weston 14 compatible service plus wayland wait plus Launcher3 startup
+required_proof=non-black Android framebuffer and non-black virtio GPU capture
+storage_budget=9 GB
+release_assets=IPA only
+requested_at=2026-07-23T15:22:00-05:00
