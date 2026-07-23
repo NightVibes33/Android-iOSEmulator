@@ -1,0 +1,43 @@
+name: Capture ARM64 signing-fix failure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/capture-redroid-signing-fix-failure.yml"
+      - ".github/release-request/capture-redroid-signing-fix-failure.txt"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Capture failed package log
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED_RUN_ID: "29968528875"
+        run: |
+          set -euo pipefail
+          mkdir -p .github/release-status
+          {
+            echo "failed_run_id=$FAILED_RUN_ID"
+            gh run view "$FAILED_RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed || true
+          } > .github/release-status/redroid-signing-fix-failure.log
+          tail -n 300 .github/release-status/redroid-signing-fix-failure.log > .github/release-status/redroid-signing-fix-failure-tail.log
+          test -s .github/release-status/redroid-signing-fix-failure-tail.log
+      - name: Commit captured failure
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-signing-fix-failure.log .github/release-status/redroid-signing-fix-failure-tail.log
+          git commit -m "Capture ARM64 signing-fix package failure"
+          git pull --rebase origin main
+          git push origin HEAD:main
