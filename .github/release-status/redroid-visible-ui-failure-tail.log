@@ -1,0 +1,180 @@
+2026-07-23T19:42:49.5865720Z vde
+2026-07-23T19:42:49.5866430Z [32m==>[0m [1mFetching downloads for: [32mqemu[39m[0m
+2026-07-23T19:42:50.8632340Z ✔︎ Bottle Manifest capstone (5.0.9)
+2026-07-23T19:42:50.8734220Z ✔︎ Bottle Manifest dtc (1.8.1)
+2026-07-23T19:42:50.9150870Z ✔︎ Bottle dtc (1.8.1)
+2026-07-23T19:42:50.9850320Z ✔︎ Bottle Manifest libslirp (4.9.3)
+2026-07-23T19:42:51.0164710Z ✔︎ Bottle libslirp (4.9.3)
+2026-07-23T19:42:51.0279250Z ✔︎ Bottle Manifest libssh (0.12.0_1)
+2026-07-23T19:42:51.0518320Z ✔︎ Bottle capstone (5.0.9)
+2026-07-23T19:42:51.0639610Z ✔︎ Bottle Manifest ncurses (6.6)
+2026-07-23T19:42:51.0845700Z ✔︎ Bottle libssh (0.12.0_1)
+2026-07-23T19:42:51.0949950Z ✔︎ Bottle Manifest snappy (1.2.2)
+2026-07-23T19:42:51.1574280Z ✔︎ Bottle Manifest vde (2.3.3)
+2026-07-23T19:42:51.1680190Z ✔︎ Bottle snappy (1.2.2)
+2026-07-23T19:42:51.1884330Z ✔︎ Bottle vde (2.3.3)
+2026-07-23T19:42:52.0694180Z ✔︎ Bottle ncurses (6.6)
+2026-07-23T19:42:52.7722860Z ✔︎ Bottle qemu (11.0.2)
+2026-07-23T19:42:52.9545700Z [32m==>[0m [1mInstalling dependencies for qemu:[0m [32mcapstone[39m, [32mdtc[39m, [32mlibslirp[39m, [32mlibssh[39m, [32mncurses[39m, [32msnappy[39m and [32mvde[39m[0m
+2026-07-23T19:42:52.9548200Z [32m==>[0m [1mInstalling qemu dependency: [32mcapstone[39m[0m
+2026-07-23T19:42:53.0230710Z [34m==>[0m [1mPouring capstone--5.0.9.arm64_tahoe.bottle.tar.gz[0m
+2026-07-23T19:42:53.4665420Z 🍺  /opt/homebrew/Cellar/capstone/5.0.9: 31 files, 23.4MB
+2026-07-23T19:42:53.4672290Z [32m==>[0m [1mInstalling qemu dependency: [32mdtc[39m[0m
+2026-07-23T19:42:53.5393220Z [34m==>[0m [1mPouring dtc--1.8.1.arm64_tahoe.bottle.tar.gz[0m
+2026-07-23T19:42:53.6713590Z 🍺  /opt/homebrew/Cellar/dtc/1.8.1: 19 files, 588.2KB
+2026-07-23T19:42:53.6726980Z [32m==>[0m [1mInstalling qemu dependency: [32mlibslirp[39m[0m
+2026-07-23T19:42:53.7383240Z [34m==>[0m [1mPouring libslirp--4.9.3.arm64_tahoe.bottle.tar.gz[0m
+2026-07-23T19:42:53.7997930Z 🍺  /opt/homebrew/Cellar/libslirp/4.9.3: 13 files, 421.0KB
+2026-07-23T19:42:53.8000140Z [32m==>[0m [1mInstalling qemu dependency: [32mlibssh[39m[0m
+2026-07-23T19:42:53.8243870Z [34m==>[0m [1mPouring libssh--0.12.0_1.arm64_tahoe.bottle.tar.gz[0m
+2026-07-23T19:42:53.8926170Z 🍺  /opt/homebrew/Cellar/libssh/0.12.0_1: 25 files, 1.7MB
+2026-07-23T19:42:53.8979260Z [32m==>[0m [1mInstalling qemu dependency: [32mncurses[39m[0m
+2026-07-23T19:42:53.8984230Z [34m==>[0m [1mPouring ncurses--6.6.arm64_tahoe.bottle.tar.gz[0m
+2026-07-23T19:42:54.9585020Z 🍺  /opt/homebrew/Cellar/ncurses/6.6: 4,086 files, 10.3MB
+2026-07-23T19:42:54.9588800Z [32m==>[0m [1mInstalling qemu dependency: [32msnappy[39m[0m
+2026-07-23T19:42:54.9627210Z [34m==>[0m [1mPouring snappy--1.2.2.arm64_tahoe.bottle.tar.gz[0m
+2026-07-23T19:42:54.9932010Z 🍺  /opt/homebrew/Cellar/snappy/1.2.2: 19 files, 160.4KB
+2026-07-23T19:42:54.9953670Z [32m==>[0m [1mInstalling qemu dependency: [32mvde[39m[0m
+2026-07-23T19:42:54.9998020Z [34m==>[0m [1mPouring vde--2.3.3.arm64_tahoe.bottle.tar.gz[0m
+2026-07-23T19:42:55.1127600Z 🍺  /opt/homebrew/Cellar/vde/2.3.3: 67 files, 1.2MB
+2026-07-23T19:42:55.1130350Z [32m==>[0m [1mInstalling [32mqemu[39m[0m
+2026-07-23T19:42:55.1131060Z [34m==>[0m [1mPouring qemu--11.0.2.arm64_tahoe.bottle.tar.gz[0m
+2026-07-23T19:43:04.4483700Z 🍺  /opt/homebrew/Cellar/qemu/11.0.2: 169 files, 713.6MB
+2026-07-23T19:43:06.0200660Z error: externally-managed-environment
+2026-07-23T19:43:06.0201420Z 
+2026-07-23T19:43:06.0203180Z × This environment is externally managed
+2026-07-23T19:43:06.0204540Z ╰─> To install Python packages system-wide, try brew install
+2026-07-23T19:43:06.0205590Z     xyz, where xyz is the package you are trying to
+2026-07-23T19:43:06.0206730Z     install.
+2026-07-23T19:43:06.0207330Z     
+2026-07-23T19:43:06.0208130Z     If you wish to install a Python library that isn't in Homebrew,
+2026-07-23T19:43:06.0212000Z     use a virtual environment:
+2026-07-23T19:43:06.0212750Z     
+2026-07-23T19:43:06.0213340Z     python3 -m venv path/to/venv
+2026-07-23T19:43:06.0214230Z     source path/to/venv/bin/activate
+2026-07-23T19:43:06.0214900Z     python3 -m pip install xyz
+2026-07-23T19:43:06.0215560Z     
+2026-07-23T19:43:06.0216330Z     If you wish to install a Python application that isn't in Homebrew,
+2026-07-23T19:43:06.0217540Z     it may be easiest to use 'pipx install xyz', which will manage a
+2026-07-23T19:43:06.0218680Z     virtual environment for you. You can install pipx with
+2026-07-23T19:43:06.0219420Z     
+2026-07-23T19:43:06.0219970Z     brew install pipx
+2026-07-23T19:43:06.0220490Z     
+2026-07-23T19:43:06.0221200Z     You may restore the old behavior of pip by passing
+2026-07-23T19:43:06.0222120Z     the '--break-system-packages' flag to pip, or by adding
+2026-07-23T19:43:06.0223210Z     'break-system-packages = true' to your pip.conf file. The latter
+2026-07-23T19:43:06.0224260Z     will permanently disable this error.
+2026-07-23T19:43:06.0225120Z     
+2026-07-23T19:43:06.0225830Z     If you disable this error, we STRONGLY recommend that you additionally
+2026-07-23T19:43:06.0227020Z     pass the '--user' flag to pip, or set 'user = true' in your pip.conf
+2026-07-23T19:43:06.0228160Z     file. Failure to do this can result in a broken Homebrew installation.
+2026-07-23T19:43:06.0229260Z     
+2026-07-23T19:43:06.0230110Z     Read more about this behavior here: <https://peps.python.org/pep-0668/>
+2026-07-23T19:43:06.0230950Z 
+2026-07-23T19:43:06.0239070Z note: If you believe this is a mistake, please contact your Python installation or OS distribution provider. You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
+2026-07-23T19:43:06.0241500Z hint: See PEP 668 for the detailed specification.
+2026-07-23T19:43:06.1001760Z ##[error]Process completed with exit code 1.
+2026-07-23T19:43:06.1162170Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T19:43:06.1164110Z ##[group]Run actions/upload-artifact@v4
+2026-07-23T19:43:06.1164510Z with:
+2026-07-23T19:43:06.1164790Z   name: Android-visible-UI-diagnostic
+2026-07-23T19:43:06.1165620Z   path: android-visible-diagnostic.txt
+android-screencap.png
+virtio-ramfb.ppm
+visible-ui-analysis.json
+qemu-monitor-output.txt
+redroid-visible-serial.log
+redroid-visible-qemu.log
+
+2026-07-23T19:43:06.1166330Z   if-no-files-found: warn
+2026-07-23T19:43:06.1166690Z   retention-days: 30
+2026-07-23T19:43:06.1166910Z   compression-level: 6
+2026-07-23T19:43:06.1167180Z   overwrite: false
+2026-07-23T19:43:06.1167390Z   include-hidden-files: false
+2026-07-23T19:43:06.1167710Z env:
+2026-07-23T19:43:06.1168040Z   SOURCE_RUN_ID: 29985656289
+2026-07-23T19:43:06.1168460Z   SOURCE_ARTIFACT: Android-iOSEmulator-Redroid13-ARM64-SE-LowStorage-unsigned
+2026-07-23T19:43:06.1169130Z   SOURCE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+2026-07-23T19:43:06.1169560Z   ADB_PORT: 5557
+2026-07-23T19:43:06.1169880Z ##[endgroup]
+2026-07-23T19:43:06.6910620Z (node:3723) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-07-23T19:43:06.6929760Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-07-23T19:43:06.6995650Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-07-23T19:43:06.7002840Z The least common ancestor is /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator. This will be the root directory of the artifact
+2026-07-23T19:43:06.7006520Z ##[warning]No files were found with the provided path: android-visible-diagnostic.txt
+android-screencap.png
+virtio-ramfb.ppm
+visible-ui-analysis.json
+qemu-monitor-output.txt
+redroid-visible-serial.log
+redroid-visible-qemu.log. No artifacts will be uploaded.
+2026-07-23T19:43:06.7178250Z ##[group]Run set -euo pipefail
+2026-07-23T19:43:06.7178650Z [36;1mset -euo pipefail[0m
+2026-07-23T19:43:06.7179040Z [36;1mgit fetch origin main[0m
+2026-07-23T19:43:06.7179310Z [36;1mgit checkout -B main origin/main[0m
+2026-07-23T19:43:06.7179670Z [36;1mmkdir -p .github/release-status[0m
+2026-07-23T19:43:06.7180040Z [36;1mif [[ -f visible-ui-analysis.json ]]; then[0m
+2026-07-23T19:43:06.7180510Z [36;1m  jq --arg run_id "$GITHUB_RUN_ID" --arg status "$JOB_STATUS" \[0m
+2026-07-23T19:43:06.7181000Z [36;1m    '. + {workflow_run_id:$run_id,job_status:$status}' visible-ui-analysis.json \[0m
+2026-07-23T19:43:06.7181620Z [36;1m    > .github/release-status/redroid-visible-ui-diagnostic.json[0m
+2026-07-23T19:43:06.7182020Z [36;1melse[0m
+2026-07-23T19:43:06.7182420Z [36;1m  jq -n --arg run_id "$GITHUB_RUN_ID" --arg status "$JOB_STATUS" \[0m
+2026-07-23T19:43:06.7182920Z [36;1m    '{workflow_run_id:$run_id,job_status:$status,analysis_available:false}' \[0m
+2026-07-23T19:43:06.7183450Z [36;1m    > .github/release-status/redroid-visible-ui-diagnostic.json[0m
+2026-07-23T19:43:06.7183870Z [36;1mfi[0m
+2026-07-23T19:43:06.7184250Z [36;1mgit config user.name github-actions[bot][0m
+2026-07-23T19:43:06.7184630Z [36;1mgit config user.email 41898282+github-actions[bot]@users.noreply.github.com[0m
+2026-07-23T19:43:06.7185220Z [36;1mgit add .github/release-status/redroid-visible-ui-diagnostic.json[0m
+2026-07-23T19:43:06.7185700Z [36;1mgit commit -m "Record Android visible UI diagnostic" || exit 0[0m
+2026-07-23T19:43:06.7186090Z [36;1mfor attempt in 1 2 3; do[0m
+2026-07-23T19:43:06.7186500Z [36;1m  git pull --rebase origin main && git push origin HEAD:main && break[0m
+2026-07-23T19:43:06.7186990Z [36;1m  sleep 2[0m
+2026-07-23T19:43:06.7187290Z [36;1mdone[0m
+2026-07-23T19:43:06.7239130Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-23T19:43:06.7239890Z env:
+2026-07-23T19:43:06.7240170Z   SOURCE_RUN_ID: 29985656289
+2026-07-23T19:43:06.7240510Z   SOURCE_ARTIFACT: Android-iOSEmulator-Redroid13-ARM64-SE-LowStorage-unsigned
+2026-07-23T19:43:06.7241040Z   SOURCE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+2026-07-23T19:43:06.7241430Z   ADB_PORT: 5557
+2026-07-23T19:43:06.7241720Z   JOB_STATUS: failure
+2026-07-23T19:43:06.7241930Z ##[endgroup]
+2026-07-23T19:43:07.6638300Z From https://github.com/NightVibes33/Android-iOSEmulator
+2026-07-23T19:43:07.6639890Z  * branch            main       -> FETCH_HEAD
+2026-07-23T19:43:07.6641720Z    78445bb..4e2242f  main       -> origin/main
+2026-07-23T19:43:07.7130160Z Reset branch 'main'
+2026-07-23T19:43:07.7142240Z branch 'main' set up to track 'origin/main'.
+2026-07-23T19:43:07.7144400Z Your branch is up to date with 'origin/main'.
+2026-07-23T19:43:07.7801270Z [main 59bea0a] Record Android visible UI diagnostic
+2026-07-23T19:43:07.7801580Z  1 file changed, 5 insertions(+)
+2026-07-23T19:43:07.7802040Z  create mode 100644 .github/release-status/redroid-visible-ui-diagnostic.json
+2026-07-23T19:43:08.3863830Z From https://github.com/NightVibes33/Android-iOSEmulator
+2026-07-23T19:43:08.3864240Z  * branch            main       -> FETCH_HEAD
+2026-07-23T19:43:08.3985340Z Current branch main is up to date.
+2026-07-23T19:43:09.7825350Z To https://github.com/NightVibes33/Android-iOSEmulator
+2026-07-23T19:43:09.7831490Z  ! [remote rejected] HEAD -> main (cannot lock ref 'refs/heads/main': is at 34202603859b07c71f5ccf575e5ef32cc1bd65e2 but expected 4e2242f979453fb296fb45d17e02cee669f35670)
+2026-07-23T19:43:09.7832910Z error: failed to push some refs to 'https://github.com/NightVibes33/Android-iOSEmulator'
+2026-07-23T19:43:12.6294160Z From https://github.com/NightVibes33/Android-iOSEmulator
+2026-07-23T19:43:12.6295700Z  * branch            main       -> FETCH_HEAD
+2026-07-23T19:43:12.6299580Z    4e2242f..3420260  main       -> origin/main
+2026-07-23T19:43:12.6624170Z Rebasing (1/1)
+2026-07-23T19:43:12.6624990Z Successfully rebased and updated refs/heads/main.
+2026-07-23T19:43:14.0282500Z To https://github.com/NightVibes33/Android-iOSEmulator
+2026-07-23T19:43:14.0283610Z    3420260..15d6720  HEAD -> main
+2026-07-23T19:43:14.0597880Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T19:43:14.0599160Z Post job cleanup.
+2026-07-23T19:43:14.2423160Z [command]/opt/homebrew/bin/git version
+2026-07-23T19:43:14.2541510Z git version 2.55.0
+2026-07-23T19:43:14.2742710Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/783ea6e1-a5f1-47bd-8c5f-abfa1ea27b43/.gitconfig'
+2026-07-23T19:43:14.2745410Z Temporarily overriding HOME='/Users/runner/work/_temp/783ea6e1-a5f1-47bd-8c5f-abfa1ea27b43' before making global git config changes
+2026-07-23T19:43:14.2747790Z Adding repository directory to the temporary git global config as a safe directory
+2026-07-23T19:43:14.2750080Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
+2026-07-23T19:43:14.2799860Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-07-23T19:43:14.2937280Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-07-23T19:43:14.4499550Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-07-23T19:43:14.4582640Z http.https://github.com/.extraheader
+2026-07-23T19:43:14.4597630Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-07-23T19:43:14.4731420Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-07-23T19:43:14.6218250Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-07-23T19:43:14.6319250Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-07-23T19:43:14.7903130Z Cleaning up orphan processes
+2026-07-23T19:43:15.5944820Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
