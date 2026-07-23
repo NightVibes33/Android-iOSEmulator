@@ -21,8 +21,8 @@ jobs:
       - name: Capture failed packaging step only
         env:
           GH_TOKEN: ${{ github.token }}
-          FAILED_RUN_ID: "29980898885"
-          FAILED_JOB_ID: "89122229003"
+          FAILED_RUN_ID: "29981195849"
+          FAILED_JOB_ID: "89123126576"
         run: |
           set -euo pipefail
           mkdir -p .github/release-status
@@ -40,7 +40,7 @@ jobs:
           {
             echo "failed_run_id=$FAILED_RUN_ID"
             echo "failed_job_id=$FAILED_JOB_ID"
-            awk '/##\[group\]Run set -euo pipefail/{block=""} {block=block $0 ORS} /APP=package\/Payload\/LiveContainer.app/{wanted=1} wanted{print}' /tmp/job.txt | tail -n 180
+            awk '/APP=package\/Payload\/LiveContainer.app/{wanted=1} wanted{print}' /tmp/job.txt | tail -n 180
           } > .github/release-status/livecontainer-serial-signer-failure.log
           git fetch origin main
           git checkout -B main origin/main
