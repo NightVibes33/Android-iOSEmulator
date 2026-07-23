@@ -39,4 +39,4 @@ jobs:
           git pull --rebase origin main
           git push origin HEAD:main
 
-# probe: safe-request-trigger-2026-07-22
+# probe: safe-tag-target-2026-07-22
