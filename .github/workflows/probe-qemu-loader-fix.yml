@@ -39,4 +39,4 @@ jobs:
           git pull --rebase origin main
           git push origin HEAD:main
 
-# probe: marker-check-retry-2026-07-23
+# probe: source-checksum-retry-2026-07-23
