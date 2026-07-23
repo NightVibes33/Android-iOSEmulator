@@ -84,13 +84,12 @@ jobs:
           test -f "$IPA"
           unzip -t "$IPA" >/dev/null
           grep -q '^LiveContainer minimum version: 3.7.0$' "$OUT/build-manifest.txt"
-          grep -q '^QEMU loader path: @loader_path root copies$' "$OUT/build-manifest.txt"
+          grep -q '^QEMU m68k loader path: @loader_path root copy$' "$OUT/build-manifest.txt"
+          grep -q '^QEMU aarch64 early root copy: yes$' "$OUT/build-manifest.txt"
           grep -q '^QEMU root copies archive entries: 6 and 7$' "$OUT/build-manifest.txt"
           grep -q '^Original QEMU frameworks retained as fallback: yes$' "$OUT/build-manifest.txt"
           grep -Fq '@loader_path/qemu-m68k-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"
-          grep -Fq '@loader_path/qemu-aarch64-softmmu.dylib' "$OUT/utm-executable-dependencies-relocated.txt"
           ! grep -Fq '@rpath/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"
-          ! grep -Fq '@rpath/qemu-aarch64-softmmu.framework/qemu-aarch64-softmmu' "$OUT/utm-executable-dependencies-relocated.txt"
           grep -Fxq 'qemu-m68k-softmmu.dylib' "$OUT/livecontainer-signable-machos.txt"
           grep -Fxq 'qemu-aarch64-softmmu.dylib' "$OUT/livecontainer-signable-machos.txt"
           grep -Fxq 'Frameworks/qemu-m68k-softmmu.framework/qemu-m68k-softmmu' "$OUT/livecontainer-signable-machos.txt"
@@ -135,7 +134,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --title "Android iOSEmulator — ARM64 QEMU loader fix" \
-            --notes "Replacement for v0.4.1. Both QEMU backends are regular files beside UTM SE, both strong dependencies use @loader_path, and the two root copies are stored as IPA entries 6 and 7. The original framework copies remain as fallback. Every extracted Mach-O is signature-verified. Android 13 ARM64 reached sys.boot_completed=1 in source run 29949669780." \
+            --notes "Replacement for v0.4.1. The strong qemu-m68k dependency now loads from a regular file beside UTM SE through @loader_path. Both m68k and aarch64 root copies are IPA entries 6 and 7, before later framework and Android-disk entries, while both original frameworks remain as fallback. Every extracted Mach-O is signature-verified. Android 13 ARM64 reached sys.boot_completed=1 in source run 29949669780." \
             --prerelease
           gh release upload "$RELEASE_TAG" "$IPA" \
             --repo "$GITHUB_REPOSITORY" --clobber
@@ -170,14 +169,16 @@ jobs:
             --arg workflow_run_id "$GITHUB_RUN_ID" \
             --arg source_run_id "$SOURCE_RUN_ID" \
             --arg source_commit "$GITHUB_SHA" \
-            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,livecontainer_minimum_version:"3.7.0",qemu_loader_path_root_copies:true,qemu_root_archive_entries:[6,7],original_qemu_frameworks_retained:true,macho_permissions_normalized:true,adhoc_signatures_verified:true,signable_macho_count:$signable_macho_count,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_run_id:$source_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' \
+            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,livecontainer_minimum_version:"3.7.0",qemu_m68k_loader_path_root_copy:true,qemu_aarch64_early_root_copy:true,qemu_root_archive_entries:[6,7],original_qemu_frameworks_retained:true,macho_permissions_normalized:true,adhoc_signatures_verified:true,signable_macho_count:$signable_macho_count,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_run_id:$source_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' \
             > .github/release-status/redroid-arm64-se-qemu-loader-fix.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/release-status/redroid-arm64-se-qemu-loader-fix.json
           git commit -m "Record verified ARM64 QEMU loader fix" || true
-          git pull --rebase origin main
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 2
+          done
 
       - name: Record QEMU loader-fix run result
         if: always()
@@ -200,5 +201,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add .github/release-status/redroid-qemu-loader-fix-run.json
           git commit -m "Record ARM64 QEMU loader-fix result" || exit 0
-          git pull --rebase origin main
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 2
+          done
