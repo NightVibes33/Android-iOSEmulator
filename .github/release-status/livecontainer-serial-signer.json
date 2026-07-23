@@ -1,0 +1,16 @@
+{
+  "verified": true,
+  "product": "LiveContainer serial-signing companion",
+  "upstream_ref": "2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b",
+  "serial_macho_signing": true,
+  "source_replacement_verified": true,
+  "source_patch_sha256": "deb5bdcac93a4af3ff6371ec3b2e982a84434db430f36ad3e444f3abb3078347",
+  "bundle_marker": "NightVibes33-2afc9c3-v1",
+  "tag": "livecontainer-serial-signer-2afc9c3-v1",
+  "release_url": "https://github.com/NightVibes33/Android-iOSEmulator/releases/tag/livecontainer-serial-signer-2afc9c3-v1",
+  "asset_name": "LiveContainer-SerialSigner-2afc9c3.ipa",
+  "asset_size_bytes": 4683031,
+  "asset_sha256": "c69c9fe99a9e9c5c6c90e1063f0973aa9aaffd5e4c34ace8437faf1125aa75d0",
+  "workflow_run_id": "29981388644",
+  "package_commit": "39f1e70b5fb65b44876d14a5ea801a1d03141354"
+}
