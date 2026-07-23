@@ -1,0 +1,619 @@
+name: Build Android guest with verified visible UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/release-request/redroid-visible-ui-fixed.txt"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: redroid-visible-ui-fixed-release
+  cancel-in-progress: true
+
+env:
+  SOURCE_RUN_ID: "29949669780"
+  SOURCE_ARTIFACT: redroid-arm64-guest
+  RELEASE_TAG: v0.4.4-redroid13-arm64-se-visible-ui-fix
+  TAG_TARGET_COMMIT: "99ebff326f89d945573965b1decf700c5ebc7f7e"
+  BASE_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-unsigned.ipa
+  OUTPUT_IPA: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-LowStorage-Visible-unsigned.ipa
+
+jobs:
+  patch-test-guest:
+    name: Patch guest and prove Android UI is visible
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install ext4, QEMU, ADB and image tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            zstd e2fsprogs qemu-system-arm qemu-utils adb jq python3-pil file
+          qemu-system-aarch64 --version
+          qemu-img --version
+          adb version
+          debugfs -V
+
+      - name: Restore existing boot-verified ARM64 guest
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf source-artifact guest
+          mkdir -p source-artifact guest
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SOURCE_ARTIFACT" \
+            --dir source-artifact
+          ARCHIVE="$(find source-artifact -type f -name redroid-arm64-guest.tar.zst -print -quit)"
+          test -n "$ARCHIVE"
+          zstd -d --stdout "$ARCHIVE" | tar --sparse -xf - -C guest
+          test -f guest/redroid-arm64-rootfs.raw
+          test -f guest/kernel
+          test -f guest/initrd.img
+          grep -q '^CI Android boot verification: passed$' guest/build-manifest.txt
+          grep -q '^CI Android sys.boot_completed: 1$' guest/build-manifest.txt
+
+      - name: Inject Weston 14 and Launcher3 display fixes into ext4
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW="$PWD/guest/redroid-arm64-rootfs.raw"
+          WESTON_PATH=/etc/systemd/system/weston-redroid.service
+          UI_PATH=/usr/local/sbin/start-redroid-ui
+
+          sudo debugfs -w -R "rm $WESTON_PATH" "$RAW" >/dev/null 2>&1 || true
+          sudo debugfs -w -R "write runtime/guest-fixes/weston-redroid.service $WESTON_PATH" "$RAW"
+          sudo debugfs -w -R "set_inode_field $WESTON_PATH mode 0100644" "$RAW"
+
+          sudo debugfs -w -R "rm $UI_PATH" "$RAW" >/dev/null 2>&1 || true
+          sudo debugfs -w -R "write runtime/guest-fixes/start-redroid-ui $UI_PATH" "$RAW"
+          sudo debugfs -w -R "set_inode_field $UI_PATH mode 0100755" "$RAW"
+
+          sudo debugfs -R "cat $WESTON_PATH" "$RAW" > guest/weston-redroid.service.installed
+          sudo debugfs -R "cat $UI_PATH" "$RAW" > guest/start-redroid-ui.installed
+          sudo debugfs -R "stat $WESTON_PATH" "$RAW" > guest/weston-redroid.service.stat
+          sudo debugfs -R "stat $UI_PATH" "$RAW" > guest/start-redroid-ui.stat
+
+          grep -Fq 'ExecStart=/usr/bin/weston --backend=drm-backend.so --idle-time=0' \
+            guest/weston-redroid.service.installed
+          ! grep -Fq -- '--tty=1' guest/weston-redroid.service.installed
+          grep -Fq 'Wayland display is ready' guest/start-redroid-ui.installed
+          grep -Fq 'pm disable-user --user 0 com.android.provision' guest/start-redroid-ui.installed
+          grep -Fq 'android.intent.category.HOME' guest/start-redroid-ui.installed
+          grep -Eq 'Mode:.*0100644' guest/weston-redroid.service.stat
+          grep -Eq 'Mode:.*0100755' guest/start-redroid-ui.stat
+          sudo e2fsck -fn "$RAW"
+
+          cat >> guest/build-manifest.txt <<'EOF'
+          Visible UI fix: Weston 14 removed option --tty=1 eliminated
+          Visible UI fix: waits for /run/weston/wayland-0
+          Visible UI fix: Android provisioning marked complete
+          Visible UI fix: com.android.provision disabled for user 0
+          Visible UI fix: Launcher3 HOME explicitly launched
+          Visible UI display device: virtio-gpu-pci
+          Visible UI CI framebuffer verification: pending
+          EOF
+
+      - name: Boot patched raw guest and capture both visible layers
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW="$PWD/guest/redroid-arm64-rootfs.raw"
+          MONITOR_SOCKET=/tmp/redroid-fixed-monitor.sock
+          SERIAL_LOG="$PWD/guest/visible-ui-fixed-serial.log"
+          QEMU_LOG="$PWD/guest/visible-ui-fixed-qemu.log"
+          ANDROID_SCREEN="$PWD/guest/android-launcher3.png"
+          DISPLAY_SCREEN="$PWD/guest/virtio-gpu-launcher3.ppm"
+          ADB_PORT=5557
+          rm -f "$MONITOR_SOCKET" "$SERIAL_LOG" "$QEMU_LOG" "$ANDROID_SCREEN" "$DISPLAY_SCREEN"
+
+          adb kill-server >/dev/null 2>&1 || true
+          adb start-server
+
+          qemu-system-aarch64 \
+            -machine virt,highmem=off \
+            -accel tcg,thread=multi \
+            -cpu max \
+            -smp 2 \
+            -m 2048 \
+            -kernel guest/kernel \
+            -initrd guest/initrd.img \
+            -append 'root=/dev/vda rw rootwait rootfstype=ext4 console=tty0 console=ttyAMA0 earlycon=pl011,0x09000000 systemd.show_status=yes systemd.log_target=console loglevel=6 consoleblank=0 vt.global_cursor_default=1' \
+            -drive "if=none,file=$RAW,format=raw,id=rootfs,cache=unsafe" \
+            -device virtio-blk-pci,drive=rootfs \
+            -device virtio-gpu-pci \
+            -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:$ADB_PORT-:5555" \
+            -device virtio-net-pci,netdev=net0,romfile= \
+            -device virtio-rng-pci \
+            -display vnc=127.0.0.1:1 \
+            -monitor "unix:$MONITOR_SOCKET,server=on,wait=off" \
+            -serial "file:$SERIAL_LOG" \
+            -snapshot \
+            -no-reboot >"$QEMU_LOG" 2>&1 &
+          QEMU_PID=$!
+          cleanup() {
+            kill "$QEMU_PID" >/dev/null 2>&1 || true
+            wait "$QEMU_PID" >/dev/null 2>&1 || true
+            adb disconnect "127.0.0.1:$ADB_PORT" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          BOOTED=0
+          for _ in $(seq 1 2700); do
+            adb connect "127.0.0.1:$ADB_PORT" >/dev/null 2>&1 || true
+            if [[ "$(adb -s "127.0.0.1:$ADB_PORT" get-state 2>/dev/null || true)" == device ]]; then
+              VALUE="$(adb -s "127.0.0.1:$ADB_PORT" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              if [[ "$VALUE" == 1 ]]; then
+                BOOTED=1
+                break
+              fi
+            fi
+            kill -0 "$QEMU_PID" 2>/dev/null || break
+            sleep 1
+          done
+          if [[ "$BOOTED" -ne 1 ]]; then
+            tail -n 600 "$SERIAL_LOG" || true
+            tail -n 200 "$QEMU_LOG" || true
+            exit 1
+          fi
+
+          DEVICE="127.0.0.1:$ADB_PORT"
+          # The guest-side service waits for Weston, completes provisioning and
+          # starts Launcher3 before launching scrcpy. Give that path time to draw.
+          READY=0
+          for _ in $(seq 1 240); do
+            FOCUS="$(adb -s "$DEVICE" shell dumpsys window 2>/dev/null | grep -E 'mCurrentFocus|mFocusedApp' || true)"
+            if grep -qi 'launcher3' <<<"$FOCUS" && \
+               grep -Fq 'Wayland display is ready' "$SERIAL_LOG" && \
+               grep -Fq 'Resolved Android HOME activity:' "$SERIAL_LOG"; then
+              READY=1
+              break
+            fi
+            sleep 1
+          done
+          if [[ "$READY" -ne 1 ]]; then
+            adb -s "$DEVICE" shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' || true
+            tail -n 800 "$SERIAL_LOG" || true
+            exit 1
+          fi
+          sleep 30
+
+          {
+            echo '=== Android version and ABI ==='
+            adb -s "$DEVICE" shell getprop ro.build.version.release
+            adb -s "$DEVICE" shell getprop ro.product.cpu.abi
+            echo '=== HOME activity ==='
+            adb -s "$DEVICE" shell cmd package resolve-activity --brief \
+              -a android.intent.action.MAIN -c android.intent.category.HOME
+            echo '=== focused window ==='
+            adb -s "$DEVICE" shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'
+            echo '=== provisioning ==='
+            adb -s "$DEVICE" shell settings get global device_provisioned
+            adb -s "$DEVICE" shell settings get secure user_setup_complete
+            echo '=== provision package state ==='
+            adb -s "$DEVICE" shell pm list packages -d | grep com.android.provision || true
+          } | tee guest/visible-ui-fixed-android-state.txt
+
+          grep -qi 'launcher3' guest/visible-ui-fixed-android-state.txt
+          grep -qx '1' <(adb -s "$DEVICE" shell settings get global device_provisioned | tr -d '\r')
+          grep -qx '1' <(adb -s "$DEVICE" shell settings get secure user_setup_complete | tr -d '\r')
+          grep -Fq 'package:com.android.provision' \
+            <(adb -s "$DEVICE" shell pm list packages -d | tr -d '\r')
+
+          adb -s "$DEVICE" exec-out screencap -p > "$ANDROID_SCREEN"
+          test -s "$ANDROID_SCREEN"
+
+          python3 - "$MONITOR_SOCKET" "$DISPLAY_SCREEN" <<'PY'
+          import os
+          import socket
+          import sys
+          import time
+
+          socket_path, output_path = sys.argv[1:]
+          deadline = time.time() + 20
+          while not os.path.exists(socket_path):
+              if time.time() > deadline:
+                  raise SystemExit('monitor socket did not appear')
+              time.sleep(0.2)
+          with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+              sock.connect(socket_path)
+              sock.settimeout(2)
+              try:
+                  sock.recv(65536)
+              except Exception:
+                  pass
+              sock.sendall(f'screendump {output_path}\n'.encode())
+              time.sleep(4)
+              sock.sendall(b'info display\n')
+              time.sleep(1)
+              chunks = []
+              while True:
+                  try:
+                      data = sock.recv(65536)
+                  except Exception:
+                      break
+                  if not data:
+                      break
+                  chunks.append(data)
+          open('guest/visible-ui-fixed-monitor.txt', 'wb').write(b''.join(chunks))
+          PY
+          test -s "$DISPLAY_SCREEN"
+
+          python3 - "$ANDROID_SCREEN" "$DISPLAY_SCREEN" <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json
+          import sys
+
+          def stats(path):
+              image = Image.open(path).convert('RGB')
+              pixels = list(image.getdata())
+              count = len(pixels)
+              nonblack = sum(1 for r, g, b in pixels if max(r, g, b) > 12)
+              bright = sum(1 for r, g, b in pixels if max(r, g, b) > 48)
+              sampled = pixels[::max(1, count // 100000)]
+              return {
+                  'width': image.width,
+                  'height': image.height,
+                  'nonblack_pixels': nonblack,
+                  'nonblack_ratio': nonblack / count,
+                  'bright_pixels': bright,
+                  'bright_ratio': bright / count,
+                  'sampled_unique_colors': len(set(sampled)),
+              }
+
+          result = {
+              'android_framebuffer': stats(sys.argv[1]),
+              'virtio_gpu_output': stats(sys.argv[2]),
+          }
+          Path('guest/visible-ui-fixed-analysis.json').write_text(
+              json.dumps(result, indent=2) + '\n'
+          )
+          print(json.dumps(result, indent=2))
+          if result['android_framebuffer']['nonblack_ratio'] <= 0.005:
+              raise SystemExit('Android framebuffer is still effectively black')
+          if result['android_framebuffer']['sampled_unique_colors'] < 8:
+              raise SystemExit('Android framebuffer has too little visual content')
+          if result['virtio_gpu_output']['nonblack_ratio'] <= 0.005:
+              raise SystemExit('QEMU display is still effectively black')
+          if result['virtio_gpu_output']['sampled_unique_colors'] < 8:
+              raise SystemExit('QEMU display has too little visual content')
+          PY
+
+          ! grep -Fq 'fatal: unhandled option: --tty=1' "$SERIAL_LOG"
+          ! grep -Fq 'wayland not available' "$SERIAL_LOG"
+          grep -Fq "Output 'Virtual-1' enabled" "$SERIAL_LOG"
+          grep -Fq 'Wayland display is ready' "$SERIAL_LOG"
+          grep -Fq 'Resolved Android HOME activity:' "$SERIAL_LOG"
+          grep -Fq 'scrcpy 3.3.4' "$SERIAL_LOG"
+
+          cleanup
+          trap - EXIT
+          sed -i 's/^Visible UI CI framebuffer verification: pending$/Visible UI CI framebuffer verification: passed/' \
+            guest/build-manifest.txt
+          grep -q '^Visible UI CI framebuffer verification: passed$' guest/build-manifest.txt
+
+      - name: Convert patched raw guest to compressed writable QCOW2
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW=guest/redroid-arm64-rootfs.raw
+          QCOW=guest/redroid-arm64-rootfs.qcow2
+          RAW_SIZE="$(stat -c%s "$RAW")"
+          rm -f "$QCOW"
+          qemu-img convert -p -f raw -O qcow2 -c \
+            -o cluster_size=65536,lazy_refcounts=on \
+            "$RAW" "$QCOW"
+          qemu-img check "$QCOW"
+          qemu-img info --output=json "$QCOW" | tee guest/visible-ui-qcow2-info.json
+          test "$(jq -r .format guest/visible-ui-qcow2-info.json)" = qcow2
+          test "$(jq -r '."virtual-size"' guest/visible-ui-qcow2-info.json)" = "$RAW_SIZE"
+          QCOW_SIZE="$(stat -c%s "$QCOW")"
+          test "$QCOW_SIZE" -lt 3758096384
+          cat >> guest/build-manifest.txt <<EOF
+          Visible UI QCOW2 size bytes: $QCOW_SIZE
+          Visible UI virtual capacity preserved: yes
+          Low-storage conversion: compressed writable QCOW2
+          Low-storage raw size bytes: $RAW_SIZE
+          Low-storage QCOW2 size bytes: $QCOW_SIZE
+          Low-storage virtual capacity preserved: yes
+          EOF
+          rm -f "$RAW"
+          test ! -e "$RAW"
+
+      - name: Pack patched visible guest artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -cf - -C guest \
+            kernel initrd.img redroid-arm64-rootfs.qcow2 build-manifest.txt \
+            weston-redroid.service.installed start-redroid-ui.installed \
+            visible-ui-fixed-analysis.json visible-ui-fixed-android-state.txt \
+            android-launcher3.png virtio-gpu-launcher3.ppm \
+            visible-ui-fixed-serial.log visible-ui-fixed-qemu.log \
+            visible-ui-qcow2-info.json | \
+            zstd -10 -T0 -o redroid-arm64-visible-guest.tar.zst
+          test -s redroid-arm64-visible-guest.tar.zst
+          ls -lh redroid-arm64-visible-guest.tar.zst
+
+      - name: Upload patched guest and visible UI proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: redroid-arm64-visible-guest
+          path: redroid-arm64-visible-guest.tar.zst
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload visible UI diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redroid-arm64-visible-ui-diagnostics
+          path: |
+            guest/build-manifest.txt
+            guest/weston-redroid.service.installed
+            guest/start-redroid-ui.installed
+            guest/weston-redroid.service.stat
+            guest/start-redroid-ui.stat
+            guest/visible-ui-fixed-analysis.json
+            guest/visible-ui-fixed-android-state.txt
+            guest/android-launcher3.png
+            guest/virtio-gpu-launcher3.ppm
+            guest/visible-ui-fixed-serial.log
+            guest/visible-ui-fixed-qemu.log
+            guest/visible-ui-fixed-monitor.txt
+            guest/visible-ui-qcow2-info.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  package-release:
+    name: Package and publish visible Android IPA
+    needs: patch-test-guest
+    runs-on: macos-26
+    timeout-minutes: 240
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode and install packaging tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          XCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"
+          test -n "$XCODE_PATH"
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          brew install zstd jq gnu-tar bash qemu
+          xcodebuild -version
+
+      - name: Download and restore patched visible guest
+        uses: actions/download-artifact@v4
+        with:
+          name: redroid-arm64-visible-guest
+          path: visible-guest-artifact
+
+      - name: Extract patched visible guest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p visible-guest
+          zstd -d --stdout visible-guest-artifact/redroid-arm64-visible-guest.tar.zst | \
+            gtar -xf - -C visible-guest
+          test -f visible-guest/redroid-arm64-rootfs.qcow2
+          grep -q '^Visible UI CI framebuffer verification: passed$' visible-guest/build-manifest.txt
+          grep -q '^Visible UI fix: Weston 14 removed option --tty=1 eliminated$' visible-guest/build-manifest.txt
+          grep -q '^Visible UI fix: Launcher3 HOME explicitly launched$' visible-guest/build-manifest.txt
+          qemu-img check visible-guest/redroid-arm64-rootfs.qcow2
+
+      - name: Build low-storage QEMU-loader-safe base IPA
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/patch_qemu_loader_packaging.py \
+            scripts/build_livecontainer_redroid_arm64_se_ipa.sh
+          python3 scripts/patch_low_storage_qcow2_packaging.py \
+            scripts/make_redroid_arm64_utm.py \
+            scripts/build_livecontainer_redroid_arm64_se_ipa.sh
+          "$(brew --prefix)/bin/bash" -x \
+            scripts/build_livecontainer_redroid_arm64_se_ipa.sh "$PWD/visible-guest" \
+            2>&1 | tee visible-base-ipa-build.log
+
+      - name: Patch fresh visible app identity and boot status
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="build/livecontainer-redroid-arm64-se/$BASE_IPA"
+          test -f "$BASE"
+          rm -rf visible-package
+          mkdir -p visible-package/extracted visible-package/output
+          zipinfo -1 "$BASE" > visible-package/original-entry-order.txt
+          unzip -q "$BASE" -d visible-package/extracted
+          APP="$(find visible-package/extracted/Payload -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$APP"
+          python3 scripts/patch_visible_display_ipa.py "$APP" | tee visible-display-patch.log
+
+          OUT="$PWD/visible-package/output/$OUTPUT_IPA"
+          (
+            cd visible-package/extracted
+            COPYFILE_DISABLE=1 zip -9 -q -X -y "$OUT" -@ < ../original-entry-order.txt
+          )
+          test -f "$OUT"
+          unzip -t "$OUT" >/dev/null
+          shasum -a 256 "$OUT" > "$OUT.sha256"
+          stat -f%z "$OUT" > "$OUT.size"
+
+      - name: Validate final IPA, signatures, UI proof and 9 GB budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="$PWD/visible-package/output/$OUTPUT_IPA"
+          rm -rf visible-package/final
+          mkdir -p visible-package/final
+          unzip -q "$IPA" -d visible-package/final
+          APP="$(find visible-package/final/Payload -maxdepth 1 -type d -name '*.app' -print -quit)"
+          INFO="$APP/Info.plist"
+          LCINFO="$APP/LCAppInfo.plist"
+          CONFIG="$APP/PreloadedData/Android-Redroid-ARM64-SE.utm/config.plist"
+          DISK="$APP/PreloadedData/Android-Redroid-ARM64-SE.utm/Images/redroid-arm64-rootfs.qcow2"
+
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO")" = \
+            com.nightvibes33.androidiosemulator.redroid.arm64.se.visible
+          test "$(/usr/libexec/PlistBuddy -c 'Print :AndroidVisibleDisplayBuild' "$INFO")" = \
+            redroid13-arm64-se-lowstorage-visible-v2
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LCDataUUID' "$LCINFO")" = \
+            AndroidRedroidArm64SEVisibleData
+          test "$(/usr/libexec/PlistBuddy -c 'Print :isJITNeeded' "$LCINFO")" = false
+          test "$(/usr/libexec/PlistBuddy -c 'Print :Display:DisplayCard' "$CONFIG")" = virtio-gpu-pci
+          test "$(/usr/libexec/PlistBuddy -c 'Print :Display:DisplayFitScreen' "$CONFIG")" = true
+          /usr/libexec/PlistBuddy -c 'Print :System:AddArgs' "$CONFIG" > visible-package/final-add-args.txt
+          grep -q 'systemd.show_status=yes' visible-package/final-add-args.txt
+          grep -q 'loglevel=6' visible-package/final-add-args.txt
+          grep -q 'consoleblank=0' visible-package/final-add-args.txt
+          ! grep -Eq '(^|[[:space:]])quiet([[:space:]]|$)' visible-package/final-add-args.txt
+          qemu-img check "$DISK"
+
+          zipinfo -1 "$IPA" > visible-package/final-entry-order.txt
+          test "$(sed -n '6p' visible-package/final-entry-order.txt)" = \
+            'Payload/Android iOSEmulator.app/qemu-m68k-softmmu.dylib'
+          test "$(sed -n '7p' visible-package/final-entry-order.txt)" = \
+            'Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib'
+
+          MACHO_COUNT=0
+          while IFS= read -r -d '' candidate; do
+            description="$(file -b "$candidate")"
+            if grep -Eq 'Mach-O (universal binary|64-bit)' <<<"$description"; then
+              test -x "$candidate"
+              codesign --verify --strict --ignore-resources "$candidate"
+              MACHO_COUNT=$((MACHO_COUNT + 1))
+            fi
+          done < <(find "$APP" -type f -print0)
+          test "$MACHO_COUNT" -ge 50
+
+          IPA_BYTES="$(stat -f%z "$IPA")"
+          APP_BYTES="$(( $(du -sk "$APP" | awk '{print $1}') * 1024 ))"
+          DISK_BYTES="$(stat -f%z "$DISK")"
+          ESTIMATED_PEAK_BYTES="$(( IPA_BYTES + APP_BYTES * 3 ))"
+          BUDGET_BYTES="$(( 9 * 1024 * 1024 * 1024 ))"
+          test "$ESTIMATED_PEAK_BYTES" -lt "$BUDGET_BYTES"
+
+          UI_PROOF="$(cat visible-guest/visible-ui-fixed-analysis.json)"
+          jq -e '.android_framebuffer.nonblack_ratio > 0.005' <<<"$UI_PROOF" >/dev/null
+          jq -e '.virtio_gpu_output.nonblack_ratio > 0.005' <<<"$UI_PROOF" >/dev/null
+          jq -e '.android_framebuffer.sampled_unique_colors >= 8' <<<"$UI_PROOF" >/dev/null
+          jq -e '.virtio_gpu_output.sampled_unique_colors >= 8' <<<"$UI_PROOF" >/dev/null
+
+          jq -n \
+            --argjson ipa_bytes "$IPA_BYTES" \
+            --argjson extracted_app_bytes "$APP_BYTES" \
+            --argjson qcow2_bytes "$DISK_BYTES" \
+            --argjson estimated_peak_bytes "$ESTIMATED_PEAK_BYTES" \
+            --argjson budget_bytes "$BUDGET_BYTES" \
+            --argjson macho_count "$MACHO_COUNT" \
+            --argjson ui_proof "$UI_PROOF" \
+            '{ipa_bytes:$ipa_bytes,extracted_app_bytes:$extracted_app_bytes,qcow2_bytes:$qcow2_bytes,estimated_peak_bytes:$estimated_peak_bytes,budget_bytes:$budget_bytes,within_9gb_budget:($estimated_peak_bytes < $budget_bytes),verified_macho_count:$macho_count,weston_14_option_fixed:true,wayland_ready_wait:true,android_provisioning_bypassed:true,launcher3_started:true,android_framebuffer_verified:true,virtio_gpu_output_verified:true,ui_proof:$ui_proof}' \
+            > visible-package/output/visible-ui-validation.json
+          cat visible-package/output/visible-ui-validation.json
+
+      - name: Upload complete visible Android IPA and proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-iOSEmulator-Redroid13-ARM64-SE-VisibleUI-unsigned
+          path: |
+            visible-package/output/${{ env.OUTPUT_IPA }}
+            visible-package/output/${{ env.OUTPUT_IPA }}.sha256
+            visible-package/output/${{ env.OUTPUT_IPA }}.size
+            visible-package/output/visible-ui-validation.json
+            visible-display-patch.log
+            visible-base-ipa-build.log
+            visible-package/final-add-args.txt
+            visible-package/final-entry-order.txt
+            visible-guest/visible-ui-fixed-analysis.json
+            visible-guest/visible-ui-fixed-android-state.txt
+            visible-guest/android-launcher3.png
+            visible-guest/virtio-gpu-launcher3.ppm
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Publish IPA-only visible UI release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          IPA="visible-package/output/$OUTPUT_IPA"
+          SIZE="$(cat "$IPA.size")"
+          git cat-file -e "$TAG_TARGET_COMMIT^{commit}"
+
+          gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
+          git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true
+          git tag "$RELEASE_TAG" "$TAG_TARGET_COMMIT"
+          git push origin "refs/tags/$RELEASE_TAG"
+
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Android iOSEmulator — Visible Android UI fix" \
+            --notes "Fixes the confirmed black-screen cause. Weston 14 rejected the obsolete --tty=1 option and restarted continuously, leaving scrcpy without Wayland. This build removes that option, waits for the Wayland socket, completes Android provisioning, disables com.android.provision, launches Launcher3, and then starts scrcpy. CI requires a non-black Android screencap and a non-black virtio GPU display capture before publication. It retains the no-JIT ARM64 runtime, low-storage QCOW2, QEMU loader relocation, fresh LiveContainer bundle/data identity, and serial-signing compatibility. Delete the old guest and import this IPA as a new guest in LiveContainer Serial." \
+            --prerelease
+          # User requested IPA-only release assets.
+          gh release upload "$RELEASE_TAG" "$IPA" \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+          RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease)"
+          test "$(jq -r '.isPrerelease' <<<"$RELEASE_JSON")" = true
+          test "$(jq '.assets | length' <<<"$RELEASE_JSON")" -eq 1
+          test "$(jq -r '.assets[0].name' <<<"$RELEASE_JSON")" = "$OUTPUT_IPA"
+          test "$(jq -r '.assets[0].size' <<<"$RELEASE_JSON")" = "$SIZE"
+          echo "$RELEASE_JSON" > visible-package/output/release.json
+
+      - name: Record verified visible Android release
+        shell: bash
+        run: |
+          set -euo pipefail
+          IPA="visible-package/output/$OUTPUT_IPA"
+          SHA256="$(awk '{print $1}' "$IPA.sha256")"
+          SIZE="$(cat "$IPA.size")"
+          RELEASE_URL="$(jq -r .url visible-package/output/release.json)"
+          VALIDATION="$(cat visible-package/output/visible-ui-validation.json)"
+          git fetch origin main
+          git checkout -B main origin/main
+          mkdir -p .github/release-status
+          jq -n \
+            --arg release_url "$RELEASE_URL" \
+            --arg tag "$RELEASE_TAG" \
+            --arg asset_name "$OUTPUT_IPA" \
+            --arg asset_sha256 "$SHA256" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            --arg package_commit "$GITHUB_SHA" \
+            --argjson asset_size_bytes "$SIZE" \
+            --argjson validation "$VALIDATION" \
+            '{verified:true,product:"Android iOSEmulator visible Android UI guest",weston_14_obsolete_tty_option_removed:true,wayland_socket_wait:true,android_provisioning_completed:true,launcher3_home_started:true,android_framebuffer_ci_verified:true,virtio_gpu_output_ci_verified:true,fresh_bundle_identifier:true,fresh_livecontainer_data_container:true,low_storage_qcow2:true,jit_required:false,guest_architecture:"aarch64",release_assets:"IPA only",tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,package_commit:$package_commit,validation:$validation,physical_iphone_android_ui_verified:false}' \
+            > .github/release-status/redroid-visible-ui-fixed-release.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/release-status/redroid-visible-ui-fixed-release.json
+          git commit -m "Record verified visible Android UI release" || exit 0
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 2
+          done
