@@ -38,3 +38,5 @@ jobs:
           git commit -m "Probe active ARM64 QEMU loader-fix run" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
+
+# probe: valid-workflow-2026-07-22
