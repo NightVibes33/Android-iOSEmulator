@@ -68,13 +68,17 @@ jobs:
           new = 'dispatch_queue_t concurrentQueue = dispatch_queue_create("com.nightvibes33.livecontainer.serial-macho-signing", DISPATCH_QUEUE_SERIAL);'
           if text.count(old) != 1:
               raise SystemExit(f"expected exactly one signer queue marker, found {text.count(old)}")
-          path.write_text(text.replace(old, new, 1))
+          patched = text.replace(old, new, 1)
+          if old in patched or patched.count(new) != 1:
+              raise SystemExit("serial signer source replacement did not validate")
+          path.write_text(patched)
           PY
 
           grep -Fq 'com.nightvibes33.livecontainer.serial-macho-signing' \
             upstream-livecontainer/ZSign/zsign.mm
           ! grep -Fq 'dispatch_queue_t concurrentQueue = dispatch_get_global_queue' \
             upstream-livecontainer/ZSign/zsign.mm
+          shasum -a 256 upstream-livecontainer/ZSign/zsign.mm > patched-zsign.mm.sha256
 
       - name: Archive unsigned LiveContainer
         shell: bash
@@ -137,8 +141,7 @@ jobs:
 
           MAIN_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO")"
           test -f "$APP/$MAIN_EXECUTABLE"
-          strings "$APP/$MAIN_EXECUTABLE" > livecontainer-main.strings
-          grep -Fq 'com.nightvibes33.livecontainer.serial-macho-signing' livecontainer-main.strings
+          file "$APP/$MAIN_EXECUTABLE" | grep -Fq 'Mach-O 64-bit executable arm64'
 
           (
             cd package
@@ -151,8 +154,8 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialMachOSigning' "$EXTRACTED_INFO")" = true
           test "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialSignerBuild' "$EXTRACTED_INFO")" = NightVibes33-2afc9c3-v1
           EXTRACTED_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$EXTRACTED_INFO")"
-          strings "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE" > livecontainer-extracted.strings
-          grep -Fq 'com.nightvibes33.livecontainer.serial-macho-signing' livecontainer-extracted.strings
+          test -f "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE"
+          file "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE" | grep -Fq 'Mach-O 64-bit executable arm64'
 
           shasum -a 256 "$IPA_NAME" > "$IPA_NAME.sha256"
           stat -f%z "$IPA_NAME" > "$IPA_NAME.size"
@@ -161,6 +164,7 @@ jobs:
             echo "Upstream ref: $UPSTREAM_REF"
             echo "Upstream commit: $(cat upstream-livecontainer-commit.txt)"
             echo 'Patch: Mach-O signing queue changed from global concurrent to serial'
+            echo 'Source replacement validation: passed'
             echo 'Bundle marker: LCSerialMachOSigning=true'
             echo 'Bundle marker: LCSerialSignerBuild=NightVibes33-2afc9c3-v1'
             echo "Package commit: $GITHUB_SHA"
@@ -176,6 +180,7 @@ jobs:
             ${{ env.IPA_NAME }}.size
             LiveContainer-SerialSigner-build-manifest.txt
             upstream-livecontainer-commit.txt
+            patched-zsign.mm.sha256
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
@@ -201,7 +206,7 @@ jobs:
             --notes "Companion host for Android iOSEmulator. Built from official LiveContainer commit 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b, which matches the signer producing the reported Invalid mach-o file and Failed to Sign messages. The signer queue is changed from concurrent to serial so large apps are copied, mapped, and signed one Mach-O at a time. Install using the same certificate, then delete and freshly reimport Android iOSEmulator v0.4.2." \
             --prerelease
           gh release upload "$RELEASE_TAG" \
-            "$IPA_NAME" "$IPA_NAME.sha256" LiveContainer-SerialSigner-build-manifest.txt \
+            "$IPA_NAME" "$IPA_NAME.sha256" LiveContainer-SerialSigner-build-manifest.txt patched-zsign.mm.sha256 \
             --repo "$GITHUB_REPOSITORY" --clobber
 
           RELEASE_JSON="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url,assets,isPrerelease)"
@@ -216,6 +221,7 @@ jobs:
           RELEASE_URL="$(jq -r .url serial-signer-release.json)"
           SIZE="$(cat "$IPA_NAME.size")"
           SHA256="$(awk '{print $1}' "$IPA_NAME.sha256")"
+          SOURCE_PATCH_SHA256="$(awk '{print $1}' patched-zsign.mm.sha256)"
           git fetch origin main
           git checkout -B main origin/main
           mkdir -p .github/release-status
@@ -224,11 +230,12 @@ jobs:
             --arg tag "$RELEASE_TAG" \
             --arg asset_name "$IPA_NAME" \
             --arg asset_sha256 "$SHA256" \
+            --arg source_patch_sha256 "$SOURCE_PATCH_SHA256" \
             --arg upstream_ref "$UPSTREAM_REF" \
             --arg workflow_run_id "$GITHUB_RUN_ID" \
             --arg package_commit "$GITHUB_SHA" \
             --argjson asset_size_bytes "$SIZE" \
-            '{verified:true,product:"LiveContainer serial-signing companion",upstream_ref:$upstream_ref,serial_macho_signing:true,bundle_marker:"NightVibes33-2afc9c3-v1",tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,package_commit:$package_commit}' \
+            '{verified:true,product:"LiveContainer serial-signing companion",upstream_ref:$upstream_ref,serial_macho_signing:true,source_replacement_verified:true,source_patch_sha256:$source_patch_sha256,bundle_marker:"NightVibes33-2afc9c3-v1",tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,package_commit:$package_commit}' \
             > .github/release-status/livecontainer-serial-signer.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
