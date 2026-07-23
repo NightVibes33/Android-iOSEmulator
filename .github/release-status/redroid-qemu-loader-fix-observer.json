@@ -1,0 +1,122 @@
+{
+  "run_id": "29972183842",
+  "conclusion": "failure",
+  "head_sha": "de65dc95b624a3d4c10e781eee5ef06612104abc",
+  "run": {
+    "conclusion": "failure",
+    "event": "push",
+    "headSha": "de65dc95b624a3d4c10e781eee5ef06612104abc",
+    "jobs": [
+      {
+        "completedAt": "2026-07-23T01:36:27Z",
+        "conclusion": "failure",
+        "databaseId": 89096345563,
+        "name": "Repackage and publish QEMU loader-safe IPA",
+        "startedAt": "2026-07-23T01:35:20Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-07-23T01:35:21Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-07-23T01:35:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:35:24Z",
+            "conclusion": "success",
+            "name": "Checkout repository",
+            "number": 2,
+            "startedAt": "2026-07-23T01:35:21Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:35:30Z",
+            "conclusion": "success",
+            "name": "Select Xcode and install packaging tools",
+            "number": 3,
+            "startedAt": "2026-07-23T01:35:24Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:08Z",
+            "conclusion": "success",
+            "name": "Download existing boot-verified ARM64 guest",
+            "number": 4,
+            "startedAt": "2026-07-23T01:35:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:23Z",
+            "conclusion": "failure",
+            "name": "Build QEMU loader-safe replacement IPA",
+            "number": 5,
+            "startedAt": "2026-07-23T01:36:08Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:23Z",
+            "conclusion": "skipped",
+            "name": "Require loader-safe QEMU binaries and extracted paths",
+            "number": 6,
+            "startedAt": "2026-07-23T01:36:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:23Z",
+            "conclusion": "skipped",
+            "name": "Upload loader-fix diagnostics",
+            "number": 7,
+            "startedAt": "2026-07-23T01:36:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:23Z",
+            "conclusion": "skipped",
+            "name": "Publish QEMU loader-fix release using built-in token",
+            "number": 8,
+            "startedAt": "2026-07-23T01:36:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:23Z",
+            "conclusion": "skipped",
+            "name": "Record verified QEMU loader-fix release",
+            "number": 9,
+            "startedAt": "2026-07-23T01:36:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:24Z",
+            "conclusion": "failure",
+            "name": "Record QEMU loader-fix run result",
+            "number": 10,
+            "startedAt": "2026-07-23T01:36:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:25Z",
+            "conclusion": "success",
+            "name": "Post Checkout repository",
+            "number": 20,
+            "startedAt": "2026-07-23T01:36:24Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-07-23T01:36:25Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 21,
+            "startedAt": "2026-07-23T01:36:25Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29972183842/job/89096345563"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/NightVibes33/Android-iOSEmulator/actions/runs/29972183842"
+  },
+  "release": {}
+}
