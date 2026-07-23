@@ -18,11 +18,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Capture failed archive log tail
+      - name: Capture failed packaging log tail
         env:
           GH_TOKEN: ${{ github.token }}
-          FAILED_RUN_ID: "29980729700"
-          FAILED_JOB_ID: "89121738427"
+          FAILED_RUN_ID: "29980898885"
+          FAILED_JOB_ID: "89122229003"
         run: |
           set -euo pipefail
           mkdir -p .github/release-status
