@@ -26,17 +26,17 @@ jobs:
           mkdir -p .github/release-status
           gh run list \
             --repo "$GITHUB_REPOSITORY" \
-            --workflow diagnose-redroid-visible-ui.yml \
+            --workflow diagnose-redroid-visible-ui-v2.yml \
             --limit 10 \
             --json databaseId,status,conclusion,url,headSha,createdAt,updatedAt,event,displayTitle \
-            > .github/release-status/redroid-visible-ui-probe.json
+            > .github/release-status/redroid-visible-ui-v2-probe.json
           git fetch origin main
           git checkout -B main origin/main
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/release-status/redroid-visible-ui-probe.json
-          git commit -m "Probe Android visible UI diagnostic" || exit 0
+          git add .github/release-status/redroid-visible-ui-v2-probe.json
+          git commit -m "Probe stock virtio GPU UI diagnostic" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
 
-# probe: isolated-analyzer-retry
+# probe: stock-virtio-gpu
