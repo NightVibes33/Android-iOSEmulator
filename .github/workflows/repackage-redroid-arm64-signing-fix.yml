@@ -22,6 +22,7 @@ env:
   SOURCE_RUN_ID: "29949669780"
   SOURCE_ARTIFACT: redroid-arm64-guest
   RELEASE_TAG: v0.4.2-redroid13-arm64-se-qemu-loader-fix
+  TAG_TARGET_COMMIT: "99ebff326f89d945573965b1decf700c5ebc7f7e"
   IPA_NAME: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned.ipa
 
 jobs:
@@ -98,11 +99,12 @@ jobs:
           test "$(sed -n '7p' "$OUT/archive-entry-order.txt")" = 'Payload/Android iOSEmulator.app/qemu-aarch64-softmmu.dylib'
           test "$(stat -f%z "$IPA")" -lt 2147483648
 
-      - name: Upload loader-fix diagnostics
+      - name: Upload complete loader-fix IPA and diagnostics
         uses: actions/upload-artifact@v4
         with:
-          name: Android-iOSEmulator-Redroid13-ARM64-QEMULoaderFix-diagnostics
+          name: Android-iOSEmulator-Redroid13-ARM64-SE-QEMULoaderFix-unsigned
           path: |
+            build/livecontainer-redroid-arm64-se/*.ipa
             build/livecontainer-redroid-arm64-se/*.sha256
             build/livecontainer-redroid-arm64-se/build-manifest.txt
             build/livecontainer-redroid-arm64-se/livecontainer-import-metadata.txt
@@ -112,6 +114,7 @@ jobs:
             build/livecontainer-redroid-arm64-se/utm-executable-dependencies*.txt
             redroid-arm64-qemu-loader-fix-build.log
           if-no-files-found: error
+          compression-level: 0
           retention-days: 30
 
       - name: Publish QEMU loader-fix release using built-in token
@@ -123,18 +126,19 @@ jobs:
           OUT=build/livecontainer-redroid-arm64-se
           IPA="$OUT/$IPA_NAME"
           SIZE="$(stat -f%z "$IPA")"
+          git cat-file -e "$TAG_TARGET_COMMIT^{commit}"
 
           gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag >/dev/null 2>&1 || true
           git push origin ":refs/tags/$RELEASE_TAG" >/dev/null 2>&1 || true
           git tag -d "$RELEASE_TAG" >/dev/null 2>&1 || true
-          git tag "$RELEASE_TAG" "$GITHUB_SHA"
+          git tag "$RELEASE_TAG" "$TAG_TARGET_COMMIT"
           git push origin "refs/tags/$RELEASE_TAG"
 
           gh release create "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --title "Android iOSEmulator — ARM64 QEMU loader fix" \
-            --notes "Replacement for v0.4.1. The strong qemu-m68k dependency now loads from a regular file beside UTM SE through @loader_path. Both m68k and aarch64 root copies are IPA entries 6 and 7, before later framework and Android-disk entries, while both original frameworks remain as fallback. Every extracted Mach-O is signature-verified. Android 13 ARM64 reached sys.boot_completed=1 in source run 29949669780." \
+            --notes "Replacement for v0.4.1. The strong qemu-m68k dependency loads from a regular file beside UTM SE through @loader_path. Both m68k and aarch64 root copies are IPA entries 6 and 7, while both original frameworks remain as fallback. Every extracted Mach-O is signature-verified. Android 13 ARM64 reached sys.boot_completed=1 in source run 29949669780. The tag targets an earlier verified status-only commit because GitHub's built-in workflow token cannot create a tag pointing at commits that modify workflow files; the exact package commit and run are recorded in the release marker." \
             --prerelease
           gh release upload "$RELEASE_TAG" "$IPA" \
             --repo "$GITHUB_REPOSITORY" --clobber
@@ -162,14 +166,15 @@ jobs:
           mkdir -p .github/release-status
           jq -n \
             --arg tag "$RELEASE_TAG" \
+            --arg tag_target_commit "$TAG_TARGET_COMMIT" \
             --arg release_url "$RELEASE_URL" \
             --arg asset_name "$IPA_NAME" \
             --argjson asset_size_bytes "$SIZE" \
             --argjson signable_macho_count "$MACHO_COUNT" \
             --arg workflow_run_id "$GITHUB_RUN_ID" \
             --arg source_run_id "$SOURCE_RUN_ID" \
-            --arg source_commit "$GITHUB_SHA" \
-            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,livecontainer_minimum_version:"3.7.0",qemu_m68k_loader_path_root_copy:true,qemu_aarch64_early_root_copy:true,qemu_root_archive_entries:[6,7],original_qemu_frameworks_retained:true,macho_permissions_normalized:true,adhoc_signatures_verified:true,signable_macho_count:$signable_macho_count,tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_run_id:$source_run_id,source_commit:$source_commit,physical_iphone_boot_verified:false}' \
+            --arg package_commit "$GITHUB_SHA" \
+            '{verified:true,android_version:13,android_sys_boot_completed:true,runtime:"Redroid 13 arm64-only",guest_architecture:"aarch64",execution_mode:"UTM SE interpreter",jit_required:false,livecontainer_minimum_version:"3.7.0",qemu_m68k_loader_path_root_copy:true,qemu_aarch64_early_root_copy:true,qemu_root_archive_entries:[6,7],original_qemu_frameworks_retained:true,macho_permissions_normalized:true,adhoc_signatures_verified:true,signable_macho_count:$signable_macho_count,tag:$tag,tag_target_commit:$tag_target_commit,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,workflow_run_id:$workflow_run_id,source_run_id:$source_run_id,package_commit:$package_commit,physical_iphone_boot_verified:false}' \
             > .github/release-status/redroid-arm64-se-qemu-loader-fix.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
