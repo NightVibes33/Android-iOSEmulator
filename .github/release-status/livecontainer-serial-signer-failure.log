@@ -1,276 +1,600 @@
-failed_run_id=29980729700
-failed_job_id=89121738427
-﻿2026-07-23T04:54:25.0628960Z Current runner version: '2.335.1'
-2026-07-23T04:54:25.0643840Z ##[group]Runner Image Provisioner
-2026-07-23T04:54:25.0644460Z Hosted Compute Agent
-2026-07-23T04:54:25.0644840Z Version: 20260707.563
-2026-07-23T04:54:25.0645230Z Commit: 02667638d2b423fbc733a8e32a88b44996a3ba6e
-2026-07-23T04:54:25.0645700Z Build Date: 2026-07-07T19:33:50Z
-2026-07-23T04:54:25.0646130Z Worker ID: {2c6d3b62-2e66-45f2-8744-8e2596179ef7}
-2026-07-23T04:54:25.0646590Z Azure Region: westus
-2026-07-23T04:54:25.0646940Z ##[endgroup]
-2026-07-23T04:54:25.0647800Z ##[group]Operating System
-2026-07-23T04:54:25.0648160Z macOS
-2026-07-23T04:54:25.0648520Z 26.4
-2026-07-23T04:54:25.0648820Z 25E246
-2026-07-23T04:54:25.0649140Z ##[endgroup]
-2026-07-23T04:54:25.0649490Z ##[group]Runner Image
-2026-07-23T04:54:25.0649860Z Image: macos-26-arm64
-2026-07-23T04:54:25.0650210Z Version: 20260715.0248.1
-2026-07-23T04:54:25.0651330Z Included Software: https://github.com/actions/runner-images/blob/macos-26-arm64/20260715.0248/images/macos/macos-26-arm64-Readme.md
-2026-07-23T04:54:25.0652300Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26-arm64%2F20260715.0248
-2026-07-23T04:54:25.0652920Z ##[endgroup]
-2026-07-23T04:54:25.0653600Z ##[group]GITHUB_TOKEN Permissions
-2026-07-23T04:54:25.0654590Z Contents: write
-2026-07-23T04:54:25.0654930Z Metadata: read
-2026-07-23T04:54:25.0655280Z ##[endgroup]
-2026-07-23T04:54:25.0656530Z Secret source: Actions
-2026-07-23T04:54:25.0656970Z Prepare workflow directory
-2026-07-23T04:54:25.0904750Z Prepare all required actions
-2026-07-23T04:54:25.0933060Z Getting action download info
-2026-07-23T04:54:25.3477260Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
-2026-07-23T04:54:26.2882520Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
-2026-07-23T04:54:26.5819670Z Complete job name: Build and publish serial-signing LiveContainer
-2026-07-23T04:54:26.6367160Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-2026-07-23T04:54:26.6374080Z ##[group]Run actions/checkout@v4
-2026-07-23T04:54:26.6374620Z with:
-2026-07-23T04:54:26.6374930Z   fetch-depth: 0
-2026-07-23T04:54:26.6375310Z   repository: NightVibes33/Android-iOSEmulator
-2026-07-23T04:54:26.6378440Z   token: ***
-2026-07-23T04:54:26.6378800Z   ssh-strict: true
-2026-07-23T04:54:26.6379200Z   ssh-user: git
-2026-07-23T04:54:26.6379530Z   persist-credentials: true
-2026-07-23T04:54:26.6379890Z   clean: true
-2026-07-23T04:54:26.6380210Z   sparse-checkout-cone-mode: true
-2026-07-23T04:54:26.6380590Z   fetch-tags: false
-2026-07-23T04:54:26.6380910Z   show-progress: true
-2026-07-23T04:54:26.6381300Z   lfs: false
-2026-07-23T04:54:26.6381640Z   submodules: false
-2026-07-23T04:54:26.6381980Z   set-safe-directory: true
-2026-07-23T04:54:26.6382380Z   allow-unsafe-pr-checkout: false
-2026-07-23T04:54:26.6383050Z env:
-2026-07-23T04:54:26.6383410Z   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
-2026-07-23T04:54:26.6383970Z   UPSTREAM_REF: 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
-2026-07-23T04:54:26.6384520Z   RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
-2026-07-23T04:54:26.6385090Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
-2026-07-23T04:54:26.6385600Z   IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
-2026-07-23T04:54:26.6386030Z ##[endgroup]
-2026-07-23T04:54:27.0949510Z Syncing repository: NightVibes33/Android-iOSEmulator
-2026-07-23T04:54:27.0951260Z ##[group]Getting Git version info
-2026-07-23T04:54:27.0951940Z Working directory is '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator'
-2026-07-23T04:54:27.0952830Z [command]/opt/homebrew/bin/git version
-2026-07-23T04:54:27.1173740Z git version 2.55.0
-2026-07-23T04:54:27.1219550Z ##[endgroup]
-2026-07-23T04:54:27.1286220Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/1c007996-a485-4c5e-b772-c6fc27df5724/.gitconfig'
-2026-07-23T04:54:27.1289730Z Temporarily overriding HOME='/Users/runner/work/_temp/1c007996-a485-4c5e-b772-c6fc27df5724' before making global git config changes
-2026-07-23T04:54:27.1291380Z Adding repository directory to the temporary git global config as a safe directory
-2026-07-23T04:54:27.1295080Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
-2026-07-23T04:54:27.1340410Z Deleting the contents of '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator'
-2026-07-23T04:54:27.1347210Z ##[group]Initializing the repository
-2026-07-23T04:54:27.1348940Z [command]/opt/homebrew/bin/git init /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
-2026-07-23T04:54:27.1598500Z hint: Using 'master' as the name for the initial branch. This default branch name
-2026-07-23T04:54:27.1600970Z hint: will change to "main" in Git 3.0. To configure the initial branch name
-2026-07-23T04:54:27.1605580Z hint: to use in all of your new repositories, which will suppress this warning,
-2026-07-23T04:54:27.1612510Z hint: call:
-2026-07-23T04:54:27.1614220Z hint:
-2026-07-23T04:54:27.1614810Z hint: 	git config --global init.defaultBranch <name>
-2026-07-23T04:54:27.1615430Z hint:
-2026-07-23T04:54:27.1616400Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
-2026-07-23T04:54:27.1618080Z hint: 'development'. The just-created branch can be renamed via this command:
-2026-07-23T04:54:27.1620360Z hint:
-2026-07-23T04:54:27.1621030Z hint: 	git branch -m <name>
-2026-07-23T04:54:27.1621560Z hint:
-2026-07-23T04:54:27.1625860Z hint: Disable this message with "git config set advice.defaultBranchName false"
-2026-07-23T04:54:27.1630190Z Initialized empty Git repository in /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/.git/
-2026-07-23T04:54:27.1633710Z [command]/opt/homebrew/bin/git remote add origin https://github.com/NightVibes33/Android-iOSEmulator
-2026-07-23T04:54:27.1721380Z ##[endgroup]
-2026-07-23T04:54:27.1763950Z ##[group]Disabling automatic garbage collection
-2026-07-23T04:54:27.1769930Z [command]/opt/homebrew/bin/git config --local gc.auto 0
-2026-07-23T04:54:27.1819390Z ##[endgroup]
-2026-07-23T04:54:27.1820720Z ##[group]Setting up auth
-2026-07-23T04:54:27.1824940Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
-2026-07-23T04:54:27.1920190Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2026-07-23T04:54:27.2747880Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2026-07-23T04:54:27.2801920Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2026-07-23T04:54:27.3469900Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-2026-07-23T04:54:27.3521860Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
-2026-07-23T04:54:27.4839440Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
-2026-07-23T04:54:27.5233660Z ##[endgroup]
-2026-07-23T04:54:27.5340200Z ##[group]Fetching the repository
-2026-07-23T04:54:27.5442330Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
-2026-07-23T04:54:28.4619310Z From https://github.com/NightVibes33/Android-iOSEmulator
-2026-07-23T04:54:28.4620300Z  * [new branch]      android13-preinstalled     -> origin/android13-preinstalled
-2026-07-23T04:54:28.4621000Z  * [new branch]      ci/verify-macos26          -> origin/ci/verify-macos26
-2026-07-23T04:54:28.4622160Z  * [new branch]      feature/apk-first-livecontainer-flow -> origin/feature/apk-first-livecontainer-flow
-2026-07-23T04:54:28.4622910Z  * [new branch]      feature/full-android-guest-v2 -> origin/feature/full-android-guest-v2
-2026-07-23T04:54:28.4623620Z  * [new branch]      feature/livecontainer-android-shell -> origin/feature/livecontainer-android-shell
-2026-07-23T04:54:28.4624430Z  * [new branch]      feature/preloaded-android-x86-vm -> origin/feature/preloaded-android-x86-vm
-2026-07-23T04:54:28.4625790Z  * [new branch]      feature/preloaded-livecontainer-utm-se -> origin/feature/preloaded-livecontainer-utm-se
-2026-07-23T04:54:28.4626630Z  * [new branch]      fix/livecontainer-guest-ipa -> origin/fix/livecontainer-guest-ipa
-2026-07-23T04:54:28.4627370Z  * [new branch]      fix/livecontainer-host-executable -> origin/fix/livecontainer-host-executable
-2026-07-23T04:54:28.4628020Z  * [new branch]      fix/livecontainer-unknown-import -> origin/fix/livecontainer-unknown-import
-2026-07-23T04:54:28.4628900Z  * [new branch]      fix/livecontainer-unknown-import-v2 -> origin/fix/livecontainer-unknown-import-v2
-2026-07-23T04:54:28.4631390Z  * [new branch]      fix/restore-utm-frameworks -> origin/fix/restore-utm-frameworks
-2026-07-23T04:54:28.4632110Z  * [new branch]      fix/shortcut-setup         -> origin/fix/shortcut-setup
-2026-07-23T04:54:28.4632990Z  * [new branch]      fix/split-full-android-artifact -> origin/fix/split-full-android-artifact
-2026-07-23T04:54:28.4633800Z  * [new branch]      fix/verify-redroid-drm-ui  -> origin/fix/verify-redroid-drm-ui
-2026-07-23T04:54:28.4634950Z  * [new branch]      main                       -> origin/main
-2026-07-23T04:54:28.4635980Z  * [new branch]      single-ipa-android13       -> origin/single-ipa-android13
-2026-07-23T04:54:28.4636760Z  * [new tag]         v0.1.0-android-x86         -> v0.1.0-android-x86
-2026-07-23T04:54:28.4637800Z  * [new tag]         v0.1.1-livecontainer-guest -> v0.1.1-livecontainer-guest
-2026-07-23T04:54:28.4638510Z  * [new tag]         v0.4.0-redroid13-arm64-se-nojit -> v0.4.0-redroid13-arm64-se-nojit
-2026-07-23T04:54:28.4639250Z  * [new tag]         v0.4.1-redroid13-arm64-se-signing-fix -> v0.4.1-redroid13-arm64-se-signing-fix
-2026-07-23T04:54:28.4640130Z  * [new tag]         v0.4.2-redroid13-arm64-se-qemu-loader-fix -> v0.4.2-redroid13-arm64-se-qemu-loader-fix
-2026-07-23T04:54:28.4642260Z [command]/opt/homebrew/bin/git branch --list --remote origin/main
-2026-07-23T04:54:28.4709140Z   origin/main
-2026-07-23T04:54:28.4716450Z [command]/opt/homebrew/bin/git rev-parse refs/remotes/origin/main
-2026-07-23T04:54:28.4784270Z 5e3034b5445ec6fcb8f0764803814bbb1cacc18d
-2026-07-23T04:54:28.4785920Z ##[endgroup]
-2026-07-23T04:54:28.4786440Z ##[group]Determining the checkout info
-2026-07-23T04:54:28.4787030Z ##[endgroup]
-2026-07-23T04:54:28.4790040Z [command]/opt/homebrew/bin/git sparse-checkout disable
-2026-07-23T04:54:28.4871340Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
-2026-07-23T04:54:28.4937190Z ##[group]Checking out the ref
-2026-07-23T04:54:28.4939990Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
-2026-07-23T04:54:28.5200170Z Switched to a new branch 'main'
-2026-07-23T04:54:28.5204150Z branch 'main' set up to track 'origin/main'.
-2026-07-23T04:54:28.5208880Z ##[endgroup]
-2026-07-23T04:54:28.5301950Z [command]/opt/homebrew/bin/git log -1 --format=%H
-2026-07-23T04:54:28.5372910Z 5e3034b5445ec6fcb8f0764803814bbb1cacc18d
-2026-07-23T04:54:28.5517800Z ##[group]Run set -euo pipefail
-2026-07-23T04:54:28.5518290Z [36;1mset -euo pipefail[0m
-2026-07-23T04:54:28.5518820Z [36;1mXCODE_PATH="$(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' | sort -V | tail -1)"[0m
-2026-07-23T04:54:28.5519300Z [36;1mtest -n "$XCODE_PATH"[0m
-2026-07-23T04:54:28.5519650Z [36;1msudo xcode-select -s "$XCODE_PATH/Contents/Developer"[0m
-2026-07-23T04:54:28.5519980Z [36;1mxcodebuild -version[0m
-2026-07-23T04:54:28.5559880Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
-2026-07-23T04:54:28.5560480Z env:
-2026-07-23T04:54:28.5560730Z   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
-2026-07-23T04:54:28.5561090Z   UPSTREAM_REF: 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
-2026-07-23T04:54:28.5561460Z   RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
-2026-07-23T04:54:28.5561830Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
-2026-07-23T04:54:28.5562180Z   IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
-2026-07-23T04:54:28.5562490Z ##[endgroup]
-2026-07-23T04:54:30.5575150Z Xcode 26.6
-2026-07-23T04:54:30.5575660Z Build version 17F113
-2026-07-23T04:54:30.5624370Z ##[group]Run set -euo pipefail
-2026-07-23T04:54:30.5624600Z [36;1mset -euo pipefail[0m
-2026-07-23T04:54:30.5624810Z [36;1mgit clone --filter=blob:none --no-checkout \[0m
-2026-07-23T04:54:30.5625180Z [36;1m  "https://github.com/$UPSTREAM_REPOSITORY.git" upstream-livecontainer[0m
-2026-07-23T04:54:30.5625610Z [36;1mgit -C upstream-livecontainer fetch --depth 1 origin "$UPSTREAM_REF"[0m
-2026-07-23T04:54:30.5626010Z [36;1mgit -C upstream-livecontainer checkout --detach FETCH_HEAD[0m
-2026-07-23T04:54:30.5626390Z [36;1mgit -C upstream-livecontainer submodule update --init --recursive --depth 1[0m
-2026-07-23T04:54:30.5626820Z [36;1mtest "$(git -C upstream-livecontainer rev-parse HEAD)" = "$UPSTREAM_REF"[0m
-2026-07-23T04:54:30.5627260Z [36;1mgit -C upstream-livecontainer rev-parse HEAD > upstream-livecontainer-commit.txt[0m
-2026-07-23T04:54:30.5627650Z [36;1mtest -f upstream-livecontainer/ZSign/zsign.mm[0m
-2026-07-23T04:54:30.5657710Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
-2026-07-23T04:54:30.5657990Z env:
-2026-07-23T04:54:30.5658180Z   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
-2026-07-23T04:54:30.5658500Z   UPSTREAM_REF: 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
-2026-07-23T04:54:30.5658800Z   RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
-2026-07-23T04:54:30.5659110Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
-2026-07-23T04:54:30.5659410Z   IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
-2026-07-23T04:54:30.5659640Z ##[endgroup]
-2026-07-23T04:54:30.6103950Z Cloning into 'upstream-livecontainer'...
-2026-07-23T04:54:32.4844330Z From https://github.com/LiveContainer/LiveContainer
-2026-07-23T04:54:32.4846740Z  * branch            2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b -> FETCH_HEAD
-2026-07-23T04:54:33.5148380Z HEAD is now at 2afc9c3 fix issue template issue
-2026-07-23T04:54:33.6337750Z Submodule 'OpenSSL' (https://github.com/krzyzanowskim/OpenSSL) registered for path 'OpenSSL'
-2026-07-23T04:54:33.6342470Z Submodule 'litehook' (https://github.com/LiveContainer/litehook) registered for path 'litehook'
-2026-07-23T04:54:33.6482900Z Cloning into '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/OpenSSL'...
-2026-07-23T04:54:37.4440620Z Cloning into '/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/litehook'...
-2026-07-23T04:54:42.2085350Z From https://github.com/krzyzanowskim/OpenSSL
-2026-07-23T04:54:42.2086240Z  * branch            623c84da314e85363236507ca38a4bde65df21c3 -> FETCH_HEAD
-2026-07-23T04:54:43.3089410Z Submodule path 'OpenSSL': checked out '623c84da314e85363236507ca38a4bde65df21c3'
-2026-07-23T04:54:43.3424800Z Submodule path 'litehook': checked out '8025e0c8ebdf5cdd1d2a4f45025813234bf9dc55'
-2026-07-23T04:54:43.3629380Z ##[group]Run set -euo pipefail
-2026-07-23T04:54:43.3629620Z [36;1mset -euo pipefail[0m
-2026-07-23T04:54:43.3629800Z [36;1mpython3 - <<'PY'[0m
-2026-07-23T04:54:43.3629970Z [36;1mfrom pathlib import Path[0m
-2026-07-23T04:54:43.3630160Z [36;1m[0m
-2026-07-23T04:54:43.3630350Z [36;1mpath = Path("upstream-livecontainer/ZSign/zsign.mm")[0m
-2026-07-23T04:54:43.3630620Z [36;1mtext = path.read_text()[0m
-2026-07-23T04:54:43.3630990Z [36;1mold = 'dispatch_queue_t concurrentQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);'[0m
-2026-07-23T04:54:43.3631690Z [36;1mnew = 'dispatch_queue_t concurrentQueue = dispatch_queue_create("com.nightvibes33.livecontainer.serial-macho-signing", DISPATCH_QUEUE_SERIAL);'[0m
-2026-07-23T04:54:43.3636050Z [36;1mif text.count(old) != 1:[0m
-2026-07-23T04:54:43.3636410Z [36;1m    raise SystemExit(f"expected exactly one signer queue marker, found {text.count(old)}")[0m
-2026-07-23T04:54:43.3636860Z [36;1mpath.write_text(text.replace(old, new, 1))[0m
-2026-07-23T04:54:43.3637090Z [36;1mPY[0m
-2026-07-23T04:54:43.3637230Z [36;1m[0m
-2026-07-23T04:54:43.3637490Z [36;1mgrep -Fq 'com.nightvibes33.livecontainer.serial-macho-signing' \[0m
-2026-07-23T04:54:43.3637840Z [36;1m  upstream-livecontainer/ZSign/zsign.mm[0m
-2026-07-23T04:54:43.3638200Z [36;1m! grep -Fq 'dispatch_queue_t concurrentQueue = dispatch_get_global_queue' \[0m
-2026-07-23T04:54:43.3638560Z [36;1m  upstream-livecontainer/ZSign/zsign.mm[0m
-2026-07-23T04:54:43.3668660Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
-2026-07-23T04:54:43.3668890Z env:
-2026-07-23T04:54:43.3669060Z   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
-2026-07-23T04:54:43.3669350Z   UPSTREAM_REF: 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
-2026-07-23T04:54:43.3669630Z   RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
-2026-07-23T04:54:43.3669910Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
-2026-07-23T04:54:43.3670240Z   IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
-2026-07-23T04:54:43.3670470Z ##[endgroup]
-2026-07-23T04:54:43.5234910Z ##[group]Run set -euo pipefail
-2026-07-23T04:54:43.5235160Z [36;1mset -euo pipefail[0m
-2026-07-23T04:54:43.5235390Z [36;1mSCHEME=LiveContainer[0m
-2026-07-23T04:54:43.5235590Z [36;1mARCHIVE_PATH="$PWD/archive"[0m
-2026-07-23T04:54:43.5235820Z [36;1mif ls -1 *.xcworkspace >/dev/null 2>&1; then[0m
-2026-07-23T04:54:43.5236060Z [36;1m  BUILD_KIND=workspace[0m
-2026-07-23T04:54:43.5236280Z [36;1m  BUILD_FILE="$(ls -1 *.xcworkspace | head -1)"[0m
-2026-07-23T04:54:43.5236510Z [36;1melse[0m
-2026-07-23T04:54:43.5236650Z [36;1m  BUILD_KIND=project[0m
-2026-07-23T04:54:43.5236870Z [36;1m  BUILD_FILE="$(ls -1 *.xcodeproj | head -1)"[0m
-2026-07-23T04:54:43.5237140Z [36;1mfi[0m
-2026-07-23T04:54:43.5237270Z [36;1m[0m
-2026-07-23T04:54:43.5237400Z [36;1mxcodebuild archive \[0m
-2026-07-23T04:54:43.5237600Z [36;1m  -archivePath "$ARCHIVE_PATH" \[0m
-2026-07-23T04:54:43.5237800Z [36;1m  -scheme "$SCHEME" \[0m
-2026-07-23T04:54:43.5238030Z [36;1m  -"$BUILD_KIND" "$BUILD_FILE" \[0m
-2026-07-23T04:54:43.5238230Z [36;1m  -sdk iphoneos \[0m
-2026-07-23T04:54:43.5238410Z [36;1m  -arch arm64 \[0m
-2026-07-23T04:54:43.5238590Z [36;1m  -configuration Release \[0m
-2026-07-23T04:54:43.5238790Z [36;1m  CODE_SIGNING_ALLOWED=NO \[0m
-2026-07-23T04:54:43.5247770Z [36;1m  CODE_SIGNING_REQUIRED=NO \[0m
-2026-07-23T04:54:43.5248430Z [36;1m  CODE_SIGN_IDENTITY="" \[0m
-2026-07-23T04:54:43.5248770Z [36;1m  DEVELOPMENT_TEAM=""[0m
-2026-07-23T04:54:43.5249120Z [36;1m[0m
-2026-07-23T04:54:43.5249450Z [36;1mtest -d "$ARCHIVE_PATH.xcarchive/Products/Applications/LiveContainer.app"[0m
-2026-07-23T04:54:43.5279560Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
-2026-07-23T04:54:43.5279820Z env:
-2026-07-23T04:54:43.5280000Z   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
-2026-07-23T04:54:43.5280280Z   UPSTREAM_REF: 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
-2026-07-23T04:54:43.5280580Z   RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
-2026-07-23T04:54:43.5280880Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
-2026-07-23T04:54:43.5281180Z   IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
-2026-07-23T04:54:43.5281400Z ##[endgroup]
-2026-07-23T04:54:45.2662390Z Command line invocation:
-2026-07-23T04:54:45.2715410Z     /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild archive -archivePath /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/archive -scheme LiveContainer -project project.pbxproj -sdk iphoneos -arch arm64 -configuration Release CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= DEVELOPMENT_TEAM=
-2026-07-23T04:54:45.2754810Z 
-2026-07-23T04:54:45.2755400Z Build settings from command line:
-2026-07-23T04:54:45.2756270Z     ARCHS = arm64
-2026-07-23T04:54:45.2756630Z     CODE_SIGN_IDENTITY = 
-2026-07-23T04:54:45.2757000Z     CODE_SIGNING_ALLOWED = NO
-2026-07-23T04:54:45.2757300Z     CODE_SIGNING_REQUIRED = NO
-2026-07-23T04:54:45.2757590Z     DEVELOPMENT_TEAM = 
-2026-07-23T04:54:45.2758370Z     SDKROOT = iphoneos26.5
-2026-07-23T04:54:45.2758700Z 
-2026-07-23T04:54:46.3522660Z 2026-07-23 04:54:46.350 xcodebuild[40172:98343] Writing error result bundle to /var/folders/8j/sfr9qqcj73j4p6nhwcfpr0th0000gn/T/ResultBundle_2026-23-07_04-54-0046.xcresult
-2026-07-23T04:54:46.8036360Z xcodebuild: error: 'project.pbxproj' does not exist.
-2026-07-23T04:54:46.8083600Z ##[error]Process completed with exit code 66.
-2026-07-23T04:54:46.8193700Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
-2026-07-23T04:54:46.8194800Z Post job cleanup.
-2026-07-23T04:54:47.1433900Z [command]/opt/homebrew/bin/git version
-2026-07-23T04:54:47.1534550Z git version 2.55.0
-2026-07-23T04:54:47.1559630Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/c3197ef3-2e67-4621-a3cd-382c5e30e5d3/.gitconfig'
-2026-07-23T04:54:47.1565940Z Temporarily overriding HOME='/Users/runner/work/_temp/c3197ef3-2e67-4621-a3cd-382c5e30e5d3' before making global git config changes
-2026-07-23T04:54:47.1584410Z Adding repository directory to the temporary git global config as a safe directory
-2026-07-23T04:54:47.1585190Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
-2026-07-23T04:54:47.1643010Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
-2026-07-23T04:54:47.1712230Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
-2026-07-23T04:54:47.2641310Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2026-07-23T04:54:47.2693970Z http.https://github.com/.extraheader
-2026-07-23T04:54:47.2701680Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
-2026-07-23T04:54:47.2783210Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-2026-07-23T04:54:47.3544000Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
-2026-07-23T04:54:47.3597310Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
-2026-07-23T04:54:47.4818150Z Cleaning up orphan processes
-2026-07-23T04:54:48.4495190Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T04:59:45.0271220Z     export DEVELOPER_BIN_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr/bin
+2026-07-23T04:59:45.0271700Z     export DEVELOPER_DIR\=/Applications/Xcode_26.6.app/Contents/Developer
+2026-07-23T04:59:45.0466020Z     export DEVELOPER_FRAMEWORKS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Library/Frameworks
+2026-07-23T04:59:45.0466680Z     export DEVELOPER_FRAMEWORKS_DIR_QUOTED\=/Applications/Xcode_26.6.app/Contents/Developer/Library/Frameworks
+2026-07-23T04:59:45.0467210Z     export DEVELOPER_LIBRARY_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Library
+2026-07-23T04:59:45.0467750Z     export DEVELOPER_SDK_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
+2026-07-23T04:59:45.0468300Z     export DEVELOPER_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Tools
+2026-07-23T04:59:45.0468730Z     export DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr
+2026-07-23T04:59:45.0469040Z     export DEVELOPMENT_LANGUAGE\=en
+2026-07-23T04:59:45.0469260Z     export DIAGNOSE_MISSING_TARGET_DEPENDENCIES\=YES
+2026-07-23T04:59:45.0469800Z     export DIFF\=/usr/bin/diff
+2026-07-23T04:59:45.0470090Z     export DOCUMENTATION_FOLDER_PATH\=LiveContainer.app/en.lproj/Documentation
+2026-07-23T04:59:45.0470410Z     export DONT_GENERATE_INFOPLIST_FILE\=NO
+2026-07-23T04:59:45.0471130Z     export DSTROOT\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation
+2026-07-23T04:59:45.0472030Z     export DT_TOOLCHAIN_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain
+2026-07-23T04:59:45.0472440Z     export DUMP_DEPENDENCIES\=NO
+2026-07-23T04:59:45.0474290Z     export DUMP_DEPENDENCIES_OUTPUT_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/LiveContainer-BuildDependencyInfo.json
+2026-07-23T04:59:45.0475490Z     export DWARF_DSYM_FILE_NAME\=LiveContainer.app.dSYM
+2026-07-23T04:59:45.0475820Z     export DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT\=NO
+2026-07-23T04:59:45.0477850Z     export DWARF_DSYM_FOLDER_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Release-iphoneos
+2026-07-23T04:59:45.0480750Z     export DYNAMIC_LIBRARY_EXTENSION\=dylib
+2026-07-23T04:59:45.0483860Z     export EAGER_COMPILATION_ALLOW_SCRIPTS\=NO
+2026-07-23T04:59:45.0484140Z     export EAGER_LINKING\=NO
+2026-07-23T04:59:45.0484790Z     export EFFECTIVE_PLATFORM_NAME\=-iphoneos
+2026-07-23T04:59:45.0485030Z     export EFFECTIVE_SWIFT_VERSION\=5
+2026-07-23T04:59:45.0485340Z     export EMBEDDED_CONTENT_CONTAINS_SWIFT\=NO
+2026-07-23T04:59:45.0486720Z     export EMBEDDED_PROFILE_NAME\=embedded.mobileprovision
+2026-07-23T04:59:45.0487010Z     export EMBED_ASSET_PACKS_IN_PRODUCT_BUNDLE\=NO
+2026-07-23T04:59:45.0487300Z     export ENABLE_APP_SANDBOX\=NO
+2026-07-23T04:59:45.0487540Z     export ENABLE_CODE_COVERAGE\=YES
+2026-07-23T04:59:45.0487850Z     export ENABLE_COHORT_ARCHS\=NO
+2026-07-23T04:59:45.0488250Z     export ENABLE_CPLUSPLUS_BOUNDS_SAFE_BUFFERS\=NO
+2026-07-23T04:59:45.0488550Z     export ENABLE_C_BOUNDS_SAFETY\=NO
+2026-07-23T04:59:45.0488750Z     export ENABLE_DEBUG_DYLIB\=NO
+2026-07-23T04:59:45.0489970Z     export ENABLE_DEFAULT_HEADER_SEARCH_PATHS\=YES
+2026-07-23T04:59:45.0490270Z     export ENABLE_DEFAULT_SEARCH_PATHS\=YES
+2026-07-23T04:59:45.0490520Z     export ENABLE_ENHANCED_SECURITY\=NO
+2026-07-23T04:59:45.0490730Z     export ENABLE_HARDENED_RUNTIME\=NO
+2026-07-23T04:59:45.0491110Z     export ENABLE_HEADER_DEPENDENCIES\=YES
+2026-07-23T04:59:45.0491420Z     export ENABLE_INCOMING_NETWORK_CONNECTIONS\=NO
+2026-07-23T04:59:45.0492040Z     export ENABLE_NS_ASSERTIONS\=NO
+2026-07-23T04:59:45.0492240Z     export ENABLE_ON_DEMAND_RESOURCES\=YES
+2026-07-23T04:59:45.0492690Z     export ENABLE_OUTGOING_NETWORK_CONNECTIONS\=NO
+2026-07-23T04:59:45.0493070Z     export ENABLE_POINTER_AUTHENTICATION\=NO
+2026-07-23T04:59:45.0493290Z     export ENABLE_PREVIEWS\=NO
+2026-07-23T04:59:45.0493860Z     export ENABLE_RESOURCE_ACCESS_AUDIO_INPUT\=NO
+2026-07-23T04:59:45.0494490Z     export ENABLE_RESOURCE_ACCESS_BLUETOOTH\=NO
+2026-07-23T04:59:45.0494730Z     export ENABLE_RESOURCE_ACCESS_CALENDARS\=NO
+2026-07-23T04:59:45.0494970Z     export ENABLE_RESOURCE_ACCESS_CAMERA\=NO
+2026-07-23T04:59:45.0495260Z     export ENABLE_RESOURCE_ACCESS_CONTACTS\=NO
+2026-07-23T04:59:45.0495700Z     export ENABLE_RESOURCE_ACCESS_LOCATION\=NO
+2026-07-23T04:59:45.0496000Z     export ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY\=NO
+2026-07-23T04:59:45.0498330Z     export ENABLE_RESOURCE_ACCESS_PRINTING\=NO
+2026-07-23T04:59:45.0498580Z     export ENABLE_RESOURCE_ACCESS_USB\=NO
+2026-07-23T04:59:45.0498830Z     export ENABLE_SDK_IMPORTS\=NO
+2026-07-23T04:59:45.0499140Z     export ENABLE_SECURITY_COMPILER_WARNINGS\=NO
+2026-07-23T04:59:45.0499440Z     export ENABLE_SIGNATURE_AGGREGATION\=YES
+2026-07-23T04:59:45.0499670Z     export ENABLE_STRICT_OBJC_MSGSEND\=YES
+2026-07-23T04:59:45.0499950Z     export ENABLE_TESTABILITY\=NO
+2026-07-23T04:59:45.0500190Z     export ENABLE_TESTING_SEARCH_PATHS\=NO
+2026-07-23T04:59:45.0500430Z     export ENABLE_USER_SCRIPT_SANDBOXING\=NO
+2026-07-23T04:59:45.0500640Z     export ENABLE_XOJIT_PREVIEWS\=NO
+2026-07-23T04:59:45.0501060Z     export ENFORCE_VALID_ARCHS\=YES
+2026-07-23T04:59:45.0501270Z     export ENTITLEMENTS_ALLOWED\=YES
+2026-07-23T04:59:45.0501600Z     export ENTITLEMENTS_DESTINATION\=Signature
+2026-07-23T04:59:45.0501850Z     export ENTITLEMENTS_REQUIRED\=NO
+2026-07-23T04:59:45.0503160Z     export EXCLUDED_INSTALLSRC_SUBDIRECTORY_PATTERNS\=.DS_Store\ .svn\ .git\ .hg\ CVS
+2026-07-23T04:59:45.0507120Z     export EXCLUDED_RECURSIVE_SEARCH_PATH_SUBDIRECTORIES\=\*.nib\ \*.lproj\ \*.framework\ \*.gch\ \*.xcode\*\ \*.xcassets\ \*.icon\ \(\*\)\ .DS_Store\ CVS\ .svn\ .git\ .hg\ \*.pbproj\ \*.pbxproj
+2026-07-23T04:59:45.0507800Z     export EXECUTABLES_FOLDER_PATH\=LiveContainer.app/Executables
+2026-07-23T04:59:45.0510590Z     export EXECUTABLE_FOLDER_PATH\=LiveContainer.app
+2026-07-23T04:59:45.0511090Z     export EXECUTABLE_FOLDER_PATH_SHALLOW_BUNDLE_NO\=LiveContainer.app/MacOS
+2026-07-23T04:59:45.0511500Z     export EXECUTABLE_FOLDER_PATH_SHALLOW_BUNDLE_YES\=LiveContainer.app
+2026-07-23T04:59:45.0511910Z     export EXECUTABLE_NAME\=LiveContainer
+2026-07-23T04:59:45.0512170Z     export EXECUTABLE_PATH\=LiveContainer.app/LiveContainer
+2026-07-23T04:59:45.0514430Z     export EXTENSIONS_FOLDER_PATH\=LiveContainer.app/Extensions
+2026-07-23T04:59:45.0521570Z     export FILE_LIST\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects/LinkFileList
+2026-07-23T04:59:45.0542040Z     export FIXED_FILES_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/FixedFiles
+2026-07-23T04:59:45.0545640Z     export FRAMEWORKS_FOLDER_PATH\=LiveContainer.app/Frameworks
+2026-07-23T04:59:45.0546950Z     export FRAMEWORK_FLAG_PREFIX\=-framework
+2026-07-23T04:59:45.0550720Z     export FRAMEWORK_SEARCH_PATHS\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Release-iphoneos\ \ /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/Resources/Frameworks\ /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/OpenSSL/Frameworks/iphoneos
+2026-07-23T04:59:45.0553980Z     export FRAMEWORK_VERSION\=A
+2026-07-23T04:59:45.0554240Z     export FULL_PRODUCT_NAME\=LiveContainer.app
+2026-07-23T04:59:45.0554710Z     export FUSE_BUILD_PHASES\=YES
+2026-07-23T04:59:45.0554940Z     export FUSE_BUILD_SCRIPT_PHASES\=NO
+2026-07-23T04:59:45.0555190Z     export GCC3_VERSION\=3.3
+2026-07-23T04:59:45.0558370Z     export GCC_C_LANGUAGE_STANDARD\=gnu17
+2026-07-23T04:59:45.0559030Z     export GCC_DYNAMIC_NO_PIC\=NO
+2026-07-23T04:59:45.0559260Z     export GCC_INLINES_ARE_PRIVATE_EXTERN\=YES
+2026-07-23T04:59:45.0559470Z     export GCC_NO_COMMON_BLOCKS\=YES
+2026-07-23T04:59:45.0560120Z     export GCC_PFE_FILE_C_DIALECTS\=c\ objective-c\ c++\ objective-c++
+2026-07-23T04:59:45.0560610Z     export GCC_SYMBOLS_PRIVATE_EXTERN\=YES
+2026-07-23T04:59:45.0560830Z     export GCC_THUMB_SUPPORT\=YES
+2026-07-23T04:59:45.0561150Z     export GCC_TREAT_WARNINGS_AS_ERRORS\=NO
+2026-07-23T04:59:45.0561570Z     export GCC_VERSION\=com.apple.compilers.llvm.clang.1_0
+2026-07-23T04:59:45.0561950Z     export GCC_VERSION_IDENTIFIER\=com_apple_compilers_llvm_clang_1_0
+2026-07-23T04:59:45.0563650Z     export GCC_WARN_64_TO_32_BIT_CONVERSION\=YES
+2026-07-23T04:59:45.0563980Z     export GCC_WARN_ABOUT_RETURN_TYPE\=YES_ERROR
+2026-07-23T04:59:45.0564220Z     export GCC_WARN_UNDECLARED_SELECTOR\=YES
+2026-07-23T04:59:45.0564470Z     export GCC_WARN_UNINITIALIZED_AUTOS\=YES_AGGRESSIVE
+2026-07-23T04:59:45.0564730Z     export GCC_WARN_UNUSED_FUNCTION\=YES
+2026-07-23T04:59:45.0564950Z     export GCC_WARN_UNUSED_VARIABLE\=YES
+2026-07-23T04:59:45.0567460Z     export GENERATED_MODULEMAP_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/GeneratedModuleMaps-iphoneos
+2026-07-23T04:59:45.0568370Z     export GENERATE_INFOPLIST_FILE\=NO
+2026-07-23T04:59:45.0568660Z     export GENERATE_INTERMEDIATE_TEXT_BASED_STUBS\=YES
+2026-07-23T04:59:45.0569300Z     export GENERATE_PKGINFO_FILE\=YES
+2026-07-23T04:59:45.0569630Z     export GENERATE_PRELINK_OBJECT_FILE\=NO
+2026-07-23T04:59:45.0570220Z     export GENERATE_PROFILING_CODE\=NO
+2026-07-23T04:59:45.0570470Z     export GENERATE_TEXT_BASED_STUBS\=NO
+2026-07-23T04:59:45.0570700Z     export GID\=20
+2026-07-23T04:59:45.0570870Z     export GROUP\=staff
+2026-07-23T04:59:45.0571220Z     export HEADERMAP_INCLUDES_FLAT_ENTRIES_FOR_TARGET_BEING_BUILT\=YES
+2026-07-23T04:59:45.0571640Z     export HEADERMAP_INCLUDES_FRAMEWORK_ENTRIES_FOR_ALL_PRODUCT_TYPES\=YES
+2026-07-23T04:59:45.0573860Z     export HEADERMAP_INCLUDES_FRAMEWORK_ENTRIES_FOR_TARGETS_NOT_BEING_BUILT\=YES
+2026-07-23T04:59:45.0574470Z     export HEADERMAP_INCLUDES_NONPUBLIC_NONPRIVATE_HEADERS\=YES
+2026-07-23T04:59:45.0574790Z     export HEADERMAP_INCLUDES_PROJECT_HEADERS\=YES
+2026-07-23T04:59:45.0575550Z     export HEADERMAP_USES_FRAMEWORK_PREFIX_ENTRIES\=YES
+2026-07-23T04:59:45.0578360Z     export HEADERMAP_USES_VFS\=NO
+2026-07-23T04:59:45.0581160Z     export HEADER_SEARCH_PATHS\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Release-iphoneos/include\ 
+2026-07-23T04:59:45.0582930Z     export HOME\=/Users/runner
+2026-07-23T04:59:45.0583220Z     export HOST_ARCH\=arm64
+2026-07-23T04:59:45.0583990Z     export HOST_PLATFORM\=macosx
+2026-07-23T04:59:45.0584230Z     export ICONV\=/usr/bin/iconv
+2026-07-23T04:59:45.0584870Z     export IMPLICIT_DEPENDENCY_DOMAIN\=default
+2026-07-23T04:59:45.0586170Z     export INDEX_ENABLE_DATA_STORE\=NO
+2026-07-23T04:59:45.0586390Z     export INDEX_STORE_COMPRESS\=NO
+2026-07-23T04:59:45.0586600Z     export INDEX_STORE_ONLY_PROJECT_FILES\=NO
+2026-07-23T04:59:45.0587010Z     export INFOPLIST_ENABLE_CFBUNDLEICONS_MERGE\=YES
+2026-07-23T04:59:45.0587370Z     export INFOPLIST_EXPAND_BUILD_SETTINGS\=YES
+2026-07-23T04:59:45.0587740Z     export INFOPLIST_FILE\=Resources/Info.plist
+2026-07-23T04:59:45.0588020Z     export INFOPLIST_KEY_CFBundleDisplayName\=LiveContainer
+2026-07-23T04:59:45.0588490Z     export INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents\=YES
+2026-07-23T04:59:45.0589240Z     export INFOPLIST_KEY_UILaunchStoryboardName\=LaunchScreen
+2026-07-23T04:59:45.0589530Z     export INFOPLIST_KEY_UIMainStoryboardFile\=Main
+2026-07-23T04:59:45.0592690Z     export INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad\=UIInterfaceOrientationPortrait\ UIInterfaceOrientationPortraitUpsideDown\ UIInterfaceOrientationLandscapeLeft\ UIInterfaceOrientationLandscapeRight
+2026-07-23T04:59:45.0595860Z     export INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone\=UIInterfaceOrientationPortrait\ UIInterfaceOrientationLandscapeLeft\ UIInterfaceOrientationLandscapeRight
+2026-07-23T04:59:45.0596550Z     export INFOPLIST_OUTPUT_FORMAT\=binary
+2026-07-23T04:59:45.0597450Z     export INFOPLIST_PATH\=LiveContainer.app/Info.plist
+2026-07-23T04:59:45.0597710Z     export INFOPLIST_PREPROCESS\=NO
+2026-07-23T04:59:45.0597990Z     export INFOSTRINGS_PATH\=LiveContainer.app/en.lproj/InfoPlist.strings
+2026-07-23T04:59:45.0598340Z     export INLINE_PRIVATE_FRAMEWORKS\=NO
+2026-07-23T04:59:45.0601370Z     export INSTALLAPI_IGNORE_SKIP_INSTALL\=YES
+2026-07-23T04:59:45.0601690Z     export INSTALLHDRS_COPY_PHASE\=NO
+2026-07-23T04:59:45.0602190Z     export INSTALLHDRS_SCRIPT_PHASE\=NO
+2026-07-23T04:59:45.0603550Z     export INSTALL_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications
+2026-07-23T04:59:45.0604680Z     export INSTALL_GROUP\=staff
+2026-07-23T04:59:45.0605360Z     export INSTALL_MODE_FLAG\=u+w,go-w,a+rX
+2026-07-23T04:59:45.0605610Z     export INSTALL_OWNER\=runner
+2026-07-23T04:59:45.0605850Z     export INSTALL_PATH\=/Applications
+2026-07-23T04:59:45.0607470Z     export INSTALL_ROOT\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation
+2026-07-23T04:59:45.0608630Z     export IPHONEOS_DEPLOYMENT_TARGET\=15.0
+2026-07-23T04:59:45.0608970Z     export IS_UNOPTIMIZED_BUILD\=NO
+2026-07-23T04:59:45.0611370Z     export JAVAC_DEFAULT_FLAGS\=-J-Xms64m\ -J-XX:NewSize\=4M\ -J-Dfile.encoding\=UTF8
+2026-07-23T04:59:45.0611890Z     export JAVA_APP_STUB\=/System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub
+2026-07-23T04:59:45.0613390Z     export JAVA_ARCHIVE_CLASSES\=YES
+2026-07-23T04:59:45.0613600Z     export JAVA_ARCHIVE_TYPE\=JAR
+2026-07-23T04:59:45.0613790Z     export JAVA_COMPILER\=/usr/bin/javac
+2026-07-23T04:59:45.0614080Z     export JAVA_FOLDER_PATH\=LiveContainer.app/Java
+2026-07-23T04:59:45.0614370Z     export JAVA_FRAMEWORK_RESOURCES_DIRS\=Resources
+2026-07-23T04:59:45.0614790Z     export JAVA_JAR_FLAGS\=cv
+2026-07-23T04:59:45.0615480Z     export JAVA_SOURCE_SUBDIR\=.
+2026-07-23T04:59:45.0618090Z     export JAVA_USE_DEPENDENCIES\=YES
+2026-07-23T04:59:45.0618820Z     export JAVA_ZIP_FLAGS\=-urg
+2026-07-23T04:59:45.0619070Z     export JIKES_DEFAULT_FLAGS\=+E\ +OLDCSO
+2026-07-23T04:59:45.0620910Z     export KASAN_CFLAGS_CLASSIC\=-DKASAN\=1\ -DKASAN_CLASSIC\=1\ -fsanitize\=address\ -mllvm\ -asan-globals-live-support\ -mllvm\ -asan-force-dynamic-shadow
+2026-07-23T04:59:45.0624300Z     export KASAN_CFLAGS_TBI\=-DKASAN\=1\ -DKASAN_TBI\=1\ -fsanitize\=kernel-hwaddress\ -mllvm\ -hwasan-recover\=0\ -mllvm\ -hwasan-instrument-atomics\=0\ -mllvm\ -hwasan-instrument-stack\=1\ -mllvm\ -hwasan-generate-tags-with-calls\=1\ -mllvm\ -hwasan-instrument-with-calls\=1\ -mllvm\ -hwasan-use-short-granules\=0\ -mllvm\ -hwasan-memory-access-callback-prefix\=__asan_
+2026-07-23T04:59:45.0627050Z     export KASAN_DEFAULT_CFLAGS\=-DKASAN\=1\ -DKASAN_CLASSIC\=1\ -fsanitize\=address\ -mllvm\ -asan-globals-live-support\ -mllvm\ -asan-force-dynamic-shadow
+2026-07-23T04:59:45.0628020Z     export KEEP_PRIVATE_EXTERNS\=NO
+2026-07-23T04:59:45.0631790Z     export LD_DEPENDENCY_INFO_FILE\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal/undefined_arch/LiveContainer_dependency_info.dat
+2026-07-23T04:59:45.0634210Z     export LD_EXPORT_SYMBOLS\=YES
+2026-07-23T04:59:45.0634510Z     export LD_GENERATE_MAP_FILE\=NO
+2026-07-23T04:59:45.0636090Z     export LD_MAP_FILE_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/LiveContainer-LinkMap-normal-undefined_arch.txt
+2026-07-23T04:59:45.0637320Z     export LD_NO_PIE\=NO
+2026-07-23T04:59:45.0639010Z     export LD_QUOTE_LINKER_ARGUMENTS_FOR_COMPILER_DRIVER\=YES
+2026-07-23T04:59:45.0639430Z     export LD_RUNPATH_SEARCH_PATHS\=\ @executable_path/Frameworks
+2026-07-23T04:59:45.0639840Z     export LD_RUNPATH_SEARCH_PATHS_YES\=@loader_path/../Frameworks
+2026-07-23T04:59:45.0640160Z     export LD_SHARED_CACHE_ELIGIBLE\=Automatic
+2026-07-23T04:59:45.0640510Z     export LD_WARN_DUPLICATE_LIBRARIES\=NO
+2026-07-23T04:59:45.0640710Z     export LD_WARN_UNUSED_DYLIBS\=NO
+2026-07-23T04:59:45.0643860Z     export LEGACY_DEVELOPER_DIR\=/Applications/Xcode_26.6.app/Contents/PlugIns/Xcode3Core.ideplugin/Contents/SharedSupport/Developer
+2026-07-23T04:59:45.0645890Z     export LEX\=lex
+2026-07-23T04:59:45.0646150Z     export LIBRARY_DEXT_INSTALL_PATH\=/Library/DriverExtensions
+2026-07-23T04:59:45.0646440Z     export LIBRARY_FLAG_NOSPACE\=YES
+2026-07-23T04:59:45.0646670Z     export LIBRARY_FLAG_PREFIX\=-l
+2026-07-23T04:59:45.0651480Z     export LIBRARY_KEXT_INSTALL_PATH\=/Library/Extensions
+2026-07-23T04:59:45.0652970Z     export LIBRARY_SEARCH_PATHS\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Release-iphoneos\ 
+2026-07-23T04:59:45.0655500Z     export LINKER_DISPLAYS_MANGLED_NAMES\=NO
+2026-07-23T04:59:45.0658310Z     export LINK_FILE_LIST_normal_arm64\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal/arm64/LiveContainer.LinkFileList
+2026-07-23T04:59:45.0661650Z     export LINK_OBJC_RUNTIME\=YES
+2026-07-23T04:59:45.0661920Z     export LINK_WITH_STANDARD_LIBRARIES\=YES
+2026-07-23T04:59:45.0662290Z     export LIVECONTAINER_BUNDLE_IDENTIFIER\=com.kdt.livecontainer
+2026-07-23T04:59:45.0665030Z     export LLVM_TARGET_TRIPLE_OS_VERSION\=ios15.0
+2026-07-23T04:59:45.0665350Z     export LLVM_TARGET_TRIPLE_VENDOR\=apple
+2026-07-23T04:59:45.0668490Z     export LM_AUX_CONST_METADATA_LIST_PATH_normal_arm64\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal/arm64/LiveContainer.SwiftConstValuesFileList
+2026-07-23T04:59:45.0671700Z     export LOCALIZATION_EXPORT_SUPPORTED\=YES
+2026-07-23T04:59:45.0672050Z     export LOCALIZATION_PREFERS_STRING_CATALOGS\=YES
+2026-07-23T04:59:45.0672190Z     export LOCALIZED_RESOURCES_FOLDER_PATH\=LiveContainer.app/en.lproj
+2026-07-23T04:59:45.0672270Z     export LOCALIZED_STRING_CODE_COMMENTS\=NO
+2026-07-23T04:59:45.0672450Z     export LOCALIZED_STRING_MACRO_NAMES\=NSLocalizedString\ CFCopyLocalizedString
+2026-07-23T04:59:45.0673870Z     export LOCALIZED_STRING_SWIFTUI_SUPPORT\=NO
+2026-07-23T04:59:45.0674570Z     export LOCAL_ADMIN_APPS_DIR\=/Applications/Utilities
+2026-07-23T04:59:45.0674670Z     export LOCAL_APPS_DIR\=/Applications
+2026-07-23T04:59:45.0674760Z     export LOCAL_DEVELOPER_DIR\=/Library/Developer
+2026-07-23T04:59:45.0674830Z     export LOCAL_LIBRARY_DIR\=/Library
+2026-07-23T04:59:45.0675600Z     export LOCROOT\=/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.0676470Z     export LOCSYMROOT\=/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.0676570Z     export MACH_O_TYPE\=mh_execute
+2026-07-23T04:59:45.0676650Z     export MAC_OS_X_PRODUCT_BUILD_VERSION\=25E246
+2026-07-23T04:59:45.0676720Z     export MAC_OS_X_VERSION_ACTUAL\=260400
+2026-07-23T04:59:45.0676790Z     export MAC_OS_X_VERSION_MAJOR\=260000
+2026-07-23T04:59:45.0676870Z     export MAC_OS_X_VERSION_MINOR\=260400
+2026-07-23T04:59:45.0677250Z     export MAKE_MERGEABLE\=NO
+2026-07-23T04:59:45.0677430Z     export MARKETING_VERSION\=3.3.55
+2026-07-23T04:59:45.0677800Z     export MERGEABLE_LIBRARY\=NO
+2026-07-23T04:59:45.0678450Z     export MERGED_BINARY_TYPE\=none
+2026-07-23T04:59:45.0678530Z     export MERGE_LINKED_LIBRARIES\=NO
+2026-07-23T04:59:45.0680000Z     export MESSAGES_APPLICATION_EXTENSION_SUPPORT_FOLDER_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/MessagesApplicationExtensionSupport
+2026-07-23T04:59:45.0681700Z     export MESSAGES_APPLICATION_SUPPORT_FOLDER_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/MessagesApplicationSupport
+2026-07-23T04:59:45.0681800Z     export METAL_LIBRARY_FILE_BASE\=default
+2026-07-23T04:59:45.0684860Z     export METAL_LIBRARY_OUTPUT_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app
+2026-07-23T04:59:45.0685400Z     export MODULES_FOLDER_PATH\=LiveContainer.app/Modules
+2026-07-23T04:59:45.0687740Z     export MODULE_CACHE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/ModuleCache.noindex
+2026-07-23T04:59:45.0687820Z     export MTL_ENABLE_DEBUG_INFO\=NO
+2026-07-23T04:59:45.0688030Z     export MTL_FAST_MATH\=YES
+2026-07-23T04:59:45.0688110Z     export NATIVE_ARCH\=arm64
+2026-07-23T04:59:45.0688180Z     export NATIVE_ARCH_32_BIT\=arm
+2026-07-23T04:59:45.0688240Z     export NATIVE_ARCH_64_BIT\=arm64
+2026-07-23T04:59:45.0688320Z     export NATIVE_ARCH_ACTUAL\=arm64
+2026-07-23T04:59:45.0688370Z     export NO_COMMON\=YES
+2026-07-23T04:59:45.0690560Z     export OBJECT_FILE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects
+2026-07-23T04:59:45.0693650Z     export OBJECT_FILE_DIR_normal\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal
+2026-07-23T04:59:45.0694880Z     export OBJROOT\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath
+2026-07-23T04:59:45.0694970Z     export ONLY_ACTIVE_ARCH\=NO
+2026-07-23T04:59:45.0695040Z     export OS\=MACOS
+2026-07-23T04:59:45.0695120Z     export OSAC\=/usr/bin/osacompile
+2026-07-23T04:59:45.0695230Z     export OTHER_LDFLAGS\=-e\ _LiveContainerMainC
+2026-07-23T04:59:45.0695490Z     export PACKAGE_TYPE\=com.apple.package-type.wrapper.application
+2026-07-23T04:59:45.0695710Z     export PASCAL_STRINGS\=YES
+2026-07-23T04:59:45.0710490Z     export PATH\=/Applications/Xcode_26.6.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.K0Ui4y/Metal.xctoolchain/usr/bin:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.K0Ui4y/Metal.xctoolchain/usr/local/bin:/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.K0Ui4y/Metal.xctoolchain/usr/libexec:/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/usr/bin:/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/usr/local/bin:/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin:/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/local/bin:/Applications/Xcode_26.6.app/Contents/Developer/usr/bin:/Applications/Xcode_26.6.app/Contents/Developer/usr/local/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/opt/homebrew/opt/ruby@3.4/bin:/Users/runner/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Users/runner/.cargo/bin:/usr/local/opt/curl/bin:/usr/local/bin:/usr/local/sbin:/Users/runner/bin:/Users/runner/.yarn/bin:/Users/runner/Library/Android/sdk/tools:/Users/runner/Library/Android/sdk/platform-tools:/Library/Frameworks/Python.framework/Versions/Current/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/usr/bin:/bin:/usr/sbin:/sbin:/Users/runner/.dotnet/tools
+2026-07-23T04:59:45.0713080Z     export PATH_PREFIXES_EXCLUDED_FROM_HEADER_DEPENDENCIES\=/usr/include\ /usr/local/include\ /System/Library/Frameworks\ /System/Library/PrivateFrameworks\ /Applications/Xcode_26.6.app/Contents/Developer/Headers\ /Applications/Xcode_26.6.app/Contents/Developer/SDKs\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms
+2026-07-23T04:59:45.0713260Z     export PBDEVELOPMENTPLIST_PATH\=LiveContainer.app/pbdevelopment.plist
+2026-07-23T04:59:45.0714140Z     export PER_ARCH_MODULE_FILE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal/undefined_arch
+2026-07-23T04:59:45.0717720Z     export PER_ARCH_OBJECT_FILE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal/undefined_arch
+2026-07-23T04:59:45.0718750Z     export PER_VARIANT_OBJECT_FILE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal
+2026-07-23T04:59:45.0723550Z     export PKGINFO_FILE_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/PkgInfo
+2026-07-23T04:59:45.0723690Z     export PKGINFO_PATH\=LiveContainer.app/PkgInfo
+2026-07-23T04:59:45.0724110Z     export PLATFORM_DEVELOPER_APPLICATIONS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Applications
+2026-07-23T04:59:45.0724930Z     export PLATFORM_DEVELOPER_BIN_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin
+2026-07-23T04:59:45.0726380Z     export PLATFORM_DEVELOPER_LIBRARY_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library
+2026-07-23T04:59:45.0726780Z     export PLATFORM_DEVELOPER_SDK_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs
+2026-07-23T04:59:45.0727300Z     export PLATFORM_DEVELOPER_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Tools
+2026-07-23T04:59:45.0727610Z     export PLATFORM_DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr
+2026-07-23T04:59:45.0728890Z     export PLATFORM_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform
+2026-07-23T04:59:45.0728970Z     export PLATFORM_DISPLAY_NAME\=iOS
+2026-07-23T04:59:45.0729040Z     export PLATFORM_FAMILY_NAME\=iOS
+2026-07-23T04:59:45.0729100Z     export PLATFORM_NAME\=iphoneos
+2026-07-23T04:59:45.0729180Z     export PLATFORM_PREFERRED_ARCH\=arm64
+2026-07-23T04:59:45.0729270Z     export PLATFORM_PRODUCT_BUILD_VERSION\=23F81a
+2026-07-23T04:59:45.0729370Z     export PLATFORM_REQUIRES_SWIFT_AUTOLINK_EXTRACT\=NO
+2026-07-23T04:59:45.0729450Z     export PLATFORM_REQUIRES_SWIFT_MODULEWRAP\=NO
+2026-07-23T04:59:45.0729520Z     export PLATFORM_USES_DSYMS\=YES
+2026-07-23T04:59:45.0729590Z     export PLIST_FILE_OUTPUT_FORMAT\=binary
+2026-07-23T04:59:45.0729710Z     export PLUGINS_FOLDER_PATH\=LiveContainer.app/PlugIns
+2026-07-23T04:59:45.0729830Z     export PRECOMPS_INCLUDE_HEADERS_FROM_BUILT_PRODUCTS_DIR\=YES
+2026-07-23T04:59:45.0734030Z     export PRECOMP_DESTINATION_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/PrefixHeaders
+2026-07-23T04:59:45.0734230Z     export PRIVATE_HEADERS_FOLDER_PATH\=LiveContainer.app/PrivateHeaders
+2026-07-23T04:59:45.0738340Z     export PROCESSED_INFOPLIST_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal/undefined_arch/Processed-Info.plist
+2026-07-23T04:59:45.0739760Z     export PRODUCT_BUNDLE_IDENTIFIER\=com.kdt.livecontainer
+2026-07-23T04:59:45.0739940Z     export PRODUCT_BUNDLE_PACKAGE_TYPE\=APPL
+2026-07-23T04:59:45.0740090Z     export PRODUCT_MODULE_NAME\=LiveContainer
+2026-07-23T04:59:45.0740180Z     export PRODUCT_NAME\=LiveContainer
+2026-07-23T04:59:45.0740650Z     export PRODUCT_SETTINGS_PATH\=/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/Resources/Info.plist
+2026-07-23T04:59:45.0740810Z     export PRODUCT_TYPE\=com.apple.product-type.application
+2026-07-23T04:59:45.0740870Z     export PROFILING_CODE\=NO
+2026-07-23T04:59:45.0740940Z     export PROJECT\=LiveContainer
+2026-07-23T04:59:45.0741980Z     export PROJECT_DERIVED_FILE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/DerivedSources
+2026-07-23T04:59:45.0743270Z     export PROJECT_DIR\=/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.0744410Z     export PROJECT_FILE_PATH\=/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/LiveContainer.xcodeproj
+2026-07-23T04:59:45.0744930Z     export PROJECT_GUID\=7385de79f145ee839a048a69f08ef0fa
+2026-07-23T04:59:45.0745030Z     export PROJECT_NAME\=LiveContainer
+2026-07-23T04:59:45.0745690Z     export PROJECT_TEMP_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build
+2026-07-23T04:59:45.0749270Z     export PROJECT_TEMP_ROOT\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath
+2026-07-23T04:59:45.0749390Z     export PROVISIONING_PROFILE_REQUIRED\=YES
+2026-07-23T04:59:45.0749490Z     export PROVISIONING_PROFILE_REQUIRED_YES_YES\=YES
+2026-07-23T04:59:45.0750220Z     export PROVISIONING_PROFILE_SUPPORTED\=YES
+2026-07-23T04:59:45.0750380Z     export PUBLIC_HEADERS_FOLDER_PATH\=LiveContainer.app/Headers
+2026-07-23T04:59:45.0750580Z     export RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET\=15.0
+2026-07-23T04:59:45.0754650Z     export RECURSIVE_SEARCH_PATHS_FOLLOW_SYMLINKS\=YES
+2026-07-23T04:59:45.0754750Z     export REMOVE_CVS_FROM_RESOURCES\=YES
+2026-07-23T04:59:45.0754840Z     export REMOVE_GIT_FROM_RESOURCES\=YES
+2026-07-23T04:59:45.0754950Z     export REMOVE_HEADERS_FROM_EMBEDDED_BUNDLES\=YES
+2026-07-23T04:59:45.0755040Z     export REMOVE_HG_FROM_RESOURCES\=YES
+2026-07-23T04:59:45.0755260Z     export REMOVE_STATIC_EXECUTABLES_FROM_EMBEDDED_BUNDLES\=YES
+2026-07-23T04:59:45.0755370Z     export REMOVE_SVN_FROM_RESOURCES\=YES
+2026-07-23T04:59:45.0755480Z     export RESCHEDULE_INDEPENDENT_HEADERS_PHASES\=YES
+2026-07-23T04:59:45.0759580Z     export REZ_COLLECTOR_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/ResourceManagerResources
+2026-07-23T04:59:45.0760660Z     export REZ_OBJECTS_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/ResourceManagerResources/Objects
+2026-07-23T04:59:45.0761730Z     export REZ_SEARCH_PATHS\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Release-iphoneos\ 
+2026-07-23T04:59:45.0762520Z     export RPATH_ORIGIN\=@loader_path
+2026-07-23T04:59:45.0763910Z     export RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES\=NO
+2026-07-23T04:59:45.0763990Z     export RUNTIME_EXCEPTION_ALLOW_JIT\=NO
+2026-07-23T04:59:45.0764130Z     export RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY\=NO
+2026-07-23T04:59:45.0764210Z     export RUNTIME_EXCEPTION_DEBUGGING_TOOL\=NO
+2026-07-23T04:59:45.0764340Z     export RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION\=NO
+2026-07-23T04:59:45.0764480Z     export RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION\=NO
+2026-07-23T04:59:45.0764600Z     export SCANNING_PCM_KEEP_CACHE_DIRECTORY\=YES
+2026-07-23T04:59:45.0764800Z     export SCAN_ALL_SOURCE_FILES_FOR_INCLUDES\=NO
+2026-07-23T04:59:45.0764980Z     export SCRIPTS_FOLDER_PATH\=LiveContainer.app/Scripts
+2026-07-23T04:59:45.0765050Z     export SCRIPT_INPUT_FILE_COUNT\=0
+2026-07-23T04:59:45.0765120Z     export SCRIPT_INPUT_FILE_LIST_COUNT\=0
+2026-07-23T04:59:45.0765650Z     export SCRIPT_OUTPUT_FILE_COUNT\=0
+2026-07-23T04:59:45.0765760Z     export SCRIPT_OUTPUT_FILE_LIST_COUNT\=0
+2026-07-23T04:59:45.0768870Z     export SDKROOT\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+2026-07-23T04:59:45.0769210Z     export SDK_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+2026-07-23T04:59:45.0769540Z     export SDK_DIR_iphoneos\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+2026-07-23T04:59:45.0771490Z     export SDK_DIR_iphoneos26_5\=/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk
+2026-07-23T04:59:45.0771590Z     export SDK_NAME\=iphoneos26.5
+2026-07-23T04:59:45.0771670Z     export SDK_NAMES\=iphoneos26.5
+2026-07-23T04:59:45.0771770Z     export SDK_PRODUCT_BUILD_VERSION\=23F81a
+2026-07-23T04:59:45.0771940Z     export SDK_STAT_CACHE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData
+2026-07-23T04:59:45.0772010Z     export SDK_STAT_CACHE_ENABLE\=YES
+2026-07-23T04:59:45.0772670Z     export SDK_STAT_CACHE_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphoneos26.5-23F81a-688ef53f1462e2c8f657fdc38a81448fee66e23052a0157c865c76b268046726.sdkstatcache
+2026-07-23T04:59:45.0772740Z     export SDK_VERSION\=26.5
+2026-07-23T04:59:45.0772840Z     export SDK_VERSION_ACTUAL\=260500
+2026-07-23T04:59:45.0772920Z     export SDK_VERSION_MAJOR\=260000
+2026-07-23T04:59:45.0773000Z     export SDK_VERSION_MINOR\=260500
+2026-07-23T04:59:45.0773070Z     export SED\=/usr/bin/sed
+2026-07-23T04:59:45.0773140Z     export SEPARATE_STRIP\=NO
+2026-07-23T04:59:45.0773230Z     export SEPARATE_SYMBOL_EDIT\=NO
+2026-07-23T04:59:45.0773310Z     export SET_DIR_MODE_OWNER_GROUP\=YES
+2026-07-23T04:59:45.0774470Z     export SET_FILE_MODE_OWNER_GROUP\=NO
+2026-07-23T04:59:45.0774560Z     export SHALLOW_BUNDLE\=YES
+2026-07-23T04:59:45.0774630Z     export SHALLOW_BUNDLE_TRIPLE\=ios
+2026-07-23T04:59:45.0774710Z     export SHALLOW_BUNDLE_ios_macabi\=NO
+2026-07-23T04:59:45.0774770Z     export SHALLOW_BUNDLE_macos\=NO
+2026-07-23T04:59:45.0775530Z     export SHARED_DERIVED_FILE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Release-iphoneos/DerivedSources
+2026-07-23T04:59:45.0775700Z     export SHARED_FRAMEWORKS_FOLDER_PATH\=LiveContainer.app/SharedFrameworks
+2026-07-23T04:59:45.0778570Z     export SHARED_PRECOMPS_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/PrecompiledHeaders
+2026-07-23T04:59:45.0778740Z     export SHARED_SUPPORT_FOLDER_PATH\=LiveContainer.app/SharedSupport
+2026-07-23T04:59:45.0779680Z     export SIGNATURE_METADATA_FOLDER_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Signatures
+2026-07-23T04:59:45.0779770Z     export SKIP_INSTALL\=NO
+2026-07-23T04:59:45.0779870Z     export SKIP_MERGEABLE_LIBRARY_BUNDLE_HOOK\=NO
+2026-07-23T04:59:45.0780510Z     export SOURCE_ROOT\=/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.0781110Z     export SRCROOT\=/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.0786440Z     export STRINGSDATA_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal/undefined_arch
+2026-07-23T04:59:45.0787390Z     export STRINGSDATA_ROOT\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build
+2026-07-23T04:59:45.0787720Z     export STRINGS_FILE_INFOPLIST_RENAME\=YES
+2026-07-23T04:59:45.0788660Z     export STRINGS_FILE_OUTPUT_ENCODING\=binary
+2026-07-23T04:59:45.0788760Z     export STRING_CATALOG_GENERATE_SYMBOLS\=NO
+2026-07-23T04:59:45.0788960Z     export STRIP_BITCODE_FROM_COPIED_FILES\=YES
+2026-07-23T04:59:45.0789690Z     export STRIP_INSTALLED_PRODUCT\=YES
+2026-07-23T04:59:45.0789780Z     export STRIP_STYLE\=all
+2026-07-23T04:59:45.0789860Z     export STRIP_SWIFT_SYMBOLS\=YES
+2026-07-23T04:59:45.0789950Z     export SUPPORTED_DEVICE_FAMILIES\=1,2
+2026-07-23T04:59:45.0790060Z     export SUPPORTED_PLATFORMS\=iphoneos\ iphonesimulator
+2026-07-23T04:59:45.0790220Z     export SUPPORTS_MACCATALYST\=NO
+2026-07-23T04:59:45.0790390Z     export SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD\=YES
+2026-07-23T04:59:45.0790490Z     export SUPPORTS_ON_DEMAND_RESOURCES\=YES
+2026-07-23T04:59:45.0790590Z     export SUPPORTS_TEXT_BASED_API\=NO
+2026-07-23T04:59:45.0790690Z     export SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD\=YES
+2026-07-23T04:59:45.0790750Z     export SUPPRESS_WARNINGS\=NO
+2026-07-23T04:59:45.0790830Z     export SWIFT_COMPILATION_MODE\=wholemodule
+2026-07-23T04:59:45.0793210Z     export SWIFT_EMIT_CONST_VALUE_PROTOCOLS\=AnyResolverProviding\ AppEntity\ AppEnum\ AppExtension\ AppIntent\ AppIntentsPackage\ AppShortcutProviding\ AppShortcutsProvider\ DynamicOptionsProvider\ EntityQuery\ ExtensionPointDefining\ IntentValueQuery\ Resolver\ TransientEntity\ _AssistantIntentsProvider\ _GenerativeFunctionExtractable\ _IntentValueRepresentable
+2026-07-23T04:59:45.0793340Z     export SWIFT_EMIT_LOC_STRINGS\=NO
+2026-07-23T04:59:45.0793420Z     export SWIFT_ENABLE_EXPLICIT_MODULES\=YES
+2026-07-23T04:59:45.0793500Z     export SWIFT_PLATFORM_TARGET_PREFIX\=ios
+2026-07-23T04:59:45.0795870Z     export SWIFT_RESPONSE_FILE_PATH_normal_arm64\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Objects-normal/arm64/LiveContainer.SwiftFileList
+2026-07-23T04:59:45.0799360Z     export SWIFT_STDLIB_TOOL_UNSIGNED_DESTINATION_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/SwiftSupport
+2026-07-23T04:59:45.0799440Z     export SWIFT_VERSION\=5.0
+2026-07-23T04:59:45.0801490Z     export SYMROOT\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath
+2026-07-23T04:59:45.0801980Z     export SYSTEM_ADMIN_APPS_DIR\=/Applications/Utilities
+2026-07-23T04:59:45.0802060Z     export SYSTEM_APPS_DIR\=/Applications
+2026-07-23T04:59:45.0802180Z     export SYSTEM_CORE_SERVICES_DIR\=/System/Library/CoreServices
+2026-07-23T04:59:45.0802270Z     export SYSTEM_DEMOS_DIR\=/Applications/Extras
+2026-07-23T04:59:45.0802520Z     export SYSTEM_DEVELOPER_APPS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications
+2026-07-23T04:59:45.0802760Z     export SYSTEM_DEVELOPER_BIN_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr/bin
+2026-07-23T04:59:45.0803170Z     export SYSTEM_DEVELOPER_DEMOS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities/Built\ Examples
+2026-07-23T04:59:45.0803380Z     export SYSTEM_DEVELOPER_DIR\=/Applications/Xcode_26.6.app/Contents/Developer
+2026-07-23T04:59:45.0803670Z     export SYSTEM_DEVELOPER_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library
+2026-07-23T04:59:45.0804360Z     export SYSTEM_DEVELOPER_GRAPHICS_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Graphics\ Tools
+2026-07-23T04:59:45.0805020Z     export SYSTEM_DEVELOPER_JAVA_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Java\ Tools
+2026-07-23T04:59:45.0805530Z     export SYSTEM_DEVELOPER_PERFORMANCE_TOOLS_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Performance\ Tools
+2026-07-23T04:59:45.0805910Z     export SYSTEM_DEVELOPER_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes
+2026-07-23T04:59:45.0806210Z     export SYSTEM_DEVELOPER_TOOLS\=/Applications/Xcode_26.6.app/Contents/Developer/Tools
+2026-07-23T04:59:45.0806630Z     export SYSTEM_DEVELOPER_TOOLS_DOC_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/documentation/DeveloperTools
+2026-07-23T04:59:45.0807870Z     export SYSTEM_DEVELOPER_TOOLS_RELEASENOTES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/ADC\ Reference\ Library/releasenotes/DeveloperTools
+2026-07-23T04:59:45.0808160Z     export SYSTEM_DEVELOPER_USR_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/usr
+2026-07-23T04:59:45.0808450Z     export SYSTEM_DEVELOPER_UTILITIES_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Applications/Utilities
+2026-07-23T04:59:45.0808620Z     export SYSTEM_DEXT_INSTALL_PATH\=/System/Library/DriverExtensions
+2026-07-23T04:59:45.0810750Z     export SYSTEM_DOCUMENTATION_DIR\=/Library/Documentation
+2026-07-23T04:59:45.0811900Z     export SYSTEM_EXTENSIONS_FOLDER_PATH\=LiveContainer.app/SystemExtensions
+2026-07-23T04:59:45.0814210Z     export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_NO\=LiveContainer.app/Library/SystemExtensions
+2026-07-23T04:59:45.0814470Z     export SYSTEM_EXTENSIONS_FOLDER_PATH_SHALLOW_BUNDLE_YES\=LiveContainer.app/SystemExtensions
+2026-07-23T04:59:45.0814630Z     export SYSTEM_KEXT_INSTALL_PATH\=/System/Library/Extensions
+2026-07-23T04:59:45.0814730Z     export SYSTEM_LIBRARY_DIR\=/System/Library
+2026-07-23T04:59:45.0814860Z     export TAPI_DEMANGLE\=YES
+2026-07-23T04:59:45.0814960Z     export TAPI_ENABLE_PROJECT_HEADERS\=NO
+2026-07-23T04:59:45.0815040Z     export TAPI_LANGUAGE\=objective-c
+2026-07-23T04:59:45.0815160Z     export TAPI_LANGUAGE_STANDARD\=compiler-default
+2026-07-23T04:59:45.0815240Z     export TAPI_USE_SRCROOT\=YES
+2026-07-23T04:59:45.0815330Z     export TAPI_VERIFY_MODE\=Pedantic
+2026-07-23T04:59:45.0815400Z     export TARGETED_DEVICE_FAMILY\=1,2
+2026-07-23T04:59:45.0815460Z     export TARGETNAME\=LiveContainer
+2026-07-23T04:59:45.0819790Z     export TARGET_BUILD_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications
+2026-07-23T04:59:45.0819960Z     export TARGET_NAME\=LiveContainer
+2026-07-23T04:59:45.0833990Z     export TARGET_TEMP_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build
+2026-07-23T04:59:45.0841780Z     export TEMP_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build
+2026-07-23T04:59:45.0843020Z     export TEMP_FILES_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build
+2026-07-23T04:59:45.0844850Z     export TEMP_FILE_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build
+2026-07-23T04:59:45.0845450Z     export TEMP_ROOT\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath
+2026-07-23T04:59:45.0846380Z     export TEMP_SANDBOX_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/TemporaryTaskSandboxes
+2026-07-23T04:59:45.0848290Z     export TEST_FRAMEWORK_SEARCH_PATHS\=\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/Frameworks\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/Developer/Library/Frameworks
+2026-07-23T04:59:45.0848770Z     export TEST_LIBRARY_SEARCH_PATHS\=\ /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/lib
+2026-07-23T04:59:45.0849520Z     export TOOLCHAINS\=com.apple.dt.toolchain.Metal.32023.883\ com.apple.dt.toolchain.XcodeDefault
+2026-07-23T04:59:45.0852620Z     export TOOLCHAIN_DIR\=/var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.K0Ui4y/Metal.xctoolchain
+2026-07-23T04:59:45.0852710Z     export TOOLCHAIN_VERSION\=32023.883
+2026-07-23T04:59:45.0852820Z     export TREAT_MISSING_BASELINES_AS_TEST_FAILURES\=NO
+2026-07-23T04:59:45.0852960Z     export TREAT_MISSING_SCRIPT_PHASE_OUTPUTS_AS_ERRORS\=NO
+2026-07-23T04:59:45.0853030Z     export UID\=501
+2026-07-23T04:59:45.0853920Z     export UNINSTALLED_PRODUCTS_DIR\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/UninstalledProducts
+2026-07-23T04:59:45.0854160Z     export UNLOCALIZED_RESOURCES_FOLDER_PATH\=LiveContainer.app
+2026-07-23T04:59:45.0855600Z     export UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_NO\=LiveContainer.app/Resources
+2026-07-23T04:59:45.0855780Z     export UNLOCALIZED_RESOURCES_FOLDER_PATH_SHALLOW_BUNDLE_YES\=LiveContainer.app
+2026-07-23T04:59:45.0855850Z     export UNSTRIPPED_PRODUCT\=NO
+2026-07-23T04:59:45.0855910Z     export USER\=runner
+2026-07-23T04:59:45.0856010Z     export USER_APPS_DIR\=/Users/runner/Applications
+2026-07-23T04:59:45.0856090Z     export USER_LIBRARY_DIR\=/Users/runner/Library
+2026-07-23T04:59:45.0856160Z     export USE_DYNAMIC_NO_PIC\=YES
+2026-07-23T04:59:45.0856220Z     export USE_HEADERMAP\=YES
+2026-07-23T04:59:45.0856290Z     export USE_HEADER_SYMLINKS\=NO
+2026-07-23T04:59:45.0856390Z     export VALIDATE_DEVELOPMENT_ASSET_PATHS\=YES_ERROR
+2026-07-23T04:59:45.0856450Z     export VALIDATE_PRODUCT\=YES
+2026-07-23T04:59:45.0858200Z     export VALID_ARCHS\=arm64\ arm64e\ armv7\ armv7s
+2026-07-23T04:59:45.0858290Z     export VERBOSE_PBXCP\=NO
+2026-07-23T04:59:45.0858440Z     export VERSIONPLIST_PATH\=LiveContainer.app/version.plist
+2026-07-23T04:59:45.0858530Z     export VERSION_INFO_BUILDER\=runner
+2026-07-23T04:59:45.0858630Z     export VERSION_INFO_FILE\=LiveContainer_vers.c
+2026-07-23T04:59:45.0858930Z     export VERSION_INFO_STRING\=\"@\(\#\)PROGRAM:LiveContainer\ \ PROJECT:LiveContainer-1\"
+2026-07-23T04:59:45.0859600Z     export WATCHKIT_2_SUPPORT_FOLDER_PATH\=/Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/WatchKitSupport2
+2026-07-23T04:59:45.0861500Z     export WORKSPACE_DIR\=/Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/LiveContainer.xcodeproj
+2026-07-23T04:59:45.0863110Z     export WRAPPER_EXTENSION\=app
+2026-07-23T04:59:45.0863200Z     export WRAPPER_NAME\=LiveContainer.app
+2026-07-23T04:59:45.0863270Z     export WRAPPER_SUFFIX\=.app
+2026-07-23T04:59:45.0863380Z     export WRAP_ASSET_PACKS_IN_SEPARATE_DIRECTORIES\=NO
+2026-07-23T04:59:45.0863610Z     export XCODE_APP_SUPPORT_DIR\=/Applications/Xcode_26.6.app/Contents/Developer/Library/Xcode
+2026-07-23T04:59:45.0864480Z     export XCODE_PRODUCT_BUILD_VERSION\=17F113
+2026-07-23T04:59:45.0864580Z     export XCODE_VERSION_ACTUAL\=2660
+2026-07-23T04:59:45.0864660Z     export XCODE_VERSION_MAJOR\=2600
+2026-07-23T04:59:45.0867210Z     export XCODE_VERSION_MINOR\=2660
+2026-07-23T04:59:45.0867740Z     export XPCSERVICES_FOLDER_PATH\=LiveContainer.app/XPCServices
+2026-07-23T04:59:45.0868500Z     export YACC\=yacc
+2026-07-23T04:59:45.0872540Z     export _DISCOVER_COMMAND_LINE_LINKER_INPUTS\=YES
+2026-07-23T04:59:45.0872690Z     export _DISCOVER_COMMAND_LINE_LINKER_INPUTS_INCLUDE_WL\=YES
+2026-07-23T04:59:45.0872760Z     export _LD_MULTIARCH\=YES
+2026-07-23T04:59:45.0872880Z     export _WRAPPER_CONTENTS_DIR_SHALLOW_BUNDLE_NO\=/Contents
+2026-07-23T04:59:45.0872980Z     export _WRAPPER_PARENT_PATH_SHALLOW_BUNDLE_NO\=/..
+2026-07-23T04:59:45.0873090Z     export _WRAPPER_RESOURCES_DIR_SHALLOW_BUNDLE_NO\=/Resources
+2026-07-23T04:59:45.0873170Z     export __DIAGNOSE_DEPRECATED_ARCHS\=YES
+2026-07-23T04:59:45.0897700Z     export __IS_NOT_MACOS\=YES
+2026-07-23T04:59:45.0897820Z     export __IS_NOT_MACOS_macosx\=NO
+2026-07-23T04:59:45.0897890Z     export __IS_NOT_SIMULATOR\=YES
+2026-07-23T04:59:45.0897970Z     export __IS_NOT_SIMULATOR_simulator\=NO
+2026-07-23T04:59:45.0898710Z     export __ORIGINAL_SDK_DEFINED_LLVM_TARGET_TRIPLE_SYS\=ios
+2026-07-23T04:59:45.0898780Z     export arch\=undefined_arch
+2026-07-23T04:59:45.0898850Z     export variant\=normal
+2026-07-23T04:59:45.0901860Z     /bin/sh -c /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/IntermediateBuildFilesPath/LiveContainer.build/Release-iphoneos/LiveContainer.build/Script-17D4DA692D9C495E008E7396.sh
+2026-07-23T04:59:45.0901920Z 1
+2026-07-23T04:59:45.0901930Z 
+2026-07-23T04:59:45.0903790Z ValidateEmbeddedBinary /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/PlugIns/ShareExtension.appex (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:45.0908690Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.0917050Z     /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/PlugIns/ShareExtension.appex -info-plist-path /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/Info.plist
+2026-07-23T04:59:45.9511720Z warning: Embedded binary's NSExtensionActivationRule is TRUEPREDICATE. Before you submit your containing app to the App Store, be sure to replace all uses of TRUEPREDICATE with specific predicate statements or NSExtensionActivationRule keys. If any extensions in your containing app include TRUEPREDICATE, the app will be rejected.
+2026-07-23T04:59:45.9613300Z 
+2026-07-23T04:59:45.9715550Z ValidateEmbeddedBinary /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/PlugIns/LiveProcess.appex (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:45.9817660Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.9822440Z     /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/PlugIns/LiveProcess.appex -info-plist-path /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/Info.plist
+2026-07-23T04:59:45.9825990Z warning: The CFBundleVersion of an app extension ('1') must match that of its containing parent app ('3.8.1').
+2026-07-23T04:59:45.9826330Z 
+2026-07-23T04:59:45.9827270Z ValidateEmbeddedBinary /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/PlugIns/LaunchAppExtension.appex (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:45.9828460Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.9830460Z     /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/embeddedBinaryValidationUtility /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/PlugIns/LaunchAppExtension.appex -info-plist-path /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/Info.plist
+2026-07-23T04:59:45.9833500Z warning: Embedded binary's NSExtensionActivationRule is TRUEPREDICATE. Before you submit your containing app to the App Store, be sure to replace all uses of TRUEPREDICATE with specific predicate statements or NSExtensionActivationRule keys. If any extensions in your containing app include TRUEPREDICATE, the app will be rejected.
+2026-07-23T04:59:45.9834410Z 
+2026-07-23T04:59:45.9835890Z GenerateDSYMFile /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Release-iphoneos/LiveContainer.app.dSYM /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/LiveContainer (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:45.9837630Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.9839450Z     /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/LiveContainer -o /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/BuildProductsPath/Release-iphoneos/LiveContainer.app.dSYM
+2026-07-23T04:59:45.9841100Z 
+2026-07-23T04:59:45.9841910Z Strip /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/LiveContainer (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:45.9842980Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.9844180Z     /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -D /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app/LiveContainer
+2026-07-23T04:59:45.9864680Z 
+2026-07-23T04:59:45.9867170Z SetOwnerAndGroup runner:staff /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:45.9868630Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.9869720Z     /usr/sbin/chown -RH runner:staff /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app
+2026-07-23T04:59:45.9953380Z 
+2026-07-23T04:59:45.9955690Z SetMode u+w,go-w,a+rX /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:45.9956850Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:45.9957840Z     /bin/chmod -RH u+w,go-w,a+rX /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app
+2026-07-23T04:59:45.9994750Z 
+2026-07-23T04:59:45.9998170Z RegisterExecutionPolicyException /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:45.9999830Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:46.0000970Z     builtin-RegisterExecutionPolicyException /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app
+2026-07-23T04:59:46.0019810Z 
+2026-07-23T04:59:46.0022200Z Validate /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:46.0023320Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:46.0024510Z     builtin-validationUtility /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app -validate-for-store -shallow-bundle -infoplist-subpath Info.plist
+2026-07-23T04:59:46.0028100Z warning: All interface orientations must be supported unless the app requires full screen. (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:46.0045900Z 
+2026-07-23T04:59:46.0048150Z Touch /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:46.0049250Z     cd /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer
+2026-07-23T04:59:46.0050220Z     /usr/bin/touch -c /Users/runner/Library/Developer/Xcode/DerivedData/LiveContainer-anlxizakxbdkefbefbekrjkpjktu/Build/Intermediates.noindex/ArchiveIntermediates/LiveContainer/InstallationBuildProductsLocation/Applications/LiveContainer.app
+2026-07-23T04:59:46.0071500Z 
+2026-07-23T04:59:46.0575570Z /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/LiveContainer.xcodeproj: warning: DEFINES_MODULE was set, but no umbrella header could be found to generate the module map (in target 'LiveContainerSwiftUI' from project 'LiveContainer')
+2026-07-23T04:59:46.0577780Z /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator/upstream-livecontainer/LiveContainer.xcodeproj: warning: DEFINES_MODULE was set, but no umbrella header could be found to generate the module map (in target 'LiveContainerShared' from project 'LiveContainer')
+2026-07-23T04:59:46.0579920Z warning: Run script build phase 'Run Script' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'LiveContainer' from project 'LiveContainer')
+2026-07-23T04:59:46.1025320Z ** ARCHIVE SUCCEEDED **
+2026-07-23T04:59:46.1025650Z 
+2026-07-23T04:59:46.1830540Z ##[group]Run set -euo pipefail
+2026-07-23T04:59:46.1830870Z [36;1mset -euo pipefail[0m
+2026-07-23T04:59:46.1831060Z [36;1mrm -rf package extracted[0m
+2026-07-23T04:59:46.1831310Z [36;1mmkdir -p package/Payload extracted[0m
+2026-07-23T04:59:46.1831810Z [36;1mcp -R upstream-livecontainer/archive.xcarchive/Products/Applications/LiveContainer.app \[0m
+2026-07-23T04:59:46.1832290Z [36;1m  package/Payload/LiveContainer.app[0m
+2026-07-23T04:59:46.1832550Z [36;1m[0m
+2026-07-23T04:59:46.1832730Z [36;1mAPP=package/Payload/LiveContainer.app[0m
+2026-07-23T04:59:46.1833020Z [36;1mINFO="$APP/Info.plist"[0m
+2026-07-23T04:59:46.1833230Z [36;1mtest -f "$INFO"[0m
+2026-07-23T04:59:46.1833380Z [36;1m[0m
+2026-07-23T04:59:46.1833590Z [36;1mrm -rf "$APP/Frameworks/SideStore.framework"[0m
+2026-07-23T04:59:46.1833970Z [36;1mfind "$APP" -name _CodeSignature -type d -prune -exec rm -rf {} +[0m
+2026-07-23T04:59:46.1834450Z [36;1mfind "$APP" -name embedded.mobileprovision -type f -delete[0m
+2026-07-23T04:59:46.1834800Z [36;1mxattr -cr "$APP"[0m
+2026-07-23T04:59:46.1834970Z [36;1m[0m
+2026-07-23T04:59:46.1835250Z [36;1m/usr/libexec/PlistBuddy -c 'Delete :LCSerialMachOSigning' "$INFO" >/dev/null 2>&1 || true[0m
+2026-07-23T04:59:46.1835820Z [36;1m/usr/libexec/PlistBuddy -c 'Add :LCSerialMachOSigning bool true' "$INFO"[0m
+2026-07-23T04:59:46.1836370Z [36;1m/usr/libexec/PlistBuddy -c 'Delete :LCSerialSignerBuild' "$INFO" >/dev/null 2>&1 || true[0m
+2026-07-23T04:59:46.1836880Z [36;1m/usr/libexec/PlistBuddy -c 'Add :LCSerialSignerBuild string NightVibes33-2afc9c3-v1' "$INFO"[0m
+2026-07-23T04:59:46.1837490Z [36;1m/usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName LiveContainer Serial' "$INFO" || \[0m
+2026-07-23T04:59:46.1838020Z [36;1m  /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string LiveContainer Serial' "$INFO"[0m
+2026-07-23T04:59:46.1838470Z [36;1mplutil -lint "$INFO"[0m
+2026-07-23T04:59:46.1838650Z [36;1m[0m
+2026-07-23T04:59:46.1838980Z [36;1mMAIN_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$INFO")"[0m
+2026-07-23T04:59:46.1839370Z [36;1mtest -f "$APP/$MAIN_EXECUTABLE"[0m
+2026-07-23T04:59:46.1839650Z [36;1mstrings "$APP/$MAIN_EXECUTABLE" | grep -Fq \[0m
+2026-07-23T04:59:46.1840010Z [36;1m  'com.nightvibes33.livecontainer.serial-macho-signing'[0m
+2026-07-23T04:59:46.1840330Z [36;1m[0m
+2026-07-23T04:59:46.1840480Z [36;1m([0m
+2026-07-23T04:59:46.1840600Z [36;1m  cd package[0m
+2026-07-23T04:59:46.1840790Z [36;1m  /usr/bin/zip -qry -y "../$IPA_NAME" Payload[0m
+2026-07-23T04:59:46.1841000Z [36;1m)[0m
+2026-07-23T04:59:46.1841120Z [36;1m[0m
+2026-07-23T04:59:46.1841260Z [36;1munzip -t "$IPA_NAME" >/dev/null[0m
+2026-07-23T04:59:46.1841470Z [36;1munzip -q "$IPA_NAME" -d extracted[0m
+2026-07-23T04:59:46.1841760Z [36;1mEXTRACTED_INFO=extracted/Payload/LiveContainer.app/Info.plist[0m
+2026-07-23T04:59:46.1842200Z [36;1mtest "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialMachOSigning' "$EXTRACTED_INFO")" = true[0m
+2026-07-23T04:59:46.1842770Z [36;1mtest "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialSignerBuild' "$EXTRACTED_INFO")" = NightVibes33-2afc9c3-v1[0m
+2026-07-23T04:59:46.1843370Z [36;1mEXTRACTED_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$EXTRACTED_INFO")"[0m
+2026-07-23T04:59:46.1844260Z [36;1mstrings "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE" | grep -Fq \[0m
+2026-07-23T04:59:46.1844670Z [36;1m  'com.nightvibes33.livecontainer.serial-macho-signing'[0m
+2026-07-23T04:59:46.1844920Z [36;1m[0m
+2026-07-23T04:59:46.1845080Z [36;1mshasum -a 256 "$IPA_NAME" > "$IPA_NAME.sha256"[0m
+2026-07-23T04:59:46.1845340Z [36;1mstat -f%z "$IPA_NAME" > "$IPA_NAME.size"[0m
+2026-07-23T04:59:46.1845530Z [36;1m{[0m
+2026-07-23T04:59:46.1845700Z [36;1m  echo 'Upstream: LiveContainer/LiveContainer'[0m
+2026-07-23T04:59:46.1845940Z [36;1m  echo "Upstream ref: $UPSTREAM_REF"[0m
+2026-07-23T04:59:46.1846230Z [36;1m  echo "Upstream commit: $(cat upstream-livecontainer-commit.txt)"[0m
+2026-07-23T04:59:46.1846820Z [36;1m  echo 'Patch: Mach-O signing queue changed from global concurrent to serial'[0m
+2026-07-23T04:59:46.1847170Z [36;1m  echo 'Bundle marker: LCSerialMachOSigning=true'[0m
+2026-07-23T04:59:46.1847500Z [36;1m  echo 'Bundle marker: LCSerialSignerBuild=NightVibes33-2afc9c3-v1'[0m
+2026-07-23T04:59:46.1847800Z [36;1m  echo "Package commit: $GITHUB_SHA"[0m
+2026-07-23T04:59:46.1848060Z [36;1m} > LiveContainer-SerialSigner-build-manifest.txt[0m
+2026-07-23T04:59:46.2011970Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-07-23T04:59:46.2012290Z env:
+2026-07-23T04:59:46.2012470Z   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
+2026-07-23T04:59:46.2012750Z   UPSTREAM_REF: 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b
+2026-07-23T04:59:46.2013040Z   RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
+2026-07-23T04:59:46.2013330Z   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
+2026-07-23T04:59:46.2013610Z   IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
+2026-07-23T04:59:46.2013830Z ##[endgroup]
+2026-07-23T04:59:46.4521940Z package/Payload/LiveContainer.app/Info.plist: OK
+2026-07-23T04:59:47.2701040Z ##[error]Process completed with exit code 1.
+2026-07-23T04:59:47.2852880Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+2026-07-23T04:59:47.2854410Z Post job cleanup.
+2026-07-23T04:59:47.6648900Z [command]/opt/homebrew/bin/git version
+2026-07-23T04:59:47.6858550Z git version 2.55.0
+2026-07-23T04:59:47.6878200Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/89d39ab8-0dc8-46d8-b3c5-3f00334784ee/.gitconfig'
+2026-07-23T04:59:47.6885410Z Temporarily overriding HOME='/Users/runner/work/_temp/89d39ab8-0dc8-46d8-b3c5-3f00334784ee' before making global git config changes
+2026-07-23T04:59:47.6886180Z Adding repository directory to the temporary git global config as a safe directory
+2026-07-23T04:59:47.6888820Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Android-iOSEmulator/Android-iOSEmulator
+2026-07-23T04:59:47.7030880Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-07-23T04:59:47.7164630Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-07-23T04:59:47.8061750Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-07-23T04:59:47.8110640Z http.https://github.com/.extraheader
+2026-07-23T04:59:47.8117570Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-07-23T04:59:47.8175840Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-07-23T04:59:47.8844140Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-07-23T04:59:47.8895220Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-07-23T04:59:47.9796190Z Cleaning up orphan processes
+2026-07-23T04:59:48.0394040Z Terminate orphan process: pid (28828) (ibtoold)
+2026-07-23T04:59:48.4361220Z Terminate orphan process: pid (26972) (ibtoold)
+2026-07-23T04:59:48.5640770Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
