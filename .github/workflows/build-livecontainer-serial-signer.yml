@@ -1,4 +1,4 @@
-name: Build LiveContainer 3.7.2 serial signer
+name: Build matching LiveContainer serial signer
 
 on:
   push:
@@ -16,10 +16,10 @@ concurrency:
 
 env:
   UPSTREAM_REPOSITORY: LiveContainer/LiveContainer
-  UPSTREAM_TAG: "3.7.2"
-  RELEASE_TAG: livecontainer-3.7.2-serial-signer-v1
+  UPSTREAM_REF: "2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b"
+  RELEASE_TAG: livecontainer-serial-signer-2afc9c3-v1
   TAG_TARGET_COMMIT: 99ebff326f89d945573965b1decf700c5ebc7f7e
-  IPA_NAME: LiveContainer-3.7.2-SerialSigner.ipa
+  IPA_NAME: LiveContainer-SerialSigner-2afc9c3.ipa
 
 jobs:
   build:
@@ -42,12 +42,16 @@ jobs:
           sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
           xcodebuild -version
 
-      - name: Clone official LiveContainer 3.7.2
+      - name: Clone matching official LiveContainer source
         shell: bash
         run: |
           set -euo pipefail
-          git clone --depth 1 --branch "$UPSTREAM_TAG" --recurse-submodules \
+          git clone --filter=blob:none --no-checkout \
             "https://github.com/$UPSTREAM_REPOSITORY.git" upstream-livecontainer
+          git -C upstream-livecontainer fetch --depth 1 origin "$UPSTREAM_REF"
+          git -C upstream-livecontainer checkout --detach FETCH_HEAD
+          git -C upstream-livecontainer submodule update --init --recursive --depth 1
+          test "$(git -C upstream-livecontainer rev-parse HEAD)" = "$UPSTREAM_REF"
           git -C upstream-livecontainer rev-parse HEAD > upstream-livecontainer-commit.txt
           test -f upstream-livecontainer/ZSign/zsign.mm
 
@@ -114,8 +118,6 @@ jobs:
           INFO="$APP/Info.plist"
           test -f "$INFO"
 
-          # Match the official standalone build: SideStore.framework is only for
-          # the integrated SideStore variant and is excluded from standalone.
           rm -rf "$APP/Frameworks/SideStore.framework"
           find "$APP" -name _CodeSignature -type d -prune -exec rm -rf {} +
           find "$APP" -name embedded.mobileprovision -type f -delete
@@ -124,7 +126,7 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Delete :LCSerialMachOSigning' "$INFO" >/dev/null 2>&1 || true
           /usr/libexec/PlistBuddy -c 'Add :LCSerialMachOSigning bool true' "$INFO"
           /usr/libexec/PlistBuddy -c 'Delete :LCSerialSignerBuild' "$INFO" >/dev/null 2>&1 || true
-          /usr/libexec/PlistBuddy -c 'Add :LCSerialSignerBuild string NightVibes33-v1' "$INFO"
+          /usr/libexec/PlistBuddy -c 'Add :LCSerialSignerBuild string NightVibes33-2afc9c3-v1' "$INFO"
           /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName LiveContainer Serial' "$INFO" || \
             /usr/libexec/PlistBuddy -c 'Add :CFBundleDisplayName string LiveContainer Serial' "$INFO"
           plutil -lint "$INFO"
@@ -143,7 +145,7 @@ jobs:
           unzip -q "$IPA_NAME" -d extracted
           EXTRACTED_INFO=extracted/Payload/LiveContainer.app/Info.plist
           test "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialMachOSigning' "$EXTRACTED_INFO")" = true
-          test "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialSignerBuild' "$EXTRACTED_INFO")" = NightVibes33-v1
+          test "$(/usr/libexec/PlistBuddy -c 'Print :LCSerialSignerBuild' "$EXTRACTED_INFO")" = NightVibes33-2afc9c3-v1
           EXTRACTED_EXECUTABLE="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$EXTRACTED_INFO")"
           strings "extracted/Payload/LiveContainer.app/$EXTRACTED_EXECUTABLE" | grep -Fq \
             'com.nightvibes33.livecontainer.serial-macho-signing'
@@ -152,18 +154,18 @@ jobs:
           stat -f%z "$IPA_NAME" > "$IPA_NAME.size"
           {
             echo 'Upstream: LiveContainer/LiveContainer'
-            echo 'Upstream tag: 3.7.2'
+            echo "Upstream ref: $UPSTREAM_REF"
             echo "Upstream commit: $(cat upstream-livecontainer-commit.txt)"
             echo 'Patch: Mach-O signing queue changed from global concurrent to serial'
             echo 'Bundle marker: LCSerialMachOSigning=true'
-            echo 'Bundle marker: LCSerialSignerBuild=NightVibes33-v1'
+            echo 'Bundle marker: LCSerialSignerBuild=NightVibes33-2afc9c3-v1'
             echo "Package commit: $GITHUB_SHA"
           } > LiveContainer-SerialSigner-build-manifest.txt
 
       - name: Upload complete serial-signer IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LiveContainer-3.7.2-SerialSigner
+          name: LiveContainer-SerialSigner-2afc9c3
           path: |
             ${{ env.IPA_NAME }}
             ${{ env.IPA_NAME }}.sha256
@@ -191,8 +193,8 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
-            --title "LiveContainer 3.7.2 — Serial Mach-O signer" \
-            --notes "Companion host for the Android iOSEmulator guest. Based on official LiveContainer 3.7.2. The only runtime behavior change is serializing LiveContainer's Mach-O signing queue so large apps do not copy/map/sign dozens of binaries concurrently. Install over the existing LiveContainer using the same certificate, then reimport the Android iOSEmulator v0.4.2 IPA." \
+            --title "LiveContainer — Serial Mach-O signer (2afc9c3)" \
+            --notes "Companion host for Android iOSEmulator. Built from official LiveContainer commit 2afc9c38ea82e45d1cab1e75dc68e4b14c2fbf2b, which matches the signer producing the reported Invalid mach-o file and Failed to Sign messages. The signer queue is changed from concurrent to serial so large apps are copied, mapped, and signed one Mach-O at a time. Install using the same certificate, then delete and freshly reimport Android iOSEmulator v0.4.2." \
             --prerelease
           gh release upload "$RELEASE_TAG" \
             "$IPA_NAME" "$IPA_NAME.sha256" LiveContainer-SerialSigner-build-manifest.txt \
@@ -218,11 +220,11 @@ jobs:
             --arg tag "$RELEASE_TAG" \
             --arg asset_name "$IPA_NAME" \
             --arg asset_sha256 "$SHA256" \
-            --arg upstream_tag "$UPSTREAM_TAG" \
+            --arg upstream_ref "$UPSTREAM_REF" \
             --arg workflow_run_id "$GITHUB_RUN_ID" \
             --arg package_commit "$GITHUB_SHA" \
             --argjson asset_size_bytes "$SIZE" \
-            '{verified:true,product:"LiveContainer serial-signing companion",upstream_tag:$upstream_tag,serial_macho_signing:true,bundle_marker:"NightVibes33-v1",tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,package_commit:$package_commit}' \
+            '{verified:true,product:"LiveContainer serial-signing companion",upstream_ref:$upstream_ref,serial_macho_signing:true,bundle_marker:"NightVibes33-2afc9c3-v1",tag:$tag,release_url:$release_url,asset_name:$asset_name,asset_size_bytes:$asset_size_bytes,asset_sha256:$asset_sha256,workflow_run_id:$workflow_run_id,package_commit:$package_commit}' \
             > .github/release-status/livecontainer-serial-signer.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
