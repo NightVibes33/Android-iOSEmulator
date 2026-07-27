@@ -133,7 +133,7 @@ jobs:
           chmod +x scripts/package_visible_redroid_ipa.sh
 
       - name: Download verified visible guest
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: redroid-arm64-visible-guest-v2
           path: visible-guest-artifact
