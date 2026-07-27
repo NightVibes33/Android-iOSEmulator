@@ -100,7 +100,7 @@ jobs:
           test "$(stat -f%z "$IPA")" -lt 2147483648
 
       - name: Upload complete loader-fix IPA and diagnostics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Android-iOSEmulator-Redroid13-ARM64-SE-QEMULoaderFix-unsigned
           path: |

@@ -221,7 +221,7 @@ jobs:
           cat "$OUT/low-storage-budget.json"
 
       - name: Upload complete low-storage IPA and diagnostics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Android-iOSEmulator-Redroid13-ARM64-SE-LowStorage-unsigned
           path: |
