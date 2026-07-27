@@ -68,7 +68,7 @@ jobs:
 
       - name: Upload build diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Android-iOSEmulator-build-diagnostics
           path: ci-logs/xcodebuild.log
@@ -87,7 +87,7 @@ jobs:
           ! unzip -l build/Android-iOSEmulator-unsigned.ipa | grep -q embedded.mobileprovision
 
       - name: Upload unsigned IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Android-iOSEmulator-unsigned-real-device
           path: |

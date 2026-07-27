@@ -155,7 +155,7 @@ jobs:
           cat visible-output/visible-display-validation.json
 
       - name: Upload complete visible-display IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Android-iOSEmulator-Redroid13-ARM64-SE-VisibleDisplay-unsigned
           path: |

@@ -81,7 +81,7 @@ jobs:
           test -s redroid-arm64-visible-guest.tar.zst
 
       - name: Upload verified visible guest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: redroid-arm64-visible-guest-v2
           path: redroid-arm64-visible-guest.tar.zst
@@ -91,7 +91,7 @@ jobs:
 
       - name: Upload graphical proof
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: redroid-arm64-visible-ui-proof-v2
           path: |
@@ -157,7 +157,7 @@ jobs:
             2>&1 | tee visible-package-run.log
 
       - name: Upload complete IPA and proof
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Android-iOSEmulator-VisibleUI-v0.4.4
           path: |

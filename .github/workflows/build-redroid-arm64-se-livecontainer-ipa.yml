@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload guest diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: redroid-arm64-guest-diagnostics
           path: |
@@ -211,7 +211,7 @@ jobs:
           df -h
 
       - name: Upload verified ARM64 guest payload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: redroid-arm64-guest
           path: redroid-arm64-guest.tar.zst
@@ -297,7 +297,7 @@ jobs:
           test "$(stat -f%z "$IPA")" -lt 2147483648
 
       - name: Upload complete LiveContainer-signable IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Android-iOSEmulator-Redroid13-ARM64-SE-NoJIT-unsigned
           path: |
