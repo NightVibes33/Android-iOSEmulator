@@ -20,7 +20,7 @@ jobs:
       SUCCESS_RUN_ID: "29985656289"
       PACKAGE_COMMIT: a36d0ee4d5579b1ae97c747d2836ee766778c412
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Verify run, release and storage budget

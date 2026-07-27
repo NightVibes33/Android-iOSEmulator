@@ -57,7 +57,7 @@ jobs:
       VARIANT: ${{ github.event_name == 'workflow_dispatch' && inputs.variant || 'mini' }}
       PUBLISH_RELEASE: ${{ github.event_name == 'push' || inputs.publish_release }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select Xcode 26 and install tools
         shell: bash
