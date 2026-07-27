@@ -38,7 +38,7 @@ jobs:
     timeout-minutes: 180
     steps:
       - name: Checkout Android iOSEmulator
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Select Xcode 26
         shell: bash
